@@ -9,13 +9,14 @@ downloads_dir = os.path.expanduser('~/Downloads')
 #should L and k in logistic(L,k) be given names to reflect they're scalars, not arrays?
 #have some way to call iota and/or curvature
 #add multiple functions in the family/superposition all of them?
+#generation of N^2 vectors should be independent of optimization
+resol = 400
+x = np.linspace(0, 1, resol) #normalized psi from 0 to 1
 
-x = np.linspace(0, 1, 400) #normalized psi from 0 to 1
-psi = x - 0.5 #offset function along x axis since its center is usually at 0
 
 
 
-def logistic(L, k):
+def logistic(k, psi_shift):
     """
     Calculates the logistic function and its derivative function
     --------- Parameters ---------
@@ -32,96 +33,51 @@ def logistic(L, k):
     df_dpsi: array-like 
         Derivative of the logistic function with respect to psi
     """
-    f = 1 - (L / (1 + np.exp(-k*(psi)))) #the logistic func
-    df_dpsi = k * f(1 - f) #derivative of the logistic func with respect to psi
+    psi = x - 0.5
+    f = 1 - ( 1 / (1 + np.exp(-k*(psi - psi_shift/10)))) #the logistic func
 
-    return f, df_dpsi
+    return f
 
 
 
-def logistic_fam(L, k):
+
+
+def logistic_super(N, weights):
     """
-    Generates a family of logistic functions and 
-    the corresponding family of derivatives
+    Generates a 3D array family of logistic functions, where
+    axis 0 = value of the function, of length resol
+    axis 1 = values of parameter k
+    axis 2 = values of parameter psi_shift,
+    then brings in optimization parameter array, weights,
+    and generates a superposition of all N^2 vectors 
+
     --------- Parameters ---------
-    L: array-like
-        Maximum values for the curves
-    k: array-like
-        Steepness values for the curves
-    --------- Returns ---------
-    f_fam: 3D Array
-        Family of logistic functions
-    df_dpsi_fam: 3D Array
-        Family of derivatives
+    N: scalar
+        number of k and psi_shift values to generate
+        N^2 total permutations of k and psi_shift
+    k_val: scalar
+        values of parameter k, steepness factor
+    psi_shift: scalar
+        values of psi_shift, horizontal displacement
+    --------- Returns ------------
+
     """
-    #initializing arrays:
-    f_fam = np.zeros((len(psi), len(L), len(k)), dtype = float) #each column is f with 1 L, 1 k 
-    df_dpsi_fam = np.zeros((len(psi), len(L))) #each column is df_dpsi with 1 L, 1 k
+    kpsi_fam = np.empty((len(x), N, N), dtype=float)
 
-    for l in range(len(L)): #looping over all values of L
-        for i in range(len(k)):
-
-            f_call = logistic(L[l], k[i])
-            f_fam[:,l,i] = f_call[0]
-            df_dpsi_fam[:,l,i] = f_call[1]
-
-    return f_fam, df_dpsi_fam
+    for i, k_val in enumerate(range(10, 10 + 2*N, 2)):
+        for j, psi_shift in enumerate(range(-5, -5 + N, 1)):
+            kpsi_fam[:, i, j] = logistic(k_val, psi_shift)
     
+    #reshaping 3D kpsi_fam (resol,N,N) into 2D kpsi_flat (resol, N^2)
+    kpsi_flat = kpsi_fam.reshape(resol, -1) 
+    superpos = np.empty(resol, dtype=float)
 
-#kill:?
-#def gen_Lk(L_min, k_0, n):
-    """
-    Generates array of Ls and ks
-    ------- Parameters ---------
-    L_min: scalar
-        minimum height, min L in array
-    k_0: scalar
-        ideal steepness, other k centered about this one
-    n: scalar
-        number of variations of L and k
-    ------- Returns ------------------------------------
-    L: array-like
-        array of Ls
-    k: array-like
-        array of ks
-    """
-    L = np.linspace(L_min, 1, 0.1)
+    for w in range(N**2):
+        superpos += weights[w] * kpsi_flat[:,w] 
+        superpos = superpos/(superpos[0] - superpos[-1])
 
-
-
-
-def scrapbook(L, k):
-    #explain better in preamble:
-    """
-    Generates a family of monotonic functions by finding ("one and"?) two regions of psi
-    where one function is spliced onto another by matching their derivative values and 
-    moving that part of the second logistic func up and over to the index of the df_dpsi
-    array where the first function matches 
-    -------- Parameters ---------------------
-    L: array-like
-        Maximum values for the curves
-    k: array-like
-        Steepness values for the curves
-    --------- Returns ---------------------------------------------------------
-    spliced_fam: 2D-array
-        Family of monotonic, Frankenstein function profiles
-    """
-
-    L = np.linspace(0.1,1,0.1)
-    k = np.linspace(5,10,1)
-
-    fam = logistic_fam(L, k) #generating 3D arrays of family of logistic func & family of derivatives
-    f_fam = fam[0]
-    df_dpsi_fam = fam[1]
-
-
-
-
-
-
-
-
-
+    return superpos
+    
 
 
 
@@ -136,16 +92,10 @@ def scrapbook(L, k):
 #---------- Plotting -----------#
 plt.figure(figsize=(8, 5))
 plt.title('Logistic Function')
-plt.xlabel('x')
+plt.xlabel(r'$\psi$')
 plt.ylabel('f(x)')
+plt.plot(x, logistic_super(5, np.random.rand(5**2)))
 plt.grid()
-
-plt.plot(x, logistic(1, 10), label='L=1, k=10', color='green')
-plt.plot(x, logistic(0.8, 10), label='L=0.8, k=10', color='blue')
-plt.plot(x, logistic(0.6, 10), label='L=0.6, k=10', color='red')
-plt.plot(x, logistic(0.4, 10), label='L=0.4, k=10', color='violet')
-
-plt.legend()
 plt.tight_layout()
 plt.savefig('logistic.png')
 
