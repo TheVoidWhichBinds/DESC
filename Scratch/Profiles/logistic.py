@@ -41,7 +41,7 @@ def logistic(k, psi_shift):
 
 
 #----------- Superposition of Logistic Functions -----------#
-def logistic_super(N, weights):
+def logistic_super(N, k_min, shift_min, weights):
     """
     Generates a 3D array family of logistic functions, where
     axis 0 = value of the function, of length resol
@@ -66,8 +66,8 @@ def logistic_super(N, weights):
     kpsi_fam = np.empty((len(x), N, N), dtype=float)
     #k_val and psi_shift need to be more flexible
     #psi_shift crashes if you change range values
-    for i, k_val in enumerate(range(10, 10 + 2*N, 2)):
-        for j, psi_shift in enumerate(range(-2, -2 + N, 1)):
+    for i, k_val in enumerate(range(k_min, k_min + 2*N, 2)):
+        for j, psi_shift in enumerate(range(shift_min, shift_min + N, 1)):
             kpsi_fam[:, i, j] = logistic(k_val, psi_shift)
     
     #reshaping 3D kpsi_fam (resol,N,N) into 2D kpsi_flat (resol, N^2)
@@ -88,7 +88,7 @@ plt.title('Logistic Function')
 plt.xlabel(r'$\psi$')
 plt.ylabel('f(x)')
 #plot currently uses random weights
-plt.plot(x, logistic_super(5, np.random.rand(5**2)))
+plt.plot(x, logistic_super(5, 10, -2, np.random.rand(5**2)))
 plt.grid()
 plt.tight_layout()
 plt.savefig('logistic.png')
