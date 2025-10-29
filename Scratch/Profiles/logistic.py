@@ -76,8 +76,8 @@ def logistic_super(N, k_min, shift_min, weights):
 
     for w in range(N**2):
         superpos += weights[w] * kpsi_flat[:,w] 
-        superpos = superpos/(superpos[0] - superpos[-1])
-
+        
+    superpos = superpos/(superpos[0] - superpos[-1])
     return superpos
     
 
