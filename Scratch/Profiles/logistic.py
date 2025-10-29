@@ -15,7 +15,7 @@ x = np.linspace(0, 1, resol) #normalized psi from 0 to 1
 
 
 
-
+#----------- Logistic Function -----------#
 def logistic(k, psi_shift):
     """
     Calculates the logistic function and its derivative function
@@ -40,8 +40,7 @@ def logistic(k, psi_shift):
 
 
 
-
-
+#----------- Superposition of Logistic Functions -----------#
 def logistic_super(N, weights):
     """
     Generates a 3D array family of logistic functions, where
@@ -50,7 +49,6 @@ def logistic_super(N, weights):
     axis 2 = values of parameter psi_shift,
     then brings in optimization parameter array, weights,
     and generates a superposition of all N^2 vectors 
-
     --------- Parameters ---------
     N: scalar
         number of k and psi_shift values to generate
@@ -60,12 +58,16 @@ def logistic_super(N, weights):
     psi_shift: scalar
         values of psi_shift, horizontal displacement
     --------- Returns ------------
-
+    superpos: array-like
+        (resol,1) array that is a superposition of all logisitic
+        function permutations of the chosen range of k and psi_shift,
+        weighted by the optimization parameter "weights"
     """
     kpsi_fam = np.empty((len(x), N, N), dtype=float)
-
+    #k_val and psi_shift need to be more flexible
+    #psi_shift crashes if you change range values
     for i, k_val in enumerate(range(10, 10 + 2*N, 2)):
-        for j, psi_shift in enumerate(range(-5, -5 + N, 1)):
+        for j, psi_shift in enumerate(range(-2, -2 + N, 1)):
             kpsi_fam[:, i, j] = logistic(k_val, psi_shift)
     
     #reshaping 3D kpsi_fam (resol,N,N) into 2D kpsi_flat (resol, N^2)
@@ -80,20 +82,12 @@ def logistic_super(N, weights):
     
 
 
-
-
-
-
-
-
-
-
-
 #---------- Plotting -----------#
 plt.figure(figsize=(8, 5))
 plt.title('Logistic Function')
 plt.xlabel(r'$\psi$')
 plt.ylabel('f(x)')
+#plot currently uses random weights
 plt.plot(x, logistic_super(5, np.random.rand(5**2)))
 plt.grid()
 plt.tight_layout()
