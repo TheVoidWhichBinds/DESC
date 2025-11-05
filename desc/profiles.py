@@ -22,6 +22,18 @@ from desc.utils import (
 )
 
 
+
+#Classes: _Profile, ScaledProfile, PowerProfile, SumProfile,
+#ProductProfile, PowerSeriesProfile, TwoPowerProfile, SplineProfile,
+#HermiteSplineProfile, MTanhProfile, FourierZernikeProfile
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------------#
 class _Profile(IOAble, ABC):
     """Abstract base class for profiles.
 
@@ -257,6 +269,17 @@ class _Profile(IOAble, ABC):
         return self.__pow__(x)
 
 
+
+
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------------#
 class ScaledProfile(_Profile):
     """Profile times a constant value.
 
@@ -347,6 +370,16 @@ class ScaledProfile(_Profile):
         return s
 
 
+
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------------#
 class PowerProfile(_Profile):
     """Profile raised to a power.
 
@@ -469,6 +502,17 @@ class PowerProfile(_Profile):
         return s
 
 
+
+
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------------#
 class SumProfile(_Profile):
     """Sum of two or more Profiles.
 
@@ -556,6 +600,18 @@ class SumProfile(_Profile):
         return s
 
 
+
+
+
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------------#
 class ProductProfile(_Profile):
     """Product of two or more Profiles.
 
@@ -653,6 +709,18 @@ class ProductProfile(_Profile):
         return s
 
 
+
+
+
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------------#
 class PowerSeriesProfile(_Profile):
     """Profile represented by a monic power series.
 
@@ -830,6 +898,20 @@ class PowerSeriesProfile(_Profile):
         return cls(params, sym=sym, name=name)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------------#
+
 class TwoPowerProfile(_Profile):
     """Profile represented by two powers.
 
@@ -933,6 +1015,20 @@ class TwoPowerProfile(_Profile):
         return f
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------------#
 class SplineProfile(_Profile):
     """Radial profile represented by a piecewise cubic spline.
 
@@ -1032,6 +1128,18 @@ class SplineProfile(_Profile):
         )
 
 
+
+
+
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------------#
 class HermiteSplineProfile(_Profile):
     """Radial profile represented by a piecewise cubic Hermite spline.
 
@@ -1126,6 +1234,19 @@ class HermiteSplineProfile(_Profile):
             extrap=True,
         )
 
+
+
+
+
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------#
 
 class MTanhProfile(_Profile):
     r"""Profile represented by a modified hyperbolic tangent + polynomial.
@@ -1369,6 +1490,20 @@ class MTanhProfile(_Profile):
         return MTanhProfile(params, name)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------------#
 class FourierZernikeProfile(_Profile):
     """Possibly anisotropic profile represented by Fourier-Zernike basis.
 

@@ -35,7 +35,6 @@ def logistic(k, psi_shift):
     """
     psi = x - 0.5
     f = 1 - ( 1 / (1 + np.exp(-k*(psi - psi_shift/10)))) #the logistic func
-
     return f
 
 
@@ -70,14 +69,13 @@ def logistic_super(N, k_min, shift_min, weights):
         for j, psi_shift in enumerate(range(shift_min, shift_min + N, 1)):
             kpsi_fam[:, i, j] = logistic(k_val, psi_shift)
     
-    #reshaping 3D kpsi_fam (resol,N,N) into 2D kpsi_flat (resol, N^2)
-    kpsi_flat = kpsi_fam.reshape(resol, -1) 
-    superpos = np.empty(resol, dtype=float)
+    kpsi_flat = kpsi_fam.reshape(resol, -1) #reshaping 3D kpsi_fam (resol,N,N) into 2D kpsi_flat (resol, N^2)
+    superpos = np.empty(resol, dtype=float) #initializing (N,1) superposition array
 
-    for w in range(N**2):
+    for w in range(N**2): #scaling each func in family by optimization weights
         superpos += weights[w] * kpsi_flat[:,w] 
         
-    superpos = superpos/(superpos[0] - superpos[-1])
+    superpos = superpos/(superpos[0] - superpos[-1]) #normalizing superposition
     return superpos
     
 
@@ -87,8 +85,8 @@ plt.figure(figsize=(8, 5))
 plt.title('Logistic Function')
 plt.xlabel(r'$\psi$')
 plt.ylabel('f(x)')
-#plot currently uses random weights
-plt.plot(x, logistic_super(5, 10, -2, np.random.rand(5**2)))
+#plot currently uses random weights:
+plt.plot(x, logistic_super(5, 20, -2, np.random.rand(5**2)))
 plt.grid()
 plt.tight_layout()
 plt.savefig('logistic.png')
