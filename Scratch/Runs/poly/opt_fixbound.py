@@ -1,10 +1,16 @@
 #BASIS FIXED BOUNDARY QS OPTIMIZATION MODDED TO TAKE POLYNOMIAL COEFFICIENTS AS OPTIMIZATION VARIABLES AND PRESSURE CONSTRAINTS AS ADDITIONAL OBJECTIVES
+#NOTES:
+#play with lowering ftol
+
+
+
+
+
 
 #Imports:
 import numpy as np
 import matplotlib.pyplot as plt
 import desc.io
-from desc.grid import LinearGrid, ConcentricGrid
 from desc.objectives import (
     ObjectiveFunction,
    #FixPressure, #skipping this line
@@ -17,7 +23,7 @@ from desc.optimize import Optimizer
 
 
 #Loading Equilibria Family and Making a Copy of Final Iteration:
-eq_init_fixbound= desc.io.load("Scratch/Runs/eq_init_fixbound.h5") #initial equilibrium load - might need to generalize path
+eq_init_fixbound= desc.io.load("scratch/runs/poly/eq_init_fixbound.h5") #initial equilibrium load - might need to generalize path
 eq_init= eq_init_fixbound[-1].copy() #copy of final eq in family
 
 
@@ -28,7 +34,7 @@ eq_init= eq_init_fixbound[-1].copy() #copy of final eq in family
 objective= ObjectiveFunction(ForceBalance(eq=eq_init))
 
 #Importing Custom Constraint Funcs:
-from Scratch.Objectives.constraints import ( 
+from scratch.objectives.constraints import ( 
     pressure_edge,
     grad_pressure_axis,
     grad_pressure_edge

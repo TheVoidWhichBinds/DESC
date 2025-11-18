@@ -1,15 +1,18 @@
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-downloads_dir = os.path.expanduser('~/Downloads')
-
-#Notes:
+#NOTES:
 #consider changing df_dpsi name
 #consider changing f_call name
 #should L and k in logistic(L,k) be given names to reflect they're scalars, not arrays?
 #have some way to call iota and/or curvature
 #add multiple functions in the family/superposition all of them?
 #generation of N^2 vectors should be independent of optimization
+
+
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+downloads_dir = os.path.expanduser('~/Downloads')
+
+
 resol = 400
 x = np.linspace(0, 1, resol) #normalized psi from 0 to 1
 

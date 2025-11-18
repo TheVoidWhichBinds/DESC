@@ -1,7 +1,8 @@
 #BASIC (FIXED BOUNDARY) EQUILIBRIUM MODDED WITH LOGISTIC PROFILE
+#NOTES:
 
-#Basic Equilibrium portion:
-#Import:
+
+#Imports:
 import sys
 import os
 sys.path.insert(0, os.path.abspath("."))
