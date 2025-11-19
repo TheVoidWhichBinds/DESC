@@ -1,25 +1,24 @@
 #NOTES:
-#consider changing df_dpsi name
-#consider changing f_call name
 #should L and k in logistic(L,k) be given names to reflect they're scalars, not arrays?
 #have some way to call iota and/or curvature
-#add multiple functions in the family/superposition all of them?
-#generation of N^2 vectors should be independent of optimization
 
+#make """ """ appearance consistent
+#make comments consistent: #this? or # this?
+#consider upper limit to k_max, as decided by theory.
 
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-downloads_dir = os.path.expanduser('~/Downloads')
 
 
-resol = 400
-x = np.linspace(0, 1, resol) #normalized psi from 0 to 1
+
+NPTS= 400 #number of points
+X= np.linspace(0, 1, NPTS) #x axis generation
 
 
 
 #----------- Logistic Function -----------#
-def logistic(k, psi_shift):
+def logistic(k, rho_shift):
     """
     Calculates the logistic function and its derivative function
     --------- Parameters ---------
@@ -27,69 +26,149 @@ def logistic(k, psi_shift):
         Max value of the curve
     k: scalar
         Steepness of the curve
-    psi: array-like
+    rho: array-like
         Toroidal flux values
 
     --------- Returns ---------
     f: array-like
         Logistic function
-    df_dpsi: array-like 
-        Derivative of the logistic function with respect to psi
     """
-    psi = x - 0.5
-    f = 1 - ( 1 / (1 + np.exp(-k*(psi - psi_shift/10)))) #the logistic func
+    rho= X - 0.5 #shift s.t. the func is no longer centered at rho=0
+    f= 1 - ( 1 / (1 + np.exp(-k* (rho - rho_shift/10)))) #the logistic func
     return f
 
 
 
+#------------------ Node Distribution Functions -------------------#
+#Choices of how to spread out families of k and rho_shift parameters
+def generate_nodes(min_val, max_val, N, *, quadratic=False, equidistant=False):
+    """
+    Generates nodes in [min_val, max_val] using either a quadratic
+    or equidistant spacing.
+    Exactly one of `quadratic` or `equidistant` must be True.
+
+    Parameters
+    ----------
+    min_val: float
+        Lower bound of interval.
+    max_val: float
+        Upper bound of interval.
+    N: int
+        Number of nodes.
+    quadratic : bool, optional
+        If True, use quadratically graded nodes (cluster near max_val).
+    equidistant : bool, optional
+        If True, use equally spaced nodes.
+
+    Returns
+    -------
+    nodes: ndarray
+        1D array of nodes in [min_val, max_val].
+    """
+
+    #If both True or both False, error:
+    if quadratic == equidistant: 
+        raise ValueError(
+            "Exactly one of 'quadratic' or 'equidistant' must be True."
+        )
+    
+    t = np.linspace(0.0, 1.0, N)
+    #Quadratically graded nodes, higher density near max_val:
+    if quadratic:
+    
+        s = 1.0 - (1.0 - t)**2
+        nodes = min_val + (max_val - min_val) * s
+    #Equidistantly spaced nodes:
+    else:  
+        nodes = min_val + (max_val - min_val) * t
+
+    return nodes
+
+
+
 #----------- Superposition of Logistic Functions -----------#
-def logistic_super(N, k_min, shift_min, weights):
+def logistic_super(N_k, k_min, k_max, N_shift, shift_min, shift_max, weights):
     """
     Generates a 3D array family of logistic functions, where
     axis 0 = value of the function, of length resol
     axis 1 = values of parameter k
-    axis 2 = values of parameter psi_shift,
+    axis 2 = values of parameter rho_shift,
     then brings in optimization parameter array, weights,
-    and generates a superposition of all N^2 vectors 
+    and generates a superposition of all N^2 vectors.
     --------- Parameters ---------
-    N: scalar
-        number of k and psi_shift values to generate
-        N^2 total permutations of k and psi_shift
-    k_val: scalar
-        values of parameter k, steepness factor
-    psi_shift: scalar
-        values of psi_shift, horizontal displacement
+    N_k: scalar
+        number of k values to generate
+    k_min: scalar
+        parameter k, minimum steepness
+    N_shift: scalar
+        number of rho_shifts to generate
+    shift_min: scalar
+        value of minimum rho_shift, horizontal displacement
     --------- Returns ------------
     superpos: array-like
-        (resol,1) array that is a superposition of all logisitic
-        function permutations of the chosen range of k and psi_shift,
-        weighted by the optimization parameter "weights"
+        (NPTS,1) array that is a superposition of all logisitic
+        function permutations of the chosen range of k and rho_shift,
+        weighted by the optimization parameter "weights".
     """
-    kpsi_fam = np.empty((len(x), N, N), dtype=float)
-    #k_val and psi_shift need to be more flexible
-    #psi_shift crashes if you change range values
-    for i, k_val in enumerate(range(k_min, k_min + 2*N, 2)):
-        for j, psi_shift in enumerate(range(shift_min, shift_min + N, 1)):
-            kpsi_fam[:, i, j] = logistic(k_val, psi_shift)
-    
-    kpsi_flat = kpsi_fam.reshape(resol, -1) #reshaping 3D kpsi_fam (resol,N,N) into 2D kpsi_flat (resol, N^2)
-    superpos = np.empty(resol, dtype=float) #initializing (N,1) superposition array
+    fam= np.empty((len(X), N_k, N_shift), dtype=float)
+    k_nodes= generate_nodes( #distribution of k values 
+        k_min, k_max, N_k, quadratic=True, equidistant=False)
+    shift_nodes = generate_nodes( #distribution of rho_shifts
+        shift_min, shift_max, N_shift, quadratic=False, equidistant=True) 
 
-    for w in range(N**2): #scaling each func in family by optimization weights
-        superpos += weights[w] * kpsi_flat[:,w] 
+
+    for i, k_val in enumerate(k_nodes):
+        for j, rho_shift in enumerate(shift_nodes):
+            fam[:, i, j] = logistic(k_val, rho_shift)
+    
+    fam_flat= fam.reshape(NPTS, -1) #reshaping 3D krho_fam (resol,N,N) into 2D krho_flat (resol, N^2)
+    superpos= np.empty(NPTS, dtype=float) #initializing (N,1) superposition array
+
+    for w in range(N_k*N_shift): #scaling each func in family by optimization weights
+        superpos+= weights[w] * fam_flat[:,w] 
         
-    superpos = superpos/(superpos[0] - superpos[-1]) #normalizing superposition
+    superpos= superpos/(superpos[0] - superpos[-1]+ 0.05) #normalizing superposition
     return superpos
     
+
+
+
+#--------- Profile to be Passed to the Optimizer ---------#
+def logistic_opt(weights):
+    """
+    Function to be passed into the Optimizer.
+    N, k_min and shift_min are defined here and
+    passed into logistic_super. Weights are the 
+    only optimization variables.
+    -------- Parameters -------
+    weights: array-like 
+        Nx1 array of weights that scales each logistic
+        func in the generated family
+    --------- Returns ---------
+    pressure profile, superposition of logistic funcs
+    weighted by "weights"
+    """
+    #see logistic_super for definitions:
+    N_k= 5 
+    k_min= 20 
+    k_max= 40 #steepness
+    N_shift= 5
+    shift_min= -2 #hard clamp
+    shift_max= 2 #hard clamp
+
+    opt_pressure= logistic_super(
+        N_k, k_min, k_max, N_shift, shift_min, shift_max, weights)
+    return opt_pressure 
+
 
 
 #---------- Plotting -----------#
 plt.figure(figsize=(8, 5))
 plt.title('Logistic Function')
-plt.xlabel(r'$\psi$')
+plt.xlabel(r'$\rho$')
 plt.ylabel('f(x)')
 #plot currently uses random weights:
-plt.plot(x, logistic_super(5, 20, -2, np.random.rand(5**2)))
+plt.plot(X, logistic_super(5, 20, 300, 5, -3, 3, np.random.rand(5**2)))
 plt.grid()
 plt.tight_layout()
 plt.savefig('logistic.png')

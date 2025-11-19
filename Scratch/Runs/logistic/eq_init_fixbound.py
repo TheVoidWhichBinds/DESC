@@ -12,7 +12,7 @@ from desc.continuation import solve_continuation_automatic
 from desc.equilibrium import Equilibrium
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
-from scratch.profiles.logistic import logistic,logistic_super
+from scratch.profiles.logistic import logistic_opt
 
 
 
@@ -33,7 +33,7 @@ surf= FourierRZToroidalSurface(
 )
 
 #Initializing Pressure and Iota:
-pressure = logistic_super(
+pressure = logistic_opt(
     #FINALIZE LOGISTIC_SUPER INPUTS BEFORE INPUTTING INITIAL GUESS
 )  
 iota = PowerSeriesProfile([1, 0, 1.5])  # 1 + 1.5 r^2
