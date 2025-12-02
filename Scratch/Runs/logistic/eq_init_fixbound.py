@@ -3,10 +3,10 @@
 
 
 #Imports:
+import numpy as np
 import sys
 import os
-sys.path.insert(0, os.path.abspath("."))
-sys.path.append(os.path.abspath("../../../"))
+sys.path.append("/Users/macdaddi/DESC")
 import desc.io
 from desc.continuation import solve_continuation_automatic
 from desc.equilibrium import Equilibrium
@@ -33,9 +33,7 @@ surf= FourierRZToroidalSurface(
 )
 
 #Initializing Pressure and Iota:
-pressure = logistic_opt(
-    #FINALIZE LOGISTIC_SUPER INPUTS BEFORE INPUTTING INITIAL GUESS
-)  
+pressure = logistic_opt(np.random.rand(5**2)) #rand(#), # is N_k * N_shift
 iota = PowerSeriesProfile([1, 0, 1.5])  # 1 + 1.5 r^2
 
 #Constructing Equilibrium 
@@ -53,5 +51,6 @@ eq = Equilibrium(
 
 
 #----------------------------------------------------------
-#Solving Equilibrium:
+# Solving & Saving Equilibrium:
 eq_init= solve_continuation_automatic(eq.copy(), verbose=3)
+eq_init.save("/Users/macdaddi/DESC/scratch/runs/logistic/eq_init_fixbound.h5")

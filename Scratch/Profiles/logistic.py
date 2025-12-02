@@ -17,7 +17,7 @@ X= np.linspace(0, 1, NPTS) #x axis generation
 
 
 
-#----------- Logistic Function -----------#
+#---------------------- Logistic Function ----------------------#
 def logistic(k, rho_shift):
     """
     Calculates the logistic function and its derivative function
@@ -39,7 +39,7 @@ def logistic(k, rho_shift):
 
 
 
-#------------------ Node Distribution Functions -------------------#
+#----------------------- Node Distribution Functions ------------------------#
 #Choices of how to spread out families of k and rho_shift parameters
 def generate_nodes(min_val, max_val, N, *, quadratic=False, equidistant=False):
     """
@@ -86,7 +86,7 @@ def generate_nodes(min_val, max_val, N, *, quadratic=False, equidistant=False):
 
 
 
-#----------- Superposition of Logistic Functions -----------#
+#------------------- Superposition of Logistic Functions --------------------#
 def logistic_super(N_k, k_min, k_max, N_shift, shift_min, shift_max, weights):
     """
     Generates a 3D array family of logistic functions, where
@@ -112,7 +112,7 @@ def logistic_super(N_k, k_min, k_max, N_shift, shift_min, shift_max, weights):
     """
     fam= np.empty((len(X), N_k, N_shift), dtype=float)
     k_nodes= generate_nodes( #distribution of k values 
-        k_min, k_max, N_k, quadratic=True, equidistant=False)
+        k_min, k_max, N_k, quadratic=False, equidistant=True)
     shift_nodes = generate_nodes( #distribution of rho_shifts
         shift_min, shift_max, N_shift, quadratic=False, equidistant=True) 
 
@@ -133,7 +133,7 @@ def logistic_super(N_k, k_min, k_max, N_shift, shift_min, shift_max, weights):
 
 
 
-#--------- Profile to be Passed to the Optimizer ---------#
+#------- Profile to be Passed to the Optimizer ------#
 def logistic_opt(weights):
     """
     Function to be passed into the Optimizer.
@@ -168,7 +168,7 @@ plt.title('Logistic Function')
 plt.xlabel(r'$\rho$')
 plt.ylabel('f(x)')
 #plot currently uses random weights:
-plt.plot(X, logistic_super(5, 20, 300, 5, -3, 3, np.random.rand(5**2)))
+plt.plot(X, logistic_super(5, 20, 100, 5, -3, 3, np.random.rand(5**2)))
 plt.grid()
 plt.tight_layout()
 plt.savefig('logistic.png')

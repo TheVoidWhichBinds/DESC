@@ -6,9 +6,7 @@
 #Import:
 import sys
 import os
-sys.path.insert(0, os.path.abspath("."))
-sys.path.append(os.path.abspath("../../../"))
-import desc.io
+sys.path.append("/Users/macdaddi/DESC")
 from desc.continuation import solve_continuation_automatic
 from desc.equilibrium import Equilibrium
 from desc.geometry import FourierRZToroidalSurface
@@ -53,5 +51,6 @@ eq = Equilibrium(
 
 
 #----------------------------------------------------------
-#Solving Equilibrium:
+#Solving & Saving Equilibrium:
 eq_init= solve_continuation_automatic(eq.copy(), verbose=3)
+eq_init.save('/Users/macdaddi/DESC/scratch/runs/poly/eq_init_fixbound.h5')

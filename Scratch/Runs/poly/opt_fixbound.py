@@ -5,10 +5,10 @@
 
 
 
-
-
 #Imports:
 import numpy as np
+import sys
+sys.path.append("/Users/macdaddi/DESC")
 import matplotlib.pyplot as plt
 import desc.io
 from desc.objectives import (
@@ -20,6 +20,7 @@ from desc.objectives import (
     LinearObjectiveFromUser,
 )
 from desc.optimize import Optimizer
+import scratch
 
 
 #Loading Equilibria Family and Making a Copy of Final Iteration:
@@ -85,7 +86,7 @@ eq_opt, result = eq_init.optimize(
     optimizer=optimizer,
     ftol=5e-2,  # stopping tolerance on the function value
     xtol=1e-6,  # stopping tolerance on the step size
-    gtol=1e-6,  # stopping tolerance on the gradient
+    gtol=1e-7,  # stopping tolerance on the gradient
     maxiter=50,  # maximum number of iterations
     options={
         "perturb_options": {"order": 2, "verbose": 0},  # use 2nd-order perturbations

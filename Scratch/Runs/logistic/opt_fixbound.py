@@ -7,6 +7,8 @@
 #Imports:
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
+sys.path.append("/Users/macdaddi/DESC")
 import desc.io
 from desc.objectives import (
     ObjectiveFunction,
@@ -30,32 +32,32 @@ eq_init= eq_init_fixbound[-1].copy() #copy of final eq in family
 #Objective of Choice:
 objective= ObjectiveFunction(ForceBalance(eq=eq_init))
 
-#Importing Custom Constraint Funcs:
-from scratch.objectives.constraints import ( 
-    pressure_edge,
-    grad_pressure_axis,
-    grad_pressure_edge
-)
+#Importing Custom Constraint Funcs:(NOT NECESSARY FOR LOGISTIC FUNC)
+# from scratch.objectives.constraints import ( 
+#     pressure_edge,
+#     grad_pressure_axis,
+#     grad_pressure_edge
+# )
 
 #Constructing the Objective Wrappers for Custom Func:
-pressure_edge_zero = LinearObjectiveFromUser(
-    fun=pressure_edge,
-    thing=eq_init,
-    target=0.0,
-    weight=1.0,
-)
-grad_pressure_axis_zero = LinearObjectiveFromUser(
-    fun=grad_pressure_axis,
-    thing=eq_init,
-    target=0.0,
-    weight=1.0,
-)
-grad_pressure_edge_zero = LinearObjectiveFromUser(
-    fun=grad_pressure_edge,
-    thing=eq_init,
-    target=0.0,
-    weight=1.0,
-)
+# pressure_edge_zero = LinearObjectiveFromUser(
+#     fun=pressure_edge,
+#     thing=eq_init,
+#     target=0.0,
+#     weight=1.0,
+# )
+# grad_pressure_axis_zero = LinearObjectiveFromUser(
+#     fun=grad_pressure_axis,
+#     thing=eq_init,
+#     target=0.0,
+#     weight=1.0,
+# )
+# grad_pressure_edge_zero = LinearObjectiveFromUser(
+#     fun=grad_pressure_edge,
+#     thing=eq_init,
+#     target=0.0,
+#     weight=1.0,
+# )
 
 #List of Constraints:
 constraints = (
@@ -79,7 +81,7 @@ eq_opt, result = eq_init.optimize(
     optimizer=optimizer,
     ftol=5e-2,  # stopping tolerance on the function value
     xtol=1e-6,  # stopping tolerance on the step size
-    gtol=1e-6,  # stopping tolerance on the gradient
+    gtol=1e-7,  # stopping tolerance on the gradient
     maxiter=50,  # maximum number of iterations
     options={
         "perturb_options": {"order": 2, "verbose": 0},  # use 2nd-order perturbations
@@ -93,3 +95,8 @@ eq_opt, result = eq_init.optimize(
     copy=False,  # copy=False we will overwrite the eq_init object with the optimized result
     verbose=3,
 )
+
+
+
+#------ Saving ------#
+eq_opt.save('/Users/macdaddi/DESC/scratch/runs/logistic/opt_fixbound.h5')
