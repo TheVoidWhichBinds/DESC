@@ -1,19 +1,18 @@
 #NOTES:
-#should L and k in logistic(L,k) be given names to reflect they're scalars, not arrays?
-#have some way to call iota and/or curvature
-
-#make """ """ appearance consistent
-#make comments consistent: #this? or # this?
-#consider upper limit to k_max, as decided by theory.
+# should L and k in logistic(L,k) be given names to reflect they're scalars, not arrays?
+# have some way to call iota and/or curvature
+# consider upper limit to k_max, as decided by theory
+# logistic_opt(weights) needs to be in form acceptable for _Profile
 
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 
 
+#------------- Global Variables -------------#
+NPTS = 400 #number of points
+X = np.linspace(0, 1, NPTS) #x axis generation
 
-NPTS= 400 #number of points
-X= np.linspace(0, 1, NPTS) #x axis generation
 
 
 
@@ -33,14 +32,14 @@ def logistic(k, rho_shift):
     f: array-like
         Logistic function
     """
-    rho= X - 0.5 #shift s.t. the func is no longer centered at rho=0
-    f= 1 - ( 1 / (1 + np.exp(-k* (rho - rho_shift/10)))) #the logistic func
+    rho = X - 0.5 #shift s.t. the func is no longer centered at rho=0
+    f = 1 - ( 1 / (1 + np.exp(-k* (rho - rho_shift/10)))) #the logistic func
     return f
 
 
 
 #----------------------- Node Distribution Functions ------------------------#
-#Choices of how to spread out families of k and rho_shift parameters
+
 def generate_nodes(min_val, max_val, N, *, quadratic=False, equidistant=False):
     """
     Generates nodes in [min_val, max_val] using either a quadratic
@@ -65,23 +64,21 @@ def generate_nodes(min_val, max_val, N, *, quadratic=False, equidistant=False):
     nodes: ndarray
         1D array of nodes in [min_val, max_val].
     """
-
-    #If both True or both False, error:
-    if quadratic == equidistant: 
+    #
+    if quadratic == equidistant: # if both True or both False, error
         raise ValueError(
             "Exactly one of 'quadratic' or 'equidistant' must be True."
         )
-    
+    #
     t = np.linspace(0.0, 1.0, N)
-    #Quadratically graded nodes, higher density near max_val:
+    # Quadratically graded nodes, higher density near max_val:
     if quadratic:
-    
         s = 1.0 - (1.0 - t)**2
         nodes = min_val + (max_val - min_val) * s
-    #Equidistantly spaced nodes:
+    # Equidistantly spaced nodes:
     else:  
         nodes = min_val + (max_val - min_val) * t
-
+    #
     return nodes
 
 
@@ -110,8 +107,8 @@ def logistic_super(N_k, k_min, k_max, N_shift, shift_min, shift_max, weights):
         function permutations of the chosen range of k and rho_shift,
         weighted by the optimization parameter "weights".
     """
-    fam= np.empty((len(X), N_k, N_shift), dtype=float)
-    k_nodes= generate_nodes( #distribution of k values 
+    fam = np.empty((len(X), N_k, N_shift), dtype=float)
+    k_nodes = generate_nodes( #distribution of k values 
         k_min, k_max, N_k, quadratic=False, equidistant=True)
     shift_nodes = generate_nodes( #distribution of rho_shifts
         shift_min, shift_max, N_shift, quadratic=False, equidistant=True) 
@@ -121,11 +118,11 @@ def logistic_super(N_k, k_min, k_max, N_shift, shift_min, shift_max, weights):
         for j, rho_shift in enumerate(shift_nodes):
             fam[:, i, j] = logistic(k_val, rho_shift)
     
-    fam_flat= fam.reshape(NPTS, -1) #reshaping 3D krho_fam (resol,N,N) into 2D krho_flat (resol, N^2)
-    superpos= np.empty(NPTS, dtype=float) #initializing (N,1) superposition array
+    fam_flat = fam.reshape(NPTS, -1) #reshaping 3D krho_fam (resol,N,N) into 2D krho_flat (resol, N^2)
+    superpos = np.empty(NPTS, dtype=float) #initializing (N,1) superposition array
 
     for w in range(N_k*N_shift): #scaling each func in family by optimization weights
-        superpos+= weights[w] * fam_flat[:,w] 
+        superpos += weights[w] * fam_flat[:,w] 
         
     superpos= superpos/(superpos[0] - superpos[-1]+ 0.05) #normalizing superposition
     return superpos
@@ -149,12 +146,12 @@ def logistic_opt(weights):
     weighted by "weights"
     """
     #see logistic_super for definitions:
-    N_k= 5 
-    k_min= 20 
-    k_max= 40 #steepness
-    N_shift= 5
-    shift_min= -2 #hard clamp
-    shift_max= 2 #hard clamp
+    N_k = 5 
+    k_min = 20 
+    k_max = 40 #steepness
+    N_shift = 5
+    shift_min = -2 #hard clamp
+    shift_max = 2 #hard clamp
 
     opt_pressure= logistic_super(
         N_k, k_min, k_max, N_shift, shift_min, shift_max, weights)
@@ -168,7 +165,7 @@ plt.title('Logistic Function')
 plt.xlabel(r'$\rho$')
 plt.ylabel('f(x)')
 #plot currently uses random weights:
-plt.plot(X, logistic_super(5, 20, 100, 5, -3, 3, np.random.rand(5**2)))
+plt.plot(X, logistic_super(5, 20, 40, 8, -3, 3, np.random.rand(5*8)))
 plt.grid()
 plt.tight_layout()
 plt.savefig('logistic.png')
