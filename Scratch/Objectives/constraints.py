@@ -1,5 +1,7 @@
 import numpy as np
 import jax.numpy as jnp
+
+
 #------------- Polynomial Constraints -------------#
 
 def pressure_axis(params):
@@ -10,6 +12,7 @@ def pressure_axis(params):
     c_0 = params['p_l'][0]
     return c_0 # only first coeff survives
 
+
 def pressure_edge(params):
     """
     Pressure on edge (rho=1)
@@ -17,6 +20,7 @@ def pressure_edge(params):
     """
     p_coeff = params['p_l']
     return p_coeff.sum()
+
 
 def grad_pressure_axis(params): 
     """
@@ -26,6 +30,7 @@ def grad_pressure_axis(params):
     c_1 = params['p_l'][1]
     return c_1
 
+
 def grad_pressure_edge(params):
     """
     Pressure gradient on edge (rho=1)
@@ -34,6 +39,7 @@ def grad_pressure_edge(params):
     grad_coeff = params['p_l'][1:]
     order = np.arange(1, len(grad_coeff)+1)
     return (order * grad_coeff).sum()
+
 
 def monotonicity(grid, data):
     """
@@ -49,9 +55,9 @@ def monotonicity(grid, data):
     jnp.max(violations): scalar
                          largest dp over all grid points
     """
-    p_sorted = data["p"] # pressure at grid points
+    p = data["p"] # pressure at grid points
     rho = grid.nodes[:, 0] # rho gridpoints
-    dp = p_sorted[1:] - p_sorted[:-1] # pressure differences: p[i+1] - p[i]
+    dp = p[1:] - p[:-1] # pressure differences: p[i+1] - p[i]
     violations = jnp.maximum(0.0, dp) # array where nonzero values = positive slope 
     return jnp.max(violations) # largest dp chosen, penalized by optimizer
 
