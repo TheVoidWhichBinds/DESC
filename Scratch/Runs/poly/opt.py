@@ -18,6 +18,8 @@ from desc.objectives import (
     FixIota,
     FixPsi,
     ForceBalance,
+    AspectRatio,
+    QuasisymmetryBoozer,
     LinearObjectiveFromUser,
     ObjectiveFromUser,
 )
@@ -64,25 +66,6 @@ grad_pressure_edge_zero = LinearObjectiveFromUser(
     weight=1.0,
 )
 
-
-# Custom objective wrapper for monotonicity func:
-negative_gradient = ObjectiveFromUser( 
-    fun=monotonicity,
-    grid=LinearGrid(rho=200,M=0,N=0),
-    thing=eq_init,
-    target=0.0,
-    weight=1.0,
-    normalize=False,
-)
-
-
-# Creating objective:
-objective= ObjectiveFunction([
-    ForceBalance(eq=eq_init), # J x B - Grad(P) = 0
-    negative_gradient, # monotonicity
-    ])
-
-
 #List of Constraints: EITHER FixPressure OR 4 Pressure Constraints Active
 constraints = (
     ForceBalance(eq=eq_init),  # enforce JxB-grad(p)=0 during optimization
@@ -94,6 +77,30 @@ constraints = (
     grad_pressure_axis_zero, #grad(P) = 0 on axis
     grad_pressure_edge_zero, #grad(P) = 0 on edge
 )
+
+
+
+
+# Custom objective wrapper for monotonicity func:
+negative_gradient = ObjectiveFromUser( 
+    fun=monotonicity,
+    grid=LinearGrid(rho=200,M=0,N=0),
+    thing=eq_init,
+    target=0.0,
+    weight=1e2, # weight > other objective weights
+    normalize=False,
+)
+
+# Creating objective:
+objective= ObjectiveFunction([
+    ForceBalance(eq=eq_init, target=0, weight=1e1), # J x B - Grad(P) = 0
+    AspectRatio(eq=eq_init, target=6, weight=1e-1), # acceptable range: 
+    QuasisymmetryBoozer(eq=eq_init, helicity=(1, eq_init.NFP), weight=1e-2), #TARGET??? acceptable range: 
+    negative_gradient, # monotonicity
+    ])
+
+
+
 
 
 #Optimizer of Choice:
@@ -145,4 +152,3 @@ plt.title("Post-Optimization Pressure", fontsize=16)
 plt.grid(True)
 plt.tight_layout()
 plt.savefig('/Users/macdaddi/DESC/scratch/runs/poly/pressure.png')
-print(eq_opt.pressure.params)
