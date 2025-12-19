@@ -165,7 +165,7 @@ plt.title('Logistic Function')
 plt.xlabel(r'$\rho$')
 plt.ylabel('f(x)')
 #plot currently uses random weights:
-plt.plot(X, logistic_super(5, 20, 40, 8, -3, 3, np.random.rand(5*8)))
+plt.plot(X, logistic_super(4, 20, 40, 4, -3, 3, np.random.rand(4*4)))
 plt.grid()
 plt.tight_layout()
 plt.savefig('logistic.png')

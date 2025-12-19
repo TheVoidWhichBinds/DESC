@@ -30,35 +30,9 @@ eq_init= eq_init_fixbound[-1].copy() #copy of final eq in family
 
 
 #-----------------------------------------------------
-#Objective of Choice:
+#Objectives of Choice:
 objective= ObjectiveFunction(ForceBalance(eq=eq_init))
 
-#Importing Custom Constraint Funcs:(NOT NECESSARY FOR LOGISTIC FUNC)
-# from scratch.objectives.constraints import ( 
-#     pressure_edge,
-#     grad_pressure_axis,
-#     grad_pressure_edge
-# )
-
-#Constructing the Objective Wrappers for Custom Func:
-# pressure_edge_zero = LinearObjectiveFromUser(
-#     fun=pressure_edge,
-#     thing=eq_init,
-#     target=0.0,
-#     weight=1.0,
-# )
-# grad_pressure_axis_zero = LinearObjectiveFromUser(
-#     fun=grad_pressure_axis,
-#     thing=eq_init,
-#     target=0.0,
-#     weight=1.0,
-# )
-# grad_pressure_edge_zero = LinearObjectiveFromUser(
-#     fun=grad_pressure_edge,
-#     thing=eq_init,
-#     target=0.0,
-#     weight=1.0,
-# )
 
 #List of Constraints:
 constraints = (

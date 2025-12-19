@@ -1678,3 +1678,25 @@ class FourierZernikeProfile(_Profile):
         c, resids, rank, s = jnp.linalg.lstsq(A, f, rcond=None)
         c = (c.T / scale).T  # broadcast scale coefficients
         return cls(c, modes=basis.modes, NFP=NFP, name=name)
+
+
+
+
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------------#
+#DO NOT TRUST LOGISTIC PROFILE AS CURRENTLY IS
+
+class LogisticProfile(_Profile):
+    """Superposition of logistic functions (designed for monotonic pressure).
+    
+    
+    
+    """
+
