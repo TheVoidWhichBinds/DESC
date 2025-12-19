@@ -32,7 +32,7 @@ surf= FourierRZToroidalSurface(
 
 #Initializing Pressure and Iota:
 pressure = PowerSeriesProfile(
-    [1.8e4, 0, -3.6e4, 0, 1.8e4, 0, 1e4]
+    [1.8e4, 0, -3.6e4, 0, 1.8e4]
 )  
 iota = PowerSeriesProfile([1, 0, 2]) 
 
@@ -53,7 +53,5 @@ eq = Equilibrium(
 #----------------------------------------------------------
 #Solving & Saving Equilibrium:
 eq_init= solve_continuation_automatic(eq.copy(), verbose=3)
-eq_init.save('/Users/macdaddi/DESC/scratch/runs/poly/eq_init_fixbound.h5')
+eq_init.save('/Users/macdaddi/DESC/scratch/runs/poly/eq.h5')
 
-
-#[ 1.          0.         -6.55498346  9.10996693 -3.55498346] 

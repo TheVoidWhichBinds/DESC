@@ -18,7 +18,7 @@ from scratch.profiles.logistic import logistic_opt
 
 
 #---------------------------------
-#Initializing Boundary Surface:
+# Initializing Boundary Surface:
 surf= FourierRZToroidalSurface(
     R_lmn=[10.0, -1.0, -0.3, 0.3],
     modes_R=[
@@ -32,11 +32,11 @@ surf= FourierRZToroidalSurface(
     NFP=19,
 )
 
-#Initializing Pressure and Iota:
+# Initializing Pressure and Iota:
 pressure = logistic_opt(np.random.rand(5**2)) #rand(#), # is N_k * N_shift
 iota = PowerSeriesProfile([1, 0, 1.5])  # 1 + 1.5 r^2
 
-#Constructing Equilibrium 
+# Constructing Equilibrium 
 eq = Equilibrium(
     L=8,  # radial resolution
     M=8,  # poloidal resolution
@@ -53,4 +53,4 @@ eq = Equilibrium(
 #----------------------------------------------------------
 # Solving & Saving Equilibrium:
 eq_init= solve_continuation_automatic(eq.copy(), verbose=3)
-eq_init.save("/Users/macdaddi/DESC/scratch/runs/logistic/eq_init_fixbound.h5")
+eq_init.save("/Users/macdaddi/DESC/scratch/runs/logistic/eq.h5")

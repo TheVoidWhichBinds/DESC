@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append("/Users/macdaddi/DESC")
 import desc.io
+from desc.grid import LinearGrid
 from desc.objectives import (
     ObjectiveFunction,
    #FixPressure, #skipping this line
@@ -22,7 +23,7 @@ from desc.optimize import Optimizer
 
 
 #Loading Equilibria Family and Making a Copy of Final Iteration:
-eq_init_fixbound= desc.io.load("scratch/runs/logistic/eq_init_fixbound.h5") #initial equilibrium load - might need to generalize path
+eq_init_fixbound= desc.io.load("scratch/runs/logistic/eq.h5") #initial equilibrium load - might need to generalize path
 eq_init= eq_init_fixbound[-1].copy() #copy of final eq in family
 
 
@@ -98,5 +99,23 @@ eq_opt, result = eq_init.optimize(
 
 
 
-#------ Saving ------#
-eq_opt.save('/Users/macdaddi/DESC/scratch/runs/logistic/opt_fixbound.h5')
+# Autosaving optimized equilibrium:
+eq_opt.save('/Users/macdaddi/DESC/scratch/runs/logistic/opt.h5')
+
+
+
+#------ Optimized Pressure Profile Plotting ------#
+rho = np.linspace(0, 1, 400)
+grid = LinearGrid(rho=rho, M=0, N=0)   
+data = eq_opt.compute("p", grid=grid)
+P = data["p"]
+#
+plt.figure(figsize=(7,5))
+plt.plot(rho, P, linewidth=2)
+plt.xlabel(r"$\rho$", fontsize=14)
+plt.ylabel(r"$P(\rho)$", fontsize=14)
+plt.title("Post-Optimization Pressure", fontsize=16)
+plt.grid(True)
+plt.tight_layout()
+plt.savefig('/Users/macdaddi/DESC/scratch/runs/logistic/pressure.png')
+print(eq_opt.pressure.params)

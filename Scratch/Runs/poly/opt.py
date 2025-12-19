@@ -25,7 +25,7 @@ from desc.optimize import Optimizer
 
 
 #Loading Equilibria Family and Making a Copy of Final Iteration:
-eq_init_fixbound = desc.io.load("scratch/runs/poly/eq_init_fixbound.h5") #initial equilibrium load - might need to generalize path
+eq_init_fixbound = desc.io.load("scratch/runs/poly/eq.h5") #initial equilibrium load - might need to generalize path
 eq_init = eq_init_fixbound[-1].copy() #copy of final eq in family
 
 
@@ -126,7 +126,7 @@ eq_opt, result = eq_init.optimize(
 
 
 # Autosaving optimized equilibrium:
-eq_opt.save('/Users/macdaddi/DESC/scratch/runs/poly/opt_fixbound.h5')
+eq_opt.save('/Users/macdaddi/DESC/scratch/runs/poly/opt.h5')
 
 
 
