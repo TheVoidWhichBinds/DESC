@@ -37,7 +37,7 @@ from scratch.objectives.constraints import (
     pressure_edge,
     grad_pressure_axis,
     grad_pressure_edge,
-    monotonicity
+    poly_monotonicity
 )
 
 # Custom objective wrapper for constraints:
@@ -83,7 +83,7 @@ constraints = (
 
 # Custom objective wrapper for monotonicity func:
 negative_gradient = ObjectiveFromUser( 
-    fun=monotonicity,
+    fun=poly_monotonicity,
     grid=LinearGrid(rho=200,M=0,N=0),
     thing=eq_init,
     target=0.0,

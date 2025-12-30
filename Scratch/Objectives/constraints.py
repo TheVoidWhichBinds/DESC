@@ -41,19 +41,19 @@ def grad_pressure_edge(params):
     return (order * grad_coeff).sum()
 
 
-def monotonicity(grid, data):
+def poly_monotonicity(grid, data):
     """
-    Ensures monotonic decrease of pressure
+    Ensures monotonic decrease of pressure for polynomial profile
     Parameters
     -----------
     grid: desc.grid.Grid
-          grid object - only array of rho is used
+        grid object - only array of rho is used
     data: dict[str, ndarray]
-          dictionary of optimizer outputs - only pressure array is used
+        dictionary of optimizer outputs - only pressure array is used
     Returns
     -------
     jnp.max(violations): scalar
-                         largest dp over all grid points
+        largest dp over all grid points
     """
     p = data["p"] # pressure at grid points
     rho = grid.nodes[:, 0] # rho gridpoints
@@ -62,4 +62,18 @@ def monotonicity(grid, data):
     return jnp.max(violations) # largest dp chosen, penalized by optimizer
 
 
-
+def hermite_monotonicity(grid, data):
+    """
+    Ensures monotonic decrease of pressure for polynomial profile
+    Parameters
+    -----------
+    grid: desc.grid.Grid
+        grid object - only array of rho is used
+    data: dict[str, ndarray]
+        dictionary of optimizer outputs - only pressure array is used
+    Returns
+    -------
+    jnp.max(violations): scalar
+        largest dp over all grid points
+    """
+    p = data["p"] # pressure at grid points
