@@ -15,7 +15,6 @@ import desc.io
 from desc.grid import LinearGrid
 from desc.objectives import (
     ObjectiveFunction,
-    FixPressure,
     FixIota,
     FixPsi,
     ForceBalance,
@@ -33,12 +32,12 @@ eq_init = eq_init_fixbound[-1].copy() #copy of final eq in family
 
 
 # Importing custom constraint funcs:
-from scratch.objectives.constraints import ( 
+from scratch.objectives.hermite_constraints import( 
     pressure_axis,
     pressure_edge,
     grad_pressure_axis,
     grad_pressure_edge,
-    poly_monotonicity
+    hermite_monotonicity
 )
 
 # Custom objective wrapper for constraints:
@@ -70,7 +69,6 @@ grad_pressure_edge_zero = LinearObjectiveFromUser(
 #List of Constraints: EITHER FixPressure OR 4 Pressure Constraints Active
 constraints = (
     ForceBalance(eq=eq_init),  # enforce JxB-grad(p)=0 during optimization
-    #FixPressure(eq=eq_init),  # fix pressure profile
     FixIota(eq=eq_init),  # fix rotational transform profile
     FixPsi(eq=eq_init),  # fix total toroidal magnetic flux
     pressure_axis_normalized, #pressure = 1 on axis

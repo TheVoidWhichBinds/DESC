@@ -4,18 +4,19 @@
 #Basic Equilibrium portion:
 #Import:
 import sys
+import numpy as np
 import os
 sys.path.append("/Users/macdaddi/DESC")
 from desc.continuation import solve_continuation_automatic
 from desc.equilibrium import Equilibrium
 from desc.geometry import FourierRZToroidalSurface
-from desc.profiles import PowerSeriesProfile #CHANGE
+from desc.profiles import HermiteSplineProfile, PowerSeriesProfile
 
 
 
 
 #---------------------------------
-#Initializing Boundary Surface:
+# Initializing Boundary Surface:
 surf= FourierRZToroidalSurface(
     R_lmn=[10.0, -1.0, -0.3, 0.3],
     modes_R=[
@@ -29,13 +30,15 @@ surf= FourierRZToroidalSurface(
     NFP=19,
 )
 
-#Initializing Pressure and Iota:
-pressure = PowerSeriesProfile(
-    [1.8e4, 0, -3.6e4, 0, 1.8e4]
+# Initializing Pressure:
+pressure = HermiteSplineProfile(
+    np.arange(1,0,200)
 )  
+
+# Initializing iota:
 iota = PowerSeriesProfile([1, 0, 2]) 
 
-#Constructing Equilibrium 
+# Constructing Equilibrium: 
 eq = Equilibrium(
     L=8,  # radial resolution
     M=8,  # poloidal resolution
@@ -50,7 +53,7 @@ eq = Equilibrium(
 
 
 #----------------------------------------------------------
-#Solving & Saving Equilibrium:
+# Solving & Saving Equilibrium:
 eq_init= solve_continuation_automatic(eq.copy(), verbose=3)
 eq_init.save('/Users/macdaddi/DESC/scratch/runs/hermite/eq.h5')
 
