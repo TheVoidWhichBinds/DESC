@@ -32,7 +32,7 @@ surf= FourierRZToroidalSurface(
 
 # Initializing Pressure:
 pressure = HermiteSplineProfile(
-    np.arange(1,0,200)
+    np.linspace(1,0,200) # num steps must match LinearGrid rho # in opt.py
 )  
 
 # Initializing iota:

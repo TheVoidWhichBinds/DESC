@@ -10,8 +10,8 @@ def pressure_axis(params):
     Pressure on axis (rho=0)
     Target: P(0)=1 (normalized)
     """
-    c_0 = params['p_l'][0]
-    return c_0 # only first coeff survives
+    p_axis = params['p_l'][0]
+    return p_axis # pressure on axis
 
 
 def pressure_edge(params):
@@ -19,8 +19,8 @@ def pressure_edge(params):
     Pressure on edge (rho=1)
     Target: P(1)=0
     """
-    p_coeff = params['p_l']
-    return p_coeff.sum()
+    p_edge = params['p_l'][-2]
+    return p_edge # pressure on edge
 
 
 def grad_pressure_axis(params): 
@@ -28,8 +28,8 @@ def grad_pressure_axis(params):
     Pressure gradient on axis (rho=0)
     Target: GradP=0 (no discontinuity)
     """
-    c_1 = params['p_l'][1]
-    return c_1
+    gradp_axis = params['p_l'][1]
+    return gradp_axis
 
 
 def grad_pressure_edge(params):
@@ -37,9 +37,8 @@ def grad_pressure_edge(params):
     Pressure gradient on edge (rho=1)
     Target: GradP=0 (no surface current J)
     """ 
-    grad_coeff = params['p_l'][1:]
-    order = np.arange(1, len(grad_coeff)+1)
-    return (order * grad_coeff).sum()
+    gradp_edge = params['p_l'][-1]
+    return gradp_edge
 
 
 def hermite_monotonicity(grid, data):
@@ -57,3 +56,9 @@ def hermite_monotonicity(grid, data):
         largest dp over all grid points
     """
     p = data["p"] # pressure at grid points
+    rho = grid.nodes[:, 0] # rho gridpoints
+    dp = p[1:] - p[:-1] # pressure differences: p[i+1] - p[i]
+    violations = jnp.maximum(0.0, dp) # array where nonzero values = positive slope 
+    return jnp.max(violations) # largest dp chosen, penalized by optimizer
+
+

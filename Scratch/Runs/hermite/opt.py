@@ -82,8 +82,8 @@ constraints = (
 
 # Custom objective wrapper for monotonicity func:
 negative_gradient = ObjectiveFromUser( 
-    fun=poly_monotonicity,
-    grid=LinearGrid(rho=200,M=0,N=0),
+    fun=hermite_monotonicity,
+    grid=LinearGrid(rho=200,M=0,N=0), # rho # must match linspace step # in eq.py
     thing=eq_init,
     target=0.0,
     weight=1e2, # weight > other objective weights
