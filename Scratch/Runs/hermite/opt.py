@@ -95,7 +95,7 @@ objective= ObjectiveFunction([
     ForceBalance(eq=eq_init, target=0, weight=1e1), # J x B - Grad(P) = 0
     AspectRatio(eq=eq_init, target=6, weight=1e-1), # acceptable range: 
     QuasisymmetryBoozer(eq=eq_init, helicity=(1, eq_init.NFP), weight=1e-2), #TARGET??? acceptable range: 
-    negative_gradient, # monotonicity
+    #negative_gradient, # monotonicity
     ])
 
 
