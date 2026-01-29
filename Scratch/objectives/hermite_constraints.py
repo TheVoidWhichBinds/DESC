@@ -55,7 +55,7 @@ def hermite_monotonicity(grid, data):
     jnp.max(violations): scalar
         largest dp over all grid points
     """
-    p = data["p"] # pressure at grid points
+    p = data['p'] # pressure at grid points
     rho = grid.nodes[:, 0] # rho gridpoints
     dp = p[1:] - p[:-1] # pressure differences: p[i+1] - p[i]
     violations = jnp.maximum(0.0, dp) # array where nonzero values = positive slope 

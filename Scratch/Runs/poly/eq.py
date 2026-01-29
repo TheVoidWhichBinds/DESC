@@ -31,7 +31,7 @@ surf= FourierRZToroidalSurface(
 )
 
 #Initializing Pressure and Iota:
-pressure = PowerSeriesProfile(
+pressure_init = PowerSeriesProfile(
     [1.8e4, 0, -3.6e4, 0, 1.8e4]
 )  
 iota = PowerSeriesProfile([1, 0, 2]) 
@@ -42,7 +42,7 @@ eq = Equilibrium(
     M=8,  # poloidal resolution
     N=3,  # toroidal resolution
     surface=surf,
-    pressure=pressure,
+    pressure=pressure_init,
     iota=iota,
     Psi=1.0,  # total flux, in Webers
 )

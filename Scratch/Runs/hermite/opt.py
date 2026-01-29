@@ -68,13 +68,13 @@ grad_pressure_edge_zero = LinearObjectiveFromUser(
 
 #List of Constraints: EITHER FixPressure OR 4 Pressure Constraints Active
 constraints = (
-    ForceBalance(eq=eq_init),  # enforce JxB-grad(p)=0 during optimization
-    FixIota(eq=eq_init),  # fix rotational transform profile
-    FixPsi(eq=eq_init),  # fix total toroidal magnetic flux
-    pressure_axis_normalized, #pressure = 1 on axis
-    pressure_edge_zero, # pressure = 0 on edge
-    grad_pressure_axis_zero, #grad(P) = 0 on axis
-    grad_pressure_edge_zero, #grad(P) = 0 on edge
+    ForceBalance(eq=eq_init), # enforce JxB-grad(p)=0 during optimization
+    FixIota(eq=eq_init),      # fix rotational transform profile
+    FixPsi(eq=eq_init),       # fix total toroidal magnetic flux
+    # pressure_axis_normalized, # pressure = 1 on axis
+    # pressure_edge_zero,       # pressure = 0 on edge
+    # grad_pressure_axis_zero,  # grad(P) = 0 on axis
+    # grad_pressure_edge_zero,  # grad(P) = 0 on edge
 )
 
 
@@ -94,8 +94,8 @@ negative_gradient = ObjectiveFromUser(
 objective= ObjectiveFunction([
     ForceBalance(eq=eq_init, target=0, weight=1e1), # J x B - Grad(P) = 0
     AspectRatio(eq=eq_init, target=6, weight=1e-1), # acceptable range: 
-    QuasisymmetryBoozer(eq=eq_init, helicity=(1, eq_init.NFP), weight=1e-2), #TARGET??? acceptable range: 
-    #negative_gradient, # monotonicity
+    QuasisymmetryBoozer(eq=eq_init, helicity=(2, eq_init.NFP), weight=1e-1), #TARGET??? acceptable range: 
+    negative_gradient, # monotonicity
     ])
 
 

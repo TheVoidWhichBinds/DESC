@@ -18,6 +18,8 @@ from desc.equilibrium import Equilibrium
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import HermiteSplineProfile, PowerSeriesProfile
 
+import matplotlib.pyplot as plt
+
 
 
 
@@ -37,19 +39,16 @@ surf= FourierRZToroidalSurface(
 )
 
 # Initializing Pressure:
-def hermite_initializer():
-    rho = np.linspace(0,1,200) - 0.5
-    p_0 = 1 - ( 1 / (1 + np.exp(-10 * rho))) # logistic function to initialize with arbitrary k value
-    gradp_0 = p_0 * (1 - p_0) # exact derivative
+rho = np.linspace(0,1,200)
+p_0 = 1 - ( 1 / (1 + np.exp(-40 * (rho - 0.5)))) # logistic function to initialize with arbitrary k value
+gradp_0 = p_0 * (1 - p_0) # exact derivative
+pressure_init = HermiteSplineProfile(
+    p_0, # num steps must match LinearGrid rho # in opt.py
+    gradp_0,
+    knots=None,
+)  
 
-    initial = HermiteSplineProfile(
-        p_0, # num steps must match LinearGrid rho # in opt.py
-        gradp_0,
-        knots=None,
-    )  
-    return initial
 
-# Generating initial pressure and initial slope
 
 
 
@@ -62,7 +61,7 @@ eq = Equilibrium(
     M = 8,  # poloidal resolution
     N = 3,  # toroidal resolution
     surface = surf,
-    pressure = hermite_initializer(),
+    pressure = pressure_init,
     iota = iota,
     Psi=1.0,  # total flux, in Webers
 )

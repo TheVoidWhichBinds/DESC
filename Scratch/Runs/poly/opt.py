@@ -7,6 +7,7 @@
 
 #---------- Imports & Loads ----------#
 import numpy as np
+import matplotlib.patheffects as pe
 import sys
 sys.path.append("/Users/macdaddi/DESC")
 import matplotlib.pyplot as plt
@@ -139,13 +140,21 @@ eq_opt.save('/Users/macdaddi/DESC/scratch/runs/poly/opt.h5')
 #------ Optimized Pressure Profile Plotting ------#
 rho = np.linspace(0, 1, 400)
 grid = LinearGrid(rho=rho, M=0, N=0)   
-data = eq_opt.compute("p", grid=grid)
-P = data["p"]
+pressure_init = eq_init.compute('p', grid=grid)['p']
+pressure_opt = eq_opt.compute('p', grid=grid)['p']
 #
 plt.figure(figsize=(7,5))
-plt.plot(rho, P, linewidth=2)
+plt.plot(rho, pressure_init, linewidth=2, color='g',
+    path_effects=[
+        pe.Stroke(linewidth=6, foreground='lightgreen'),
+        pe.Normal()
+    ],
+    label='init'
+)
+
+plt.plot(rho, pressure_opt, linewidth=2, color='r', label='opt')
 plt.xlabel(r"$\rho$", fontsize=14)
-plt.ylabel(r"$P(\rho)$", fontsize=14)
+plt.ylabel(r"$Pressure$", fontsize=14)
 plt.title("Post-Optimization Pressure", fontsize=16)
 plt.grid(True)
 plt.tight_layout()
