@@ -31,6 +31,8 @@ eq_init_fixbound = desc.io.load("scratch/runs/poly/eq.h5") #initial equilibrium 
 eq_init = eq_init_fixbound[-1].copy() #copy of final eq in family
 
 
+
+#-----------------------------------------------
 # Importing custom constraint funcs:
 from scratch.objectives.poly_constraints import( 
     pressure_axis,
@@ -79,7 +81,7 @@ constraints = (
 
 
 
-
+#------------------------------------------------
 # Custom objective wrapper for monotonicity func:
 negative_gradient = ObjectiveFromUser( 
     fun=poly_monotonicity,
@@ -100,11 +102,9 @@ objective= ObjectiveFunction([
 
 
 
-
-
+#---------------------------------------------------------------
 #Optimizer of Choice:
 optimizer = Optimizer("proximal-lsq-exact") #choice of optimizer
-
 
 
 
@@ -130,14 +130,13 @@ eq_opt, result = eq_init.optimize(
     verbose=3,
 )
 
-
 # Autosaving optimized equilibrium:
 eq_opt.save('/Users/macdaddi/DESC/scratch/runs/poly/opt.h5')
 
 
 
 
-#------ Optimized Pressure Profile Plotting ------#
+#------ Pre & Post Optimization Pressure Profile Plotting ------#
 rho = np.linspace(0, 1, 400)
 grid = LinearGrid(rho=rho, M=0, N=0)   
 pressure_init = eq_init.compute('p', grid=grid)['p']
@@ -151,7 +150,7 @@ plt.plot(rho, pressure_init, linewidth=2, color='g',
     ],
     label='init'
 )
-
+plt.plot(rho, 1.8e4 -3.6e4*rho**2 + 1e2*rho**3 + 1.8e4*rho**4, color='y')
 plt.plot(rho, pressure_opt, linewidth=2, color='r', label='opt')
 plt.xlabel(r"$\rho$", fontsize=14)
 plt.ylabel(r"$Pressure$", fontsize=14)

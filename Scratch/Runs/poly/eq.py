@@ -32,7 +32,7 @@ surf= FourierRZToroidalSurface(
 
 #Initializing Pressure and Iota:
 pressure_init = PowerSeriesProfile(
-    [1.8e4, 0, -3.6e4, 0, 1.8e4]
+    [1.8e4, 0, -3.6e4, 1e2, 1.8e4]
 )  
 iota = PowerSeriesProfile([1, 0, 2]) 
 
