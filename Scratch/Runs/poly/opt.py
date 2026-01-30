@@ -26,9 +26,9 @@ from desc.objectives import (
 from desc.optimize import Optimizer
 
 
-#Loading Equilibria Family and Making a Copy of Final Iteration:
-eq_init_fixbound = desc.io.load("scratch/runs/poly/eq.h5") #initial equilibrium load - might need to generalize path
-eq_init = eq_init_fixbound[-1].copy() #copy of final eq in family
+#Loading Final Iteration of Equilibrium Family from eq.py
+eq_0 = desc.io.load("scratch/runs/poly/eq.h5") 
+eq_init = eq_0.copy() #copy of final eq in family
 
 
 
@@ -139,19 +139,21 @@ eq_opt.save('/Users/macdaddi/DESC/scratch/runs/poly/opt.h5')
 #------ Pre & Post Optimization Pressure Profile Plotting ------#
 rho = np.linspace(0, 1, 400)
 grid = LinearGrid(rho=rho, M=0, N=0)   
-pressure_init = eq_init.compute('p', grid=grid)['p']
+pressure_init = eq_0.compute('p', grid=grid)['p']
 pressure_opt = eq_opt.compute('p', grid=grid)['p']
 #
 plt.figure(figsize=(7,5))
-plt.plot(rho, pressure_init, linewidth=2, color='g',
-    path_effects=[
-        pe.Stroke(linewidth=6, foreground='lightgreen'),
-        pe.Normal()
-    ],
-    label='init'
-)
-plt.plot(rho, 1.8e4 -3.6e4*rho**2 + 1e2*rho**3 + 1.8e4*rho**4, color='y')
+
+#plt.plot(rho, 1.8e4 -3.6e4*rho**2 + 1e2*rho**3 + 1.8e4*rho**4, color='y')
+# plt.plot(rho, pressure_init, linewidth=2, color='g',
+#     path_effects=[
+#         pe.Stroke(linewidth=6, foreground='lightgreen'),
+#         pe.Normal()
+#     ],
+#     label='init'
+# )
 plt.plot(rho, pressure_opt, linewidth=2, color='r', label='opt')
+
 plt.xlabel(r"$\rho$", fontsize=14)
 plt.ylabel(r"$Pressure$", fontsize=14)
 plt.title("Post-Optimization Pressure", fontsize=16)
