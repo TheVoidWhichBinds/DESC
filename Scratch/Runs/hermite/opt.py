@@ -11,6 +11,7 @@ import numpy as np
 import sys
 sys.path.append("/Users/macdaddi/DESC")
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as pe
 import desc.io
 from desc.grid import LinearGrid
 from desc.objectives import (
@@ -27,8 +28,8 @@ from desc.optimize import Optimizer
 
 
 #Loading Equilibria Family and Making a Copy of Final Iteration:
-eq_init_fixbound = desc.io.load("scratch/runs/hermite/eq.h5") #initial equilibrium load - might need to generalize path
-eq_init = eq_init_fixbound[-1].copy() #copy of final eq in family
+eq_0 = desc.io.load("scratch/runs/hermite/eq.h5") #initial equilibrium load - might need to generalize path
+eq_init = eq_0.copy() #
 
 
 # Importing custom constraint funcs:
@@ -140,13 +141,23 @@ eq_opt.save('/Users/macdaddi/DESC/scratch/runs/hermite/opt.h5')
 #------ Optimized Pressure Profile Plotting ------#
 rho = np.linspace(0, 1, 400)
 grid = LinearGrid(rho=rho, M=0, N=0)   
-data = eq_opt.compute("p", grid=grid)
-P = data["p"]
+pressure_init = eq_0.compute('p', grid=grid)['p']
+pressure_opt = eq_opt.compute('p', grid=grid)['p']
 #
 plt.figure(figsize=(7,5))
-plt.plot(rho, P, linewidth=2)
+
+
+plt.plot(rho, pressure_init, linewidth=2, color='g',
+    path_effects=[
+        pe.Stroke(linewidth=6, foreground='lightgreen'),
+        pe.Normal()
+    ],
+    label='init'
+)
+plt.plot(rho, pressure_opt, linewidth=2, color='r', label='opt')
+
 plt.xlabel(r"$\rho$", fontsize=14)
-plt.ylabel(r"$P(\rho)$", fontsize=14)
+plt.ylabel(r"$Pressure$", fontsize=14)
 plt.title("Post-Optimization Pressure", fontsize=16)
 plt.grid(True)
 plt.tight_layout()

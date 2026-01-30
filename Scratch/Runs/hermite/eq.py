@@ -70,7 +70,7 @@ eq = Equilibrium(
 
 
 #----------------------------------------------------------
-# Solving & Saving Equilibrium:
-eq_init= solve_continuation_automatic(eq.copy(), verbose=3)
-eq_init.save('/Users/macdaddi/DESC/scratch/runs/hermite/eq.h5')
+# Solving & Saving Final Equilibrium:
+eq_0 = solve_continuation_automatic(eq.copy(), verbose=3)[-1]
+eq_0.save('/Users/macdaddi/DESC/scratch/runs/hermite/eq.h5')
 
