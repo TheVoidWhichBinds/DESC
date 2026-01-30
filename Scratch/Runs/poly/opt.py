@@ -144,7 +144,7 @@ pressure_opt = eq_opt.compute('p', grid=grid)['p']
 #
 plt.figure(figsize=(7,5))
 
-#plt.plot(rho, 1.8e4 -3.6e4*rho**2 + 1e2*rho**3 + 1.8e4*rho**4, color='y')
+
 # plt.plot(rho, pressure_init, linewidth=2, color='g',
 #     path_effects=[
 #         pe.Stroke(linewidth=6, foreground='lightgreen'),
