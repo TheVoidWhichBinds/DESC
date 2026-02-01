@@ -72,10 +72,10 @@ constraints = (
     ForceBalance(eq=eq_init), # enforce JxB-grad(p)=0 during optimization
     FixIota(eq=eq_init),      # fix rotational transform profile
     FixPsi(eq=eq_init),       # fix total toroidal magnetic flux
-    # pressure_axis_normalized, # pressure = 1 on axis
-    # pressure_edge_zero,       # pressure = 0 on edge
-    # grad_pressure_axis_zero,  # grad(P) = 0 on axis
-    # grad_pressure_edge_zero,  # grad(P) = 0 on edge
+    #pressure_axis_normalized, # pressure = 1 on axis
+    #pressure_edge_zero,       # pressure = 0 on edge
+    #grad_pressure_axis_zero,  # grad(P) = 0 on axis
+    grad_pressure_edge_zero,  # grad(P) = 0 on edge
 )
 
 
