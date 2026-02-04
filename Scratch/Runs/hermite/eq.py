@@ -40,7 +40,7 @@ surf= FourierRZToroidalSurface(
 
 # Initializing Pressure:
 rho = np.linspace(0,1,200)
-p_0 = 10 - ( 10 / (1 + np.exp(-40 * (rho - 0.5)))) # logistic function to initialize with arbitrary k value
+p_0 = 1 - ( 1 / (1 + np.exp(-30 * (rho - 0.5)))) # logistic function to initialize with arbitrary k value
 gradp_0 = p_0 * (1 - p_0) # exact derivative
 pressure_init = HermiteSplineProfile(
     p_0, # num steps must match LinearGrid rho # in opt.py

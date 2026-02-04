@@ -32,13 +32,15 @@ eq_0 = desc.io.load("scratch/runs/hermite/eq.h5") #initial equilibrium load - mi
 eq_init = eq_0.copy() #
 
 
+#------------------ Constraints ------------------#
 # Importing custom constraint funcs:
 from scratch.objectives.hermite_constraints import( 
     pressure_axis,
     pressure_edge,
     grad_pressure_axis,
     grad_pressure_edge,
-    hermite_monotonicity
+    hermite_monotonicity_slope,
+    hermite_monotonicity_pressure
 )
 
 # Custom objective wrapper for constraints:
@@ -67,43 +69,51 @@ grad_pressure_edge_zero = LinearObjectiveFromUser(
     weight=1.0,
 )
 
+
 #List of Constraints: EITHER FixPressure OR 4 Pressure Constraints Active
 constraints = (
     ForceBalance(eq=eq_init), # enforce JxB-grad(p)=0 during optimization
     FixIota(eq=eq_init),      # fix rotational transform profile
     FixPsi(eq=eq_init),       # fix total toroidal magnetic flux
-    #pressure_axis_normalized, # pressure = 1 on axis
-    #pressure_edge_zero,       # pressure = 0 on edge
-    #grad_pressure_axis_zero,  # grad(P) = 0 on axis
+    pressure_axis_normalized, # pressure = 1 on axis
+    pressure_edge_zero,       # pressure = 0 on edge
+    grad_pressure_axis_zero,  # grad(P) = 0 on axis
     grad_pressure_edge_zero,  # grad(P) = 0 on edge
 )
 
 
 
 
-# Custom objective wrapper for monotonicity func:
-negative_gradient = ObjectiveFromUser( 
-    fun=hermite_monotonicity,
+#------------------ Objectives -----------------#
+#Custom objective wrapper for monotonicity func:
+monotonic_slope = ObjectiveFromUser( 
+    fun=hermite_monotonicity_slope,
     grid=LinearGrid(rho=200,M=0,N=0), # rho # must match linspace step # in eq.py
     thing=eq_init,
     target=0.0,
-    weight=1e2, # weight > other objective weights
-    normalize=False,
+    weight=1e4, # weight > other objective weights
 )
+monotonic_pressure = ObjectiveFromUser(
+    fun=hermite_monotonicity_pressure,
+    grid=LinearGrid(rho=200,M=0,N=0),
+    thing=eq_init,
+    target=0.0,
+    weight=1e2,
+)
+
 
 # Creating objective:
 objective= ObjectiveFunction([
     ForceBalance(eq=eq_init, target=0, weight=1e1), # J x B - Grad(P) = 0
     AspectRatio(eq=eq_init, target=6, weight=1e-1), # acceptable range: 
     QuasisymmetryBoozer(eq=eq_init, helicity=(2, eq_init.NFP), weight=1e-1), #TARGET??? acceptable range: 
-    negative_gradient, # monotonicity
+    #negative_gradient, # monotonicity
     ])
 
 
 
 
-
-#Optimizer of Choice:
+#------------------ Optimizer of Choice -----------------------#
 optimizer = Optimizer("proximal-lsq-exact") #choice of optimizer
 
 
@@ -139,7 +149,7 @@ eq_opt.save('/Users/macdaddi/DESC/scratch/runs/hermite/opt.h5')
 
 
 #------ Optimized Pressure Profile Plotting ------#
-rho = np.linspace(0, 1, 400)
+rho = np.linspace(0, 1, 800)
 grid = LinearGrid(rho=rho, M=0, N=0)   
 pressure_init = eq_0.compute('p', grid=grid)['p']
 pressure_opt = eq_opt.compute('p', grid=grid)['p']
