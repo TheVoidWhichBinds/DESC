@@ -38,7 +38,8 @@ surf= FourierRZToroidalSurface(
     NFP=19,
 )
 
-# Initializing Pressure:
+
+# Initializing pressure:
 rho = np.linspace(0,1,200)
 p_0 = 1 - ( 1 / (1 + np.exp(-30 * (rho - 0.5)))) # logistic function to initialize with arbitrary k value
 gradp_0 = p_0 * (1 - p_0) # exact derivative
@@ -49,13 +50,13 @@ pressure_init = HermiteSplineProfile(
 )  
 
 
-
-
-
 # Initializing iota:
 iota = PowerSeriesProfile([1, 0, 2]) 
 
-# Constructing Equilibrium: 
+
+
+
+#----- Constructing Equilibrium -----# 
 eq = Equilibrium(
     L = 8,  # radial resolution
     M = 8,  # poloidal resolution
