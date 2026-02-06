@@ -41,12 +41,12 @@ surf= FourierRZToroidalSurface(
 
 # Initializing pressure:
 rho = np.linspace(0,1,200)
-p_0 = 1 - ( 1 / (1 + np.exp(-30 * (rho - 0.5)))) # logistic function to initialize with arbitrary k value
+p_0 = 2 - ( 1 / (1 + np.exp(-30 * (rho - 0.5)))) # logistic function to initialize with arbitrary k value
 gradp_0 = p_0 * (1 - p_0) # exact derivative
 pressure_init = HermiteSplineProfile(
-    p_0, # num steps must match LinearGrid rho # in opt.py
+    p_0, 
     gradp_0,
-    knots=None,
+    knots=rho,
 )  
 
 
@@ -57,7 +57,8 @@ iota = PowerSeriesProfile([1, 0, 2])
 
 
 #----- Constructing Equilibrium -----# 
-eq = Equilibrium(
+eq = Equilibrium( 
+    # Nodes over which equilibrium solved
     L = 8,  # radial resolution
     M = 8,  # poloidal resolution
     N = 3,  # toroidal resolution

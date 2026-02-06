@@ -86,20 +86,21 @@ constraints = (
 
 #------------------ Objectives -----------------#
 #Custom objective wrapper for monotonicity func:
-monotonic_slope = ObjectiveFromUser( 
-    fun=hermite_monotonicity_slope,
-    grid=LinearGrid(rho=200,M=0,N=0), # rho # must match linspace step # in eq.py
-    thing=eq_init,
-    target=0.0,
-    weight=1e4, # weight > other objective weights
-)
 monotonic_pressure = ObjectiveFromUser(
     fun=hermite_monotonicity_pressure,
-    grid=LinearGrid(rho=200,M=0,N=0),
+    grid=LinearGrid(rho=200,M=0,N=0), # optional, defaults to Quadrature
     thing=eq_init,
     target=0.0,
-    weight=1e2,
+    weight=1e4,
 )
+monotonic_slope = ObjectiveFromUser( 
+    fun=hermite_monotonicity_slope,
+    grid=LinearGrid(rho=8,M=0,N=0), # optional, defaults to Quadrature
+    thing=eq_init,
+    target=0.0,
+    weight=1e2, # weight > other objective weights
+)
+
 
 
 # Creating objective:
@@ -107,7 +108,8 @@ objective= ObjectiveFunction([
     ForceBalance(eq=eq_init, target=0, weight=1e1), # J x B - Grad(P) = 0
     AspectRatio(eq=eq_init, target=6, weight=1e-1), # acceptable range: 
     QuasisymmetryBoozer(eq=eq_init, helicity=(2, eq_init.NFP), weight=1e-1), #TARGET??? acceptable range: 
-    #negative_gradient, # monotonicity
+    monotonic_pressure,
+    monotonic_slope
     ])
 
 
