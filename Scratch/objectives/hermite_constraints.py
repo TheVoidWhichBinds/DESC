@@ -60,7 +60,7 @@ def hermite_monotonicity_pressure(grid, data):
     p = data['p'] # gradient of pressure at grid points
     rho = grid.nodes[:, 0] # rho gridpoints
     abs_dp = jnp.abs(p[1:] - p[0:-1]) # upper limit on change between two points
-    violation = jnp.maximum(2, abs_dp) # array where nonzero values = positive slope 
+    violation = jnp.maximum(0, abs_dp) # array where nonzero values = positive slope 
     return jnp.max(violation) # largest dp_dr chosen, penalized by optimizer
 
 
@@ -81,7 +81,7 @@ def hermite_monotonicity_slope(grid, data):
     """
     dp_dr = data['p_r'] # gradient of pressure at grid points
     rho = grid.nodes[:, 0] # rho gridpoints
-    violation = jnp.maximum(-0.1, dp_dr) # array where nonzero values = positive slope 
+    violation = jnp.maximum(0, dp_dr) # array where nonzero values = positive slope 
     return jnp.max(violation) # largest dp_dr chosen, penalized by optimizer
 
 

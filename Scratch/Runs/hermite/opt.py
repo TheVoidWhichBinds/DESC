@@ -48,25 +48,25 @@ pressure_axis_normalized = LinearObjectiveFromUser(
     fun=pressure_axis, 
     thing=eq_init,
     target=1.0, # pressure = 1 on axis
-    weight=1.0,
+    weight=1.0e1,
 )
 pressure_edge_zero = LinearObjectiveFromUser(
     fun=pressure_edge,
     thing=eq_init,
     target=0.0, # pressure = 0 on edge
-    weight=1.0,
+    weight=1.0e1,
 )
 grad_pressure_axis_zero = LinearObjectiveFromUser(
     fun=grad_pressure_axis, # Grad(P) = 0 on axis
     thing=eq_init,
     target=0.0,
-    weight=1.0,
+    weight=1.0e1,
 )
 grad_pressure_edge_zero = LinearObjectiveFromUser(
     fun=grad_pressure_edge, # Grad(P) = 0 on edge
     thing=eq_init,
     target=0.0,
-    weight=1.0,
+    weight=1.0e1,
 )
 
 
@@ -88,24 +88,24 @@ constraints = (
 #Custom objective wrapper for monotonicity func:
 monotonic_pressure = ObjectiveFromUser(
     fun=hermite_monotonicity_pressure,
-    grid=LinearGrid(rho=200,M=0,N=0), # optional, defaults to Quadrature
+    grid=LinearGrid(rho=100,M=0,N=0), # optional, defaults to Quadrature
     thing=eq_init,
     target=0.0,
     weight=1e4,
 )
 monotonic_slope = ObjectiveFromUser( 
     fun=hermite_monotonicity_slope,
-    grid=LinearGrid(rho=8,M=0,N=0), # optional, defaults to Quadrature
+    grid=LinearGrid(rho=100,M=0,N=0), # optional, defaults to Quadrature
     thing=eq_init,
     target=0.0,
-    weight=1e2, # weight > other objective weights
+    weight=1e4, # weight > other objective weights
 )
 
 
 
 # Creating objective:
 objective= ObjectiveFunction([
-    ForceBalance(eq=eq_init, target=0, weight=1e1), # J x B - Grad(P) = 0
+    ForceBalance(eq=eq_init, target=0, weight=1e-1), # J x B - Grad(P) = 0
     AspectRatio(eq=eq_init, target=6, weight=1e-1), # acceptable range: 
     QuasisymmetryBoozer(eq=eq_init, helicity=(2, eq_init.NFP), weight=1e-1), #TARGET??? acceptable range: 
     monotonic_pressure,
@@ -116,7 +116,7 @@ objective= ObjectiveFunction([
 
 
 #------------------ Optimizer of Choice -----------------------#
-optimizer = Optimizer("proximal-lsq-exact") #choice of optimizer
+optimizer = Optimizer("proximal-fmintr-bfgs") #choice of optimizer
 
 
 
@@ -126,7 +126,7 @@ eq_opt, result = eq_init.optimize(
     objective=objective,
     constraints=constraints,
     optimizer=optimizer,
-    ftol=5e-2,  # stopping tolerance on the function value
+    ftol=5e-4,  # stopping tolerance on the function value
     xtol=1e-6,  # stopping tolerance on the step size
     gtol=1e-6,  # stopping tolerance on the gradient
     maxiter=50,  # maximum number of iterations
@@ -164,13 +164,14 @@ plt.plot(rho, pressure_init, linewidth=2, color='g',
         pe.Stroke(linewidth=6, foreground='lightgreen'),
         pe.Normal()
     ],
-    label='init'
+    label='initial equilibrium'
 )
-plt.plot(rho, pressure_opt, linewidth=2, color='r', label='opt')
+plt.plot(rho, pressure_opt, linewidth=2, color='r', label='optimized')
 
 plt.xlabel(r"$\rho$", fontsize=14)
 plt.ylabel(r"$Pressure$", fontsize=14)
-plt.title("Post-Optimization Pressure", fontsize=16)
+plt.title("Pressure Evolution", fontsize=16)
 plt.grid(True)
+plt.legend
 plt.tight_layout()
 plt.savefig('/Users/macdaddi/DESC/scratch/runs/hermite/pressure.png')
