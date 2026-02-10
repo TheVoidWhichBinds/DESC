@@ -13,11 +13,9 @@ from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
 
 
-
-
 #---------------------------------
-#Initializing Boundary Surface:
-surf= FourierRZToroidalSurface(
+# Initializing Boundary Surface:
+surface_init = FourierRZToroidalSurface(
     R_lmn=[10.0, -1.0, -0.3, 0.3],
     modes_R=[
         (0, 0),
@@ -30,20 +28,28 @@ surf= FourierRZToroidalSurface(
     NFP=19,
 )
 
-#Initializing Pressure and Iota:
-pressure_init = PowerSeriesProfile(
-    [1.8e4, -1e5, -3.6e4, 1e2, 1.8e4]
-)  
-iota = PowerSeriesProfile([1, 0, 2]) 
 
+#----------------------------------
+# Initializing Pressure
+def pressure_init(coeff):
+    p_init = PowerSeriesProfile(coeff)  
+    return p_init
+    
+
+#-----------------------------------
+# Initializing Iota:
+iota_init = PowerSeriesProfile([1, 0, 2]) 
+
+
+#-----------------------------------
 #Constructing Equilibrium 
 eq = Equilibrium(
     L=8,  # radial resolution
     M=8,  # poloidal resolution
     N=3,  # toroidal resolution
-    surface=surf,
-    pressure=pressure_init,
-    iota=iota,
+    surface = surface_init,
+    pressure = pressure_init(),
+    iota = iota_init,
     Psi=1.0,  # total flux, in Webers
 )
 

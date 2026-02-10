@@ -43,10 +43,10 @@ from scratch.objectives.poly_constraints import(
 )
 
 # Custom objective wrapper for constraints:
-pressure_axis_normalized = LinearObjectiveFromUser(
+pressure_axis_set = LinearObjectiveFromUser(
     fun=pressure_axis, 
     thing=eq_init,
-    target=1.0, # pressure = 1 on axis
+    target=1.8e4, # pressure = initial pressure on axis
     weight=1.0,
 )
 pressure_edge_zero = LinearObjectiveFromUser(
@@ -73,7 +73,7 @@ constraints = (
     ForceBalance(eq=eq_init),  # enforce JxB-grad(p)=0 during optimization
     FixIota(eq=eq_init),  # fix rotational transform profile
     FixPsi(eq=eq_init),  # fix total toroidal magnetic flux
-    pressure_axis_normalized, #pressure = 1 on axis
+    pressure_axis_set, #pressure = pressure initial on axis
     pressure_edge_zero, # pressure = 0 on edge
     grad_pressure_axis_zero, #grad(P) = 0 on axis
     grad_pressure_edge_zero, #grad(P) = 0 on edge
@@ -144,19 +144,18 @@ pressure_opt = eq_opt.compute('p', grid=grid)['p']
 #
 plt.figure(figsize=(7,5))
 
-
-# plt.plot(rho, pressure_init, linewidth=2, color='g',
-#     path_effects=[
-#         pe.Stroke(linewidth=6, foreground='lightgreen'),
-#         pe.Normal()
-#     ],
-#     label='init'
-# )
-plt.plot(rho, pressure_opt, linewidth=2, color='r', label='opt')
+plt.plot(rho, pressure_init, linewidth=2, color='g',
+    path_effects=[
+        pe.Stroke(linewidth=6, foreground='lightgreen'),
+        pe.Normal()
+    ],
+    label='initial solved equilibrium'
+)
+plt.plot(rho, pressure_opt, linewidth=2, color='r', label='optimized')
 
 plt.xlabel(r"$\rho$", fontsize=14)
 plt.ylabel(r"$Pressure$", fontsize=14)
-plt.title("Post-Optimization Pressure", fontsize=16)
+plt.title("Pressure Evolution", fontsize=16)
 plt.grid(True)
 plt.tight_layout()
 plt.savefig('/Users/macdaddi/DESC/scratch/runs/poly/pressure.png')
