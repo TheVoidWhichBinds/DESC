@@ -14,7 +14,10 @@ from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
 
 
-#---------------------------------
+
+
+# Initializations:
+#-----------------------------------------------------------
 # Initializing Boundary Surface:
 surface_init = FourierRZToroidalSurface(
     R_lmn=[10.0, -1.0, -0.3, 0.3],
@@ -30,12 +33,10 @@ surface_init = FourierRZToroidalSurface(
 )
 
 
-#----------------------------------------
 # Initializing Iota:
 iota_init = PowerSeriesProfile([1, 0, 2]) 
 
 
-#-------------------------------------------------
 # Generating polynomial coefficients that are even 
 # & monotonic in [0,1]
 def coefficients(p_scale, n):
@@ -45,37 +46,52 @@ def coefficients(p_scale, n):
     return coeff
 
 
-#----------------------------------
-# Pressure:
+# Pressure initialization:
 def pressure_init(coeff):
     p_init = PowerSeriesProfile(coeff)  
     return p_init
     
 
-#-------------------------------------------
+
+
+#------------------------------------------------
 # Looping over custom range of max pressures 
 # and polynomial orders (2n maximum)
-for p_scale in [1e4]:
-    for n in range(1,3):
-        # Inputting parameters into coeff generator:
-        coeff = coefficients(p_scale, n) 
+def run_equilibrium(p_scale, n):
+    # Inputting parameters into coeff generator:
+    coeff = coefficients(p_scale, n) 
 
-        # Constructing Equilibrium:
-        eq = Equilibrium(
-            L=8,  # radial resolution
-            M=8,  # poloidal resolution
-            N=3,  # toroidal resolution
-            surface = surface_init,
-            pressure = pressure_init(coeff), 
-            iota = iota_init,
-            Psi=1.0,  # total flux, in Webers
-        )
+    # Constructing Equilibrium:
+    eq = Equilibrium(
+        L=8,
+        M=8,
+        N=3,
+        surface=surface_init,
+        pressure=pressure_init(coeff),
+        iota=iota_init,
+        Psi=1.0,
+    )
 
-        # Solving & Saving Equilibrium:
-        eq_init = solve_continuation_automatic(eq.copy(), verbose=3)[-1] # final equilibrium
-        filename = f'/Users/macdaddi/DESC/scratch/runs/poly/eq_p{p_scale:.0e}_n{n}.h5'
-        eq_init.save(filename)
+    # Solving equilibrium:
+    eq_init = solve_continuation_automatic(eq.copy(), verbose=3)[-1]
+    
+    # Saving equilibrium:
+    dir_name = os.path.dirname(os.path.abspath(__file__))
+    save_path = os.path.join(dir_name, f'eq_p{p_scale:.0e}_n{n}.h5')
+    eq_init.save(save_path)
+    
 
 
+
+#-------------------------------------------------------
+# Run single equilibrium with custom params
+if __name__ == "__main__":
+    base_path = "/Users/macdaddi/DESC/scratch/runs/poly"
+    #
+    p_scale = 1e4
+    n = 1
+    #
+    save_path = f"{base_path}/eq_p{p_scale:.0e}_n{n}.h5"
+    run_equilibrium(p_scale, n, save_path)
 
 
