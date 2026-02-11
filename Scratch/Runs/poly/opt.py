@@ -17,6 +17,7 @@ from desc.objectives import (
     ObjectiveFunction,
     FixIota,
     FixPsi,
+    FixPressure,
     ForceBalance,
     AspectRatio,
     QuasisymmetryBoozer,
@@ -41,6 +42,7 @@ from scratch.objectives.poly_constraints import(
     grad_pressure_edge,
     poly_monotonicity
 )
+
 
 # Custom objective wrapper for constraints:
 pressure_axis_set = LinearObjectiveFromUser(
@@ -68,11 +70,13 @@ grad_pressure_edge_zero = LinearObjectiveFromUser(
     weight=1.0,
 )
 
+
 #List of Constraints: EITHER FixPressure OR 4 Pressure Constraints Active
 constraints = (
     ForceBalance(eq=eq_init),  # enforce JxB-grad(p)=0 during optimization
     FixIota(eq=eq_init),  # fix rotational transform profile
     FixPsi(eq=eq_init),  # fix total toroidal magnetic flux
+    #FixPressure, # EITHER fix pressure OR custom objectives + constraints
     pressure_axis_set, #pressure = pressure initial on axis
     pressure_edge_zero, # pressure = 0 on edge
     grad_pressure_axis_zero, #grad(P) = 0 on axis
@@ -104,7 +108,7 @@ objective= ObjectiveFunction([
 
 #---------------------------------------------------------------
 #Optimizer of Choice:
-optimizer = Optimizer("proximal-lsq-exact") #choice of optimizer
+optimizer = Optimizer("proximal-fmintr-bfgs") #choice of optimizer
 
 
 
