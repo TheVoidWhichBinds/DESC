@@ -13,15 +13,19 @@ p_maxima = [1e4,1e5] # on-axis pressures to feed into initial eq solver
 n_set = [1,2,3] # polynomials will be generated of degree 2*n
 for p_scale in p_maxima:
     for n in n_set:
-        run_equilibrium(p_scale, n) # solving initial equilibrium
+        eq_result = run_equilibrium(p_scale, n) # solving initial equilibrium
         
-        # Getting file name for initial eq for optimizer:
+        # Getting file name of initial eq solve for optimizer:
         dir_name = os.path.dirname(os.path.abspath(__file__))
         load_path = os.path.join(dir_name, f'eq_p{p_scale:.0e}_n{n}.h5')
         
         # Running optimizer with fixed and optimized pressure:
-        for fix_pressure in [True, False]: 
-            run_optimizer(load_path, fix_pressure) # running optimizer on initial eq
+        for fix_pressure in [True, False]:
+            if fix_pressure == True: 
+                opt_result_FXD = run_optimizer(load_path, fix_pressure) 
+            else:
+                opt_result = run_optimizer(load_path, fix_pressure) 
+
 
 
         # Pre & post optimization pressure profile plotting

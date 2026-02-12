@@ -62,7 +62,7 @@ def run_equilibrium(p_scale, n):
     coeff = coefficients(p_scale, n) 
 
     # Constructing Equilibrium:
-    eq = Equilibrium(
+    eq, eq_result = Equilibrium(
         L=8,
         M=8,
         N=3,
@@ -79,6 +79,9 @@ def run_equilibrium(p_scale, n):
     dir_name = os.path.dirname(os.path.abspath(__file__))
     save_path = os.path.join(dir_name, f'eq_p{p_scale:.0e}_n{n}.h5')
     eq_init.save(save_path)
+
+    # Returning solved equilibrium objective values:
+    return eq_result
     
 
 

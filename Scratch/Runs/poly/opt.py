@@ -62,7 +62,7 @@ def run_optimization(load_path, fix_pressure: bool):
 
     # EITHER pressure is fixed OR custom constraints implemented: 
     #------------------------------------------------------------
-    if fix_pressure == True:
+    if fix_pressure == True: # Pressure EXcluded from optimization
         # Combining constraints:
         constraints = (
             ForceBalance(eq = eq_0), # enforce JxB-grad(p)=0 during optimization
@@ -77,11 +77,8 @@ def run_optimization(load_path, fix_pressure: bool):
             AspectRatio(eq=eq_0, target=6, weight=1e-1), # acceptable range: 
             QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP), weight=1e-2), #TARGET??? acceptable range: 
         ])
-
-    
-
-    # Pressure included in optmization:
-    else:
+        
+    else: # Pressure INcluded in optmization:
         # Custom objective wrapper for constraints:
         pressure_axis_set = LinearObjectiveFromUser(
             fun = pressure_axis, 
@@ -139,7 +136,7 @@ def run_optimization(load_path, fix_pressure: bool):
 
 
     # Running the optimizer:
-    eq_opt, result = eq_0.optimize(
+    eq_opt, opt_result = eq_0.optimize(
         objective = objective,
         constraints = constraints,
         optimizer = optimizer,
@@ -171,7 +168,11 @@ def run_optimization(load_path, fix_pressure: bool):
     else: 
         save_path = os.path.join(dir_name, f'opt_{file_name[3:]}.h5')
     # Saving optimized equilibrium:
-    eq_opt.save(save_path)
+    desc.io.save(save_path,(eq_opt, opt_result))
+
+    # Returning optimized equilibrium objective values:
+    return opt_result
+
 
 
 
