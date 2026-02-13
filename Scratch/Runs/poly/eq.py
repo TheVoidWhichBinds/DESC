@@ -62,7 +62,7 @@ def run_equilibrium(p_scale, n):
     coeff = coefficients(p_scale, n) 
 
     # Constructing Equilibrium:
-    eq, eq_result = Equilibrium(
+    eq = Equilibrium(
         L=8,
         M=8,
         N=3,
@@ -81,7 +81,7 @@ def run_equilibrium(p_scale, n):
     eq_init.save(save_path)
 
     # Returning solved equilibrium objective values:
-    return eq_result
+    
     
 
 

@@ -78,6 +78,7 @@ def run_optimization(load_path, fix_pressure: bool):
             QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP), weight=1e-2), #TARGET??? acceptable range: 
         ])
         
+
     else: # Pressure INcluded in optmization:
         # Custom objective wrapper for constraints:
         pressure_axis_set = LinearObjectiveFromUser(
@@ -114,6 +115,7 @@ def run_optimization(load_path, fix_pressure: bool):
             grad_pressure_axis_zero, #grad(P) = 0 on axis
             grad_pressure_edge_zero, #grad(P) = 0 on edge
         )
+
 
 
         # Custom objective wrapper for monotonicity func:
@@ -168,7 +170,7 @@ def run_optimization(load_path, fix_pressure: bool):
     else: 
         save_path = os.path.join(dir_name, f'opt_{file_name[3:]}.h5')
     # Saving optimized equilibrium:
-    desc.io.save(save_path,(eq_opt, opt_result))
+    eq_opt.save(save_path)
 
     # Returning optimized equilibrium objective values:
     return opt_result
