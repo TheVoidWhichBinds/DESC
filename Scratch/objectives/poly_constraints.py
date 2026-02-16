@@ -37,7 +37,7 @@ def grad_pressure_edge(params):
     Target: GradP=0 (no surface current J)
     """ 
     grad_coeff = params['p_l'][1:]
-    order = np.arange(1, len(grad_coeff)+1)
+    order = jnp.arange(1, len(grad_coeff)+1)
     return (order * grad_coeff).sum()
 
 
@@ -63,6 +63,6 @@ def poly_monotonicity(grid, data):
     rho = grid.nodes[:, 0] # rho gridpoints
     dp = p[1:] - p[:-1] # pressure differences: p[i+1] - p[i]
     violations = jnp.maximum(0.0, dp) # array where nonzero values = positive slope 
-    return jnp.max(violations) # largest dp chosen, penalized by optimizer
+    return jnp.sum(violations**2) # largest dp chosen, penalized by optimizer
 
 

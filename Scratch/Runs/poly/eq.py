@@ -1,100 +1,63 @@
-#BASIC (FIXED BOUNDARY) EQUILIBRIUM + BASIC QS OPTIMIZATION TUTORIAL MODDED 
-#TO INCLUDE NON-FIXED PRESSURE PROFILE COEFFICIENTS AND MY CONSTRAINTS FOR 
-#PRESSURE (3FUNC)
-
-#Basic Equilibrium portion:
-#Import:
 import sys
 import os
 from math import comb
 sys.path.append("/Users/macdaddi/DESC")
+
 from desc.continuation import solve_continuation_automatic
 from desc.equilibrium import Equilibrium
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
 
 
-
-
-# Initializations:
-#-----------------------------------------------------------
-# Initializing Boundary Surface:
 surface_init = FourierRZToroidalSurface(
     R_lmn=[10.0, -1.0, -0.3, 0.3],
-    modes_R=[
-        (0, 0),
-        (1, 0),
-        (1, 1),
-        (-1, -1),
-    ],  # (m,n) pairs corresponding to R_mn on previous line
+    modes_R=[(0, 0), (1, 0), (1, 1), (-1, -1)],
     Z_lmn=[1, -0.3, -0.3],
     modes_Z=[(-1, 0), (-1, 1), (1, -1)],
     NFP=19,
 )
 
-
-# Initializing Iota:
-iota_init = PowerSeriesProfile([1, 0, 2]) 
+iota_init = PowerSeriesProfile([1, 0, 2])
 
 
-# Generating polynomial coefficients that are even 
-# & monotonic in [0,1]
-def coefficients(p_scale, n):
-    coeff = [0.0] * (2*n + 1)
-    for k in range(n + 1):
-        coeff[2*k] = p_scale * comb(n, k) * (-1)**k
-    return coeff
+def coefficients(p_scale, n, min_n=2):
+    """
+    Coeffs for p(rho) = p_scale * (1 - rho^2)^n
+    Guarantees:
+      p(0)=p_scale, p(1)=0, p'(0)=0, p'(1)=0  for n>=2
+    Also nonnegative + monotone decreasing on [0,1].
+    """
+    n_eff = max(int(n), int(min_n))
+    coeff = [0.0] * (2 * n_eff + 1)
+    for k in range(n_eff + 1):
+        coeff[2 * k] = p_scale * comb(n_eff, k) * ((-1) ** k)
+    return coeff, n_eff
 
 
-# Pressure initialization:
-def pressure_init(coeff):
-    p_init = PowerSeriesProfile(coeff)  
-    return p_init
-    
+def run_equilibrium(p_scale, n, out_dir):
+    os.makedirs(out_dir, exist_ok=True)
 
+    coeff, n_eff = coefficients(p_scale, n)
 
-
-#------------------------------------------------
-# Looping over custom range of max pressures 
-# and polynomial orders (2n maximum)
-def run_equilibrium(p_scale, n):
-    # Inputting parameters into coeff generator:
-    coeff = coefficients(p_scale, n) 
-
-    # Constructing Equilibrium:
     eq = Equilibrium(
-        L=8,
-        M=8,
-        N=3,
+        L=8, M=8, N=3,
         surface=surface_init,
-        pressure=pressure_init(coeff),
+        pressure=PowerSeriesProfile(coeff),
         iota=iota_init,
         Psi=1.0,
     )
 
-    # Solving equilibrium:
     eq_init = solve_continuation_automatic(eq.copy(), verbose=3)[-1]
-    
-    # Saving equilibrium:
-    dir_name = os.path.dirname(os.path.abspath(__file__))
-    save_path = os.path.join(dir_name, f'eq_p{p_scale:.0e}_n{n}.h5')
+
+    save_path = os.path.join(out_dir, "eq.h5")
     eq_init.save(save_path)
-
-    # Returning solved equilibrium objective values:
-    
-    
+    return save_path, n_eff
 
 
-
-#-------------------------------------------------------
-# Run single equilibrium with custom params
 if __name__ == "__main__":
-    base_path = "/Users/macdaddi/DESC/scratch/runs/poly"
-    #
+    # Standalone test run: saves into ./p1.0e4_n2/eq.h5 next to this file
+    dir_name = os.path.dirname(os.path.abspath(__file__))
     p_scale = 1e4
-    n = 1
-    #
-    save_path = f"{base_path}/eq_p{p_scale:.0e}_n{n}.h5"
-    run_equilibrium(p_scale, n, save_path)
-
-
+    n = 2
+    out_dir = os.path.join(dir_name, f"p{p_scale:.1e}_n{n}")
+    run_equilibrium(p_scale, n, out_dir)
