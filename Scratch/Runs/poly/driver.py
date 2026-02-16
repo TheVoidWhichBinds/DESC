@@ -8,25 +8,50 @@ import pandas as pd
 from tabulate import tabulate
 
 
+
 def sci_compact(x, sig=2):
+    """
+    
+    """
     s = f"{x:.{sig-1}e}"
     mant, exp = s.split("e")
     exp = int(exp)
     return f"{mant}e{exp}"
 
 
+
+
+#-------- FIXED VS. OPTIMIZED PRESSURE COMPARISON ---------
 def comparison(p_maxima: list, n_set: list):
+    """
+    Runs initial equilibrium solve, then optimization for 
+    both fixed and optimized pressure. Plots, and objective
+    table are also generated.
+    p_maxima: 
+        list of maximum pressures to loop over.
+    n_set: 
+        list of polynomial orders (really 2*n) to loop over
+        n in n_set must be >=2.
+    """
+
+    # Initializing table of objective values:
     columns = [
         'Force error: ',
         'Quasi-symmetry (1,19) Boozer error: ',
+        #'Aspect ratio error: '
+        #'BallooningStability error: ',
+        #'MercierStability error: ',
     ]
 
+    # Converts ..........
     def _to_float(x):
         try:
             return float(x)
         except Exception:
             return np.nan
-
+        
+    
+    # Preps final objective values to be put into comparison table:
     def _extract_f_stats(objval):
         if isinstance(objval, list):
             chosen = None
@@ -53,35 +78,41 @@ def comparison(p_maxima: list, n_set: list):
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
+
+    # Loop over on-axis pressure and polynomial orders:
     for p_scale in p_maxima:
         for n in n_set:
 
-            rows = []
-            values = []
+            rows = [] # table row names
+            values = [] # table elements (obj vals)
 
+            # Generates directory to store equilibria, plots, table: 
             run_dir = os.path.join(base_dir, f"p{sci_compact(p_scale)}_n{n}")
             os.makedirs(run_dir, exist_ok=True)
 
+            # Running initial equilibrium solve:
             eq_path, n_eff = run_equilibrium(p_scale, n, out_dir=run_dir)
 
-            eq_opt_FXD, opt_result_FXD, _ = run_optimization(
+            # Running fixed and optimized pressure optimizations:
+            eq_opt_FXD, opt_result_FXD = run_optimization(
                 p_scale, eq_path, out_dir=run_dir, fix_pressure=True
             )
-            eq_opt, opt_result, _ = run_optimization(
+            eq_opt, opt_result = run_optimization(
                 p_scale, eq_path, out_dir=run_dir, fix_pressure=False
             )
 
+            # Generating comparison table labels:
             label_n = n if n_eff == n else f"{n}→{n_eff}"
             group_label = f"Max Pressure = {p_scale}; n = {label_n} (order={2*n_eff})"
-
             rows.append((group_label, "Fixed Pressure"))
             rows.append((group_label, "Optimized Pressure"))
             rows.append((group_label, "Difference"))
 
-            row_FXD = []
-            row_OPT = []
-            row_DIFF = []
+            row_FXD = [] # fixed pressure obj vals
+            row_OPT = [] # optimized pressure obj vals
+            row_DIFF = [] # difference between fixed and opt vals
 
+            # Extracting objective values:
             for key in columns:
                 fmin_FXD, fmean_FXD, fmax_FXD = _extract_f_stats(
                     opt_result_FXD['Objective values'][key]
@@ -99,12 +130,13 @@ def comparison(p_maxima: list, n_set: list):
                 row_DIFF.append(
                     f"f_min diff={dmin:.4g}, f_mean diff={dmean:.4g}, f_max diff={dmax:.4g}"
                 )
-
+            #
             values.append(row_FXD)
             values.append(row_OPT)
             values.append(row_DIFF)
 
-            # ---------- Save table inside run folder ----------
+
+            # Save table inside run folder:
             index = pd.MultiIndex.from_tuples(rows, names=["Run", "Pressure Type"])
             df = pd.DataFrame(
                 values,
@@ -114,12 +146,13 @@ def comparison(p_maxima: list, n_set: list):
 
             ascii_table = tabulate(df, headers='keys', tablefmt='grid')
 
-            output_file = os.path.join(run_dir, "optimization_comparison.txt")
+            output_file = os.path.join(run_dir, "comparison.txt")
             with open(output_file, "w") as f:
                 f.write("Comparison of Post-Optimization Objectives\n\n")
                 f.write(ascii_table)
 
-            # ---------- Pressure Plot ----------
+
+            # Plotting fixed and optimized pressures:
             rho = np.linspace(0.0, 1.0, 400)
             grid = LinearGrid(rho=rho, M=0, N=0)
 
@@ -147,4 +180,4 @@ def comparison(p_maxima: list, n_set: list):
 
 
 
-comparison([1.8e4], [3])
+comparison([1e3, 1e4, 1e5], [2, 4, 5])

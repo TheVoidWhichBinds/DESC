@@ -9,6 +9,10 @@ from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
 
 
+
+
+#---------- FIXED INITIAL PARAMETERS ----------
+# Initializing fixed surface: 
 surface_init = FourierRZToroidalSurface(
     R_lmn=[10.0, -1.0, -0.3, 0.3],
     modes_R=[(0, 0), (1, 0), (1, 1), (-1, -1)],
@@ -17,14 +21,17 @@ surface_init = FourierRZToroidalSurface(
     NFP=19,
 )
 
+# Initializing fixed iota:
 iota_init = PowerSeriesProfile([1, 0, 2])
 
 
+
+
+#------------------------ FUNCTIONS ---------------------------
 def coefficients(p_scale, n, min_n=2):
     """
     Coeffs for p(rho) = p_scale * (1 - rho^2)^n
-    Guarantees:
-      p(0)=p_scale, p(1)=0, p'(0)=0, p'(1)=0  for n>=2
+    Guarantees: p(0)=p_scale, p(1)=0, p'(0)=0, p'(1)=0 for n>=2
     Also nonnegative + monotone decreasing on [0,1].
     """
     n_eff = max(int(n), int(min_n))
@@ -34,11 +41,23 @@ def coefficients(p_scale, n, min_n=2):
     return coeff, n_eff
 
 
+
 def run_equilibrium(p_scale, n, out_dir):
+    """
+    Runs equilibirum solve given an on-axis pressure,
+    and polynomial order n
+    
+    Returns: 
+        save_path = location where eq_init saved
+        n_eff = n if n>=2
+    """
     os.makedirs(out_dir, exist_ok=True)
 
+    # Creating polynomial coefficients in list form:
+    # Checking that n>=2:
     coeff, n_eff = coefficients(p_scale, n)
 
+    # Prepping equilibrium:
     eq = Equilibrium(
         L=8, M=8, N=3,
         surface=surface_init,
@@ -47,10 +66,12 @@ def run_equilibrium(p_scale, n, out_dir):
         Psi=1.0,
     )
 
+    # Solving initial equilibrium and returning last step of opt:
     eq_init = solve_continuation_automatic(eq.copy(), verbose=3)[-1]
 
     save_path = os.path.join(out_dir, "eq.h5")
     eq_init.save(save_path)
+
     return save_path, n_eff
 
 
