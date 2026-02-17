@@ -180,4 +180,4 @@ def comparison(p_maxima: list, n_set: list):
 
 
 
-comparison([1e3, 1e4, 1e5], [2, 4, 5])
+comparison([1e4], [8])
