@@ -130,7 +130,7 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
         maxiter=50,
         options={
             "perturb_options": {"order": 2, "verbose": 0},
-            "solve_options": {"ftol": 5e-4, "xtol": 1e-6, "gtol": 1e-7, "verbose": 0},
+            "solve_options": {"ftol": 5e-3, "xtol": 1e-6, "gtol": 1e-7, "verbose": 0},
         },
         copy=False,
         verbose=3,
