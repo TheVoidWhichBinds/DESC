@@ -6,6 +6,7 @@ from opt import run_optimization
 import os
 import pandas as pd
 from tabulate import tabulate
+from desc.plotting import plot_comparison
 
 
 
@@ -34,6 +35,9 @@ def comparison(p_maxima: list, n_set: list):
         n in n_set must be >=2.
     """
 
+
+
+    #------------------------------------------
     # Initializing table of objective values:
     columns = [
         'Force error: ',
@@ -79,27 +83,31 @@ def comparison(p_maxima: list, n_set: list):
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
 
+
+    #--------------------------------------------------
     # Loop over on-axis pressure and polynomial orders:
     for p_scale in p_maxima:
         for n in n_set:
 
+            #---------------------------------------------------------------
             rows = [] # table row names
             values = [] # table elements (obj vals)
 
             # Generates directory to store equilibria, plots, table: 
-            run_dir = os.path.join(base_dir, f"p{sci_compact(p_scale)}_n{n}")
-            os.makedirs(run_dir, exist_ok=True)
+            out_dir = os.path.join(base_dir, f"p{sci_compact(p_scale)}_n{n}")
+            os.makedirs(out_dir, exist_ok=True)
 
             # Running initial equilibrium solve:
-            eq_path, n_eff = run_equilibrium(p_scale, n, out_dir=run_dir)
+            eq_init, n_eff = run_equilibrium(p_scale, n, out_dir=out_dir)
 
             # Running fixed and optimized pressure optimizations:
             eq_opt_FXD, opt_result_FXD = run_optimization(
-                p_scale, eq_path, out_dir=run_dir, fix_pressure=True
+                p_scale, out_dir=out_dir, fix_pressure=True
             )
             eq_opt, opt_result = run_optimization(
-                p_scale, eq_path, out_dir=run_dir, fix_pressure=False
+                p_scale, out_dir=out_dir, fix_pressure=False
             )
+
 
             # Generating comparison table labels:
             label_n = n if n_eff == n else f"{n}→{n_eff}"
@@ -135,7 +143,6 @@ def comparison(p_maxima: list, n_set: list):
             values.append(row_OPT)
             values.append(row_DIFF)
 
-
             # Save table inside run folder:
             index = pd.MultiIndex.from_tuples(rows, names=["Run", "Pressure Type"])
             df = pd.DataFrame(
@@ -143,15 +150,17 @@ def comparison(p_maxima: list, n_set: list):
                 index=index,
                 columns=[col.replace(': ', '') for col in columns],
             )
-
+        
             ascii_table = tabulate(df, headers='keys', tablefmt='grid')
-
-            output_file = os.path.join(run_dir, "comparison.txt")
+            
+            output_file = os.path.join(out_dir, "comparison.txt")
             with open(output_file, "w") as f:
                 f.write("Comparison of Post-Optimization Objectives\n\n")
                 f.write(ascii_table)
 
 
+
+            #------------------------------------------------------------
             # Plotting fixed and optimized pressures:
             rho = np.linspace(0.0, 1.0, 400)
             grid = LinearGrid(rho=rho, M=0, N=0)
@@ -172,12 +181,26 @@ def comparison(p_maxima: list, n_set: list):
             plt.legend()
             plt.tight_layout()
 
-            pressure_path = os.path.join(run_dir, "pressure_compare.png")
+            pressure_path = os.path.join(out_dir, 'pressure_compare.png')
             plt.savefig(pressure_path, dpi=200)
             plt.close()
 
 
 
+            #--------------------------------------------------------
+            # Plotting  gridded toroidal cross-sections of B-fields:
+            plt.title('Toroidal Cross-Sections of Solved Equilibria')
+            fig, ax = plot_comparison(
+                eqs=[eq_init, eq_opt_FXD, eq_opt],
+                labels=['Initial Equilibrium', 'Optimized (Fixed Pressure)','Optimized (Optimized Pressure)'],
+            )
+
+            toroidal_cuts_path = os.path.join(out_dir, 'toroidal_cuts.png')
+            plt.savefig(toroidal_cuts_path, dpi=200)
+            plt.close()
 
 
-comparison([1e4], [8])
+
+
+#-------- RUNNING IT --------
+comparison([1e4], [2])

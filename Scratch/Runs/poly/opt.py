@@ -35,26 +35,26 @@ optimizer = Optimizer("proximal-fmintr-bfgs")
 
 
 #----------------------- OPTIMIZER FUNCTION --------------------------
-def run_optimization(p_scale, load_path, out_dir, fix_pressure: bool):
+def run_optimization(p_scale, out_dir, fix_pressure: bool):
     
-    os.makedirs(out_dir, exist_ok=True)
-    eq_init = desc.io.load(load_path) # loading initial eq solve
+    eq_init = desc.io.load(os.path.join(out_dir, 'eq.h5')) # loading initial eq solve
     eq_0 = eq_init.copy() # copying initial eq solve so as to not alter it
-
 
 
     # Weight to assign to secondary objectives and constraints (not force balance):
     inferior_weights = 1e0 
 
+
     # Division of constraints and objectives depending on fix_pressure:
     if fix_pressure: # fixed pressure
+        # Compiling constraints:
         constraints = (
             ForceBalance(eq=eq_0),
             FixIota(eq=eq_0),
             FixPsi(eq=eq_0),
             FixPressure(eq=eq_0),
         )
-
+        # Compiling objectives:
         objective = ObjectiveFunction([
             ForceBalance(eq=eq_0, target=0, weight=1e1),
             AspectRatio(eq=eq_0, target=6, weight=inferior_weights),
@@ -89,7 +89,7 @@ def run_optimization(p_scale, load_path, out_dir, fix_pressure: bool):
             target=0.0,
             weight=inferior_weights,
         )
-
+        # Compiling constraints:
         constraints = (
             ForceBalance(eq=eq_0),
             FixIota(eq=eq_0),
@@ -99,7 +99,7 @@ def run_optimization(p_scale, load_path, out_dir, fix_pressure: bool):
             grad_pressure_axis_zero,
             grad_pressure_edge_zero,
         )
-
+        # Building monotonicity objective with wrapper:
         negative_gradient = ObjectiveFromUser(
             fun=poly_monotonicity,
             grid=LinearGrid(rho=200, M=0, N=0),
@@ -108,7 +108,7 @@ def run_optimization(p_scale, load_path, out_dir, fix_pressure: bool):
             weight=inferior_weights,
             normalize=False,
         )
-
+        # Compiling objectives:
         objective = ObjectiveFunction([
             ForceBalance(eq=eq_0, target=0, weight=1e4),
             AspectRatio(eq=eq_0, target=6, weight=inferior_weights),

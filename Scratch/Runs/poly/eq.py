@@ -51,7 +51,6 @@ def run_equilibrium(p_scale, n, out_dir):
         save_path = location where eq_init saved
         n_eff = n if n>=2
     """
-    os.makedirs(out_dir, exist_ok=True)
 
     # Creating polynomial coefficients in list form:
     # Checking that n>=2:
@@ -69,16 +68,17 @@ def run_equilibrium(p_scale, n, out_dir):
     # Solving initial equilibrium and returning last step of opt:
     eq_init = solve_continuation_automatic(eq.copy(), verbose=3)[-1]
 
-    save_path = os.path.join(out_dir, "eq.h5")
+    save_path = os.path.join(out_dir, 'eq.h5')
     eq_init.save(save_path)
 
-    return save_path, n_eff
+    return eq_init, n_eff
 
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     # Standalone test run: saves into ./p1.0e4_n2/eq.h5 next to this file
     dir_name = os.path.dirname(os.path.abspath(__file__))
     p_scale = 1e4
     n = 2
-    out_dir = os.path.join(dir_name, f"p{p_scale:.1e}_n{n}")
+    out_dir = os.path.join(dir_name, f'p{p_scale:.1e}_n{n}')
     run_equilibrium(p_scale, n, out_dir)
