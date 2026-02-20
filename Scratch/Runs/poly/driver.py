@@ -42,9 +42,12 @@ def comparison(p_maxima: list, n_set: list):
     columns = [
         'Force error: ',
         'Quasi-symmetry (1,19) Boozer error: ',
-        #'Aspect ratio error: '
-        #'BallooningStability error: ',
-        #'MercierStability error: ',
+        #'Aspect ratio error: ',
+        #'Fixed iota profile error: ',
+        #'Fixed Psi error: ',
+        'Ideal ballooning lambda: ',
+        'Mercier Stability error: ',
+        'Beta: '
     ]
 
     # Converts ..........
@@ -60,15 +63,15 @@ def comparison(p_maxima: list, n_set: list):
         if isinstance(objval, list):
             chosen = None
             for item in objval:
-                if isinstance(item, dict) and all(k in item for k in ("f_min", "f_mean", "f_max")):
+                if isinstance(item, dict) and all(k in item for k in ("f_min_norm", "f_mean_norm", "f_max_norm")):
                     chosen = item
                     break
             if chosen is None and len(objval) > 0:
                 chosen = objval[0]
             objval = chosen
 
-        if isinstance(objval, dict) and all(k in objval for k in ("f_min", "f_mean", "f_max")):
-            return _to_float(objval["f_min"]), _to_float(objval["f_mean"]), _to_float(objval["f_max"])
+        if isinstance(objval, dict) and all(k in objval for k in ("f_min_norm", "f_mean_norm", "f_max_norm")):
+            return _to_float(objval["f_min_norm"]), _to_float(objval["f_mean_norm"]), _to_float(objval["f_max_norm"])
 
         if isinstance(objval, dict):
             for v in objval.values():
@@ -129,16 +132,26 @@ def comparison(p_maxima: list, n_set: list):
                     opt_result['Objective values'][key]
                 )
 
-                row_FXD.append(f"f_min={fmin_FXD:.4g}, f_mean={fmean_FXD:.4g}, f_max={fmax_FXD:.4g}")
-                row_OPT.append(f"f_min={fmin_OPT:.4g}, f_mean={fmean_OPT:.4g}, f_max={fmax_OPT:.4g}")
+                row_FXD.append(f"f_min_norm={fmin_FXD:.4g}, f_mean_norm={fmean_FXD:.4g}, f_max_norm={fmax_FXD:.4g}")
+                row_OPT.append(f"f_min_norm={fmin_OPT:.4g}, f_mean_norm={fmean_OPT:.4g}, f_max_norm={fmax_OPT:.4g}")
 
                 dmin = fmin_OPT - fmin_FXD
                 dmean = fmean_OPT - fmean_FXD
                 dmax = fmax_OPT - fmax_FXD
                 row_DIFF.append(
-                    f"f_min diff={dmin:.4g}, f_mean diff={dmean:.4g}, f_max diff={dmax:.4g}"
+                    f"f_min_norm diff={dmin:.4g}, f_mean_norm diff={dmean:.4g}, f_max_norm diff={dmax:.4g}"
                 )
-            #
+
+            # Including Beta in table:
+            beta_FXD = float(eq_opt_FXD.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
+            beta_OPT = float(eq_opt.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
+            beta_DIFF = beta_OPT - beta_FXD
+
+            row_FXD.append(f"{beta_FXD:.4g}")
+            row_OPT.append(f"{beta_OPT:.4g}")
+            row_DIFF.append(f"{beta_DIFF:.4g}")
+            
+            # 
             values.append(row_FXD)
             values.append(row_OPT)
             values.append(row_DIFF)
@@ -148,7 +161,7 @@ def comparison(p_maxima: list, n_set: list):
             df = pd.DataFrame(
                 values,
                 index=index,
-                columns=[col.replace(': ', '') for col in columns],
+                columns=[col.replace(': ', '') for col in columns] + ["Beta"],
             )
         
             ascii_table = tabulate(df, headers='keys', tablefmt='grid')
@@ -201,6 +214,5 @@ def comparison(p_maxima: list, n_set: list):
 
 
 
-
 #-------- RUNNING IT --------
-comparison([4e4], [2,3,4,5,6,7,8])
+comparison([1e4], [3])

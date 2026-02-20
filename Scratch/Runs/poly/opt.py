@@ -29,7 +29,7 @@ from desc.optimize import Optimizer
 
 
 #----------- OPTIMIZER SELECTION ------------
-optimizer = Optimizer("proximal-fmintr-bfgs")
+optimizer = Optimizer("proximal-lsq-exact")
 
 
 
@@ -124,13 +124,13 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
         objective=objective,
         constraints=constraints,
         optimizer=optimizer,
-        ftol=5e-3,
+        ftol=5e-2,
         xtol=1e-6,
         gtol=1e-6,
         maxiter=50,
         options={
             "perturb_options": {"order": 2, "verbose": 0},
-            "solve_options": {"ftol": 5e-3, "xtol": 1e-6, "gtol": 1e-7, "verbose": 0},
+            "solve_options": {"ftol": 5e-2, "xtol": 1e-6, "gtol": 1e-6, "verbose": 0},
         },
         copy=False,
         verbose=3,
