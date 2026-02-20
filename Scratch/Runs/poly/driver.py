@@ -46,8 +46,7 @@ def comparison(p_maxima: list, n_set: list):
         #'Fixed iota profile error: ',
         #'Fixed Psi error: ',
         'Ideal ballooning lambda: ',
-        'Mercier Stability error: ',
-        'Beta: '
+        'Mercier Stability: ',
     ]
 
     # Converts ..........
@@ -215,4 +214,4 @@ def comparison(p_maxima: list, n_set: list):
 
 
 #-------- RUNNING IT --------
-comparison([1e4], [3])
+comparison([1e4], [2])
