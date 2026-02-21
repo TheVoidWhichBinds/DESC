@@ -62,15 +62,15 @@ def comparison(p_maxima: list, n_set: list):
         if isinstance(objval, list):
             chosen = None
             for item in objval:
-                if isinstance(item, dict) and all(k in item for k in ("f_min_norm", "f_mean_norm", "f_max_norm")):
+                if isinstance(item, dict) and all(k in item for k in ("f_min", "f_mean", "f_max")):
                     chosen = item
                     break
             if chosen is None and len(objval) > 0:
                 chosen = objval[0]
             objval = chosen
 
-        if isinstance(objval, dict) and all(k in objval for k in ("f_min_norm", "f_mean_norm", "f_max_norm")):
-            return _to_float(objval["f_min_norm"]), _to_float(objval["f_mean_norm"]), _to_float(objval["f_max_norm"])
+        if isinstance(objval, dict) and all(k in objval for k in ("f_min", "f_mean", "f_max")):
+            return _to_float(objval["f_min"]), _to_float(objval["f_mean"]), _to_float(objval["f_max"])
 
         if isinstance(objval, dict):
             for v in objval.values():
@@ -131,14 +131,14 @@ def comparison(p_maxima: list, n_set: list):
                     opt_result['Objective values'][key]
                 )
 
-                row_FXD.append(f"f_min_norm={fmin_FXD:.4g}, f_mean_norm={fmean_FXD:.4g}, f_max_norm={fmax_FXD:.4g}")
-                row_OPT.append(f"f_min_norm={fmin_OPT:.4g}, f_mean_norm={fmean_OPT:.4g}, f_max_norm={fmax_OPT:.4g}")
+                row_FXD.append(f"f_min={fmin_FXD:.4g}, f_mean={fmean_FXD:.4g}, f_max={fmax_FXD:.4g}")
+                row_OPT.append(f"f_min={fmin_OPT:.4g}, f_mean={fmean_OPT:.4g}, f_max={fmax_OPT:.4g}")
 
                 dmin = fmin_OPT - fmin_FXD
                 dmean = fmean_OPT - fmean_FXD
                 dmax = fmax_OPT - fmax_FXD
                 row_DIFF.append(
-                    f"f_min_norm diff={dmin:.4g}, f_mean_norm diff={dmean:.4g}, f_max_norm diff={dmax:.4g}"
+                    f"f_min diff={dmin:.4g}, f_mean diff={dmean:.4g}, f_max diff={dmax:.4g}"
                 )
 
             # Including Beta in table:
@@ -214,4 +214,4 @@ def comparison(p_maxima: list, n_set: list):
 
 
 #-------- RUNNING IT --------
-comparison([1e4], [2])
+comparison([1e4], [2,3,4,5,6,7,8])

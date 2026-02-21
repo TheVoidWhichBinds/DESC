@@ -3,20 +3,24 @@
 # have some way to call iota and/or curvature
 # consider upper limit to k_max, as decided by theory
 # logistic_opt(weights) needs to be in form acceptable for _Profile
+# RaiseError needs to be thrown for if rho_shift too drastic, k too steep
+# 
 
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from desc.profiles import _Profile
 
 
-#------------- Global Variables -------------#
+#---------------------------------------------
+# Global variables:
 NPTS = 400 #number of points
 X = np.linspace(0, 1, NPTS) #x axis generation
 
 
 
 
-#---------------------- Logistic Function ----------------------#
+#-------------------------- FUNCTIONS --------------------------
 def logistic(k, rho_shift):
     """
     Calculates the logistic function and its derivative function
@@ -37,8 +41,6 @@ def logistic(k, rho_shift):
     return f
 
 
-
-#----------------------- Node Distribution Functions ------------------------#
 
 def generate_nodes(min_val, max_val, N, *, quadratic=False, equidistant=False):
     """
@@ -83,8 +85,7 @@ def generate_nodes(min_val, max_val, N, *, quadratic=False, equidistant=False):
 
 
 
-#------------------- Superposition of Logistic Functions --------------------#
-def logistic_super(N_k, k_min, k_max, N_shift, shift_min, shift_max, weights):
+def logistic_super(k_range, rho_shift_range, weights):
     """
     Generates a 3D array family of logistic functions, where
     axis 0 = value of the function, of length resol
@@ -92,8 +93,8 @@ def logistic_super(N_k, k_min, k_max, N_shift, shift_min, shift_max, weights):
     axis 2 = values of parameter rho_shift,
     then brings in optimization parameter array, weights,
     and generates a superposition of all N^2 vectors.
-    --------- Parameters ---------
-    N_k: scalar
+    --------- Parameters ----------------------------
+    k_range: list of scalars
         number of k values to generate
     k_min: scalar
         parameter k, minimum steepness
@@ -101,7 +102,7 @@ def logistic_super(N_k, k_min, k_max, N_shift, shift_min, shift_max, weights):
         number of rho_shifts to generate
     shift_min: scalar
         value of minimum rho_shift, horizontal displacement
-    --------- Returns ------------
+    --------- Returns -------------------------------------
     superpos: array-like
         (NPTS,1) array that is a superposition of all logisitic
         function permutations of the chosen range of k and rho_shift,
@@ -126,24 +127,19 @@ def logistic_super(N_k, k_min, k_max, N_shift, shift_min, shift_max, weights):
         
     superpos= superpos/(superpos[0] - superpos[-1]+ 0.05) #normalizing superposition
     return superpos
-    
+#-----------------------------------------------------------------------------------------------------
 
 
 
-#------- Profile to be Passed to the Optimizer ------#
-def logistic_opt(weights):
+#--------------------------------- CLASS FOR OPTIMIZER ---------------------------------
+class logistic_opt(_Profile):
     """
-    Function to be passed into the Optimizer.
-    N, k_min and shift_min are defined here and
-    passed into logistic_super. Weights are the 
-    only optimization variables.
-    -------- Parameters -------
-    weights: array-like 
-        Nx1 array of weights that scales each logistic
-        func in the generated family
-    --------- Returns ---------
-    pressure profile, superposition of logistic funcs
-    weighted by "weights"
+    Class to be passed into the optimizer. Inherits from desc.profile._Profiles class
+    N, k_min and shift_min are defined here and passed into logistic_super.
+    -------- Parameters ---------------------------------------------------
+
+    --------- Returns --------------
+    
     """
     #see logistic_super for definitions:
     N_k = 5 
@@ -153,9 +149,9 @@ def logistic_opt(weights):
     shift_min = -2 #hard clamp
     shift_max = 2 #hard clamp
 
-    opt_pressure= logistic_super(
-        N_k, k_min, k_max, N_shift, shift_min, shift_max, weights)
-    return opt_pressure 
+    opt_pressure= logistic_super()
+    
+   
 
 
 
