@@ -1,23 +1,18 @@
-import sys
-import os
-import matplotlib.pyplot as plt
 import numpy as np
+import os
+import sys
+from pathlib import Path
+
+# ---- non-GUI backend (prevents Tk crashes on macOS) ----
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+sys.path.append("/Users/macdaddi/DESC")
+
 import desc
-from desc.grid import Grid, LinearGrid
-from desc.optimize import Optimizer
-from desc.objectives import (
-    ForceBalance,
-    AspectRatio,
-    FixIota,
-    FixPressure,
-    FixPsi,
-    PrincipalCurvature,
-    BallooningStability,
-    ObjectiveFunction,
-    FixBoundaryR,
-    FixBoundaryZ,
-    GenericObjective,
-)
+import desc.io
+from desc.grid import LinearGrid, Grid
 from scratch.objectives.poly_constraints import (
     pressure_axis,
     pressure_edge,
@@ -25,164 +20,233 @@ from scratch.objectives.poly_constraints import (
     grad_pressure_edge,
     poly_monotonicity
 )
-
-
-plt.rcParams["font.size"] = 14
-sys.path.insert(0, os.path.abspath("."))
-sys.path.append(os.path.abspath("../../../"))
-
-
-
-#-------------------------- EQUILIBRIUM SOLVE & PLOTTING --------------------------------------------------------------
-# Importing the HELIOTRON DESC equilibrium:
-eq0 = desc.examples.get("HELIOTRON")
-eq0.surface = eq0.get_surface_at(rho=1)
-
-
-surfaces = np.array([0.01, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0]) # flux surfaces on which ball stability evaluated
-alpha = np.linspace(0, np.pi, 8, endpoint=False) # field lines on which to ball stability evaluated
-nturns = 3 # num toroidal transits of the field line
-N0 = nturns * 200 # number of point along a field line in ballooning space
-zeta = np.linspace(-np.pi * nturns, np.pi * nturns, N0) # range of the ballooning coordinate zeta
-# We need to make a special grid in field aligned coordinates, which we do here
-# coordinates="raz" tells desc that this grid is in rho,alpha,zeta coordinates:
-grid = Grid.create_meshgrid([surfaces, alpha, zeta], coordinates="raz")
-data = eq0.compute(
-    ["ideal ballooning lambda", "ideal ballooning eigenfunction"], grid=grid
+from desc.objectives import (
+    ObjectiveFunction,
+    FixIota,
+    FixPsi,
+    FixPressure,
+    ForceBalance,
+    AspectRatio,
+    QuasisymmetryBoozer,
+    BallooningStability,
+    MercierStability,
+    LinearObjectiveFromUser,
+    ObjectiveFromUser,
 )
-print("Growth rate and eigenfunction calculation finished!")
-eigenvals = data["ideal ballooning lambda"]
-eigenfuns = data["ideal ballooning eigenfunction"]
+from desc.optimize import Optimizer
+from desc.plotting import plot_comparison
 
 
-lambda_max0 = np.zeros(surfaces.size)
-eigenfunc_max0 = np.zeros((surfaces.size, N0))
-for j in range(surfaces.size):
-    idxmax = np.argmax(eigenvals[j])
-    alpha_idx, zeta0_idx, eigval_idx = np.unravel_index(idxmax, eigenvals[j].shape)
-    # max eigenvalues
-    lambda_max0[j] = eigenvals[j, alpha_idx, zeta0_idx, eigval_idx]
-    # eigenfunction corresponding to the max eigenvalue
-    X0 = eigenfuns[j, alpha_idx, zeta0_idx, :, eigval_idx]
-    sign_max = np.sign(X0[np.argmax(np.abs(X0))])
-    eigenfunc_max0[j, 1:-1] = X0 / np.max(np.abs(X0)) * sign_max
-
-
-# Plotting:
-plt.plot(surfaces, lambda_max0, "-or", ms=4)
-plt.xlabel(r"$\rho$", fontsize=18)
-plt.ylabel(r"$\lambda_{\mathrm{max}}$", fontsize=18)
-plt.xticks(fontsize=16)
-plt.yticks(fontsize=16)
-#
-plt.figure()
-plt.plot(zeta, eigenfunc_max0[3])  # plotting eigenfunction on rho=0.4
-plt.xlabel(r"$\zeta$", fontsize=18)
-plt.ylabel(r"$X_{\mathrm{max}}$", fontsize=18)
-plt.xticks(fontsize=16)
-plt.yticks(fontsize=16)
-
-
-# Newcomb's metric:
-data = eq0.compute(["Newcomb ballooning metric"], grid=grid, data=data)
-plt.plot(surfaces, data["Newcomb ballooning metric"], "-or", ms=4)
-plt.xlabel(r"$\rho$", fontsize=18)
-plt.ylabel("Newcomb metric", fontsize=18)
-plt.xticks(fontsize=16)
-plt.yticks(fontsize=16)
-
-
-
-
-
-
-
-
-
-
-#-------------------------- OPTIMIZATION -----------------------------------------------------------------------------
-
-eq1 = eq0.copy() # save a copy of original for comparison
-nzetaperturn = 200 # number of point along a field line per transit
-k = 2 # determine which modes to unfix
-
-print("\n---------------------------------------")
-print(f"Optimizing boundary modes M, N <= {k}")
-print("---------------------------------------")
-
-modes_R = np.vstack(
-    (
-        [0, 0, 0],
-        eq1.surface.R_basis.modes[np.max(np.abs(eq1.surface.R_basis.modes), 1) > k, :],
-    )
-)
-modes_Z = eq1.surface.Z_basis.modes[np.max(np.abs(eq1.surface.Z_basis.modes), 1) > k, :]
-
-
-# Compiling constraints:
-constraints = (
-    ForceBalance(eq=eq1),
-    FixBoundaryR(eq=eq1, modes=modes_R),
-    FixBoundaryZ(eq=eq1, modes=modes_Z),
-    FixPressure(eq=eq1),
-    FixIota(eq=eq1),
-    FixPsi(eq=eq1),
-)
-
-
-# Grid:
-Curvature_grid = LinearGrid(
-    M=eq1.M_grid,
-    N=eq1.N_grid,
-    rho=np.array([1.0]),
-    NFP=eq1.NFP,
-    sym=eq1.sym,
-    axis=False,
-)
-
-
-# Compiling objectives:
-objective = ObjectiveFunction(
-    (
-        BallooningStability(
-            eq=eq1,
-            rho=np.array([0.8]),
-            alpha=alpha,
-            nturns=nturns,
-            nzetaperturn=nzetaperturn,
-            weight=2,
-        ),
-        AspectRatio(
-            eq=eq1,
-            bounds=(8, 11),
-            weight=1,
-        ),
-        GenericObjective(
-            f="curvature_k2_rho",
-            thing=eq1,
-            grid=Curvature_grid,
-            bounds=(-np.inf, 0),
-            weight=2,
-        ),
-    )
-)
-
-
-# Running optimizer:
+#----------- OPTIMIZER SELECTION ------------
 optimizer = Optimizer("proximal-lsq-exact")
-(eq1,), _ = optimizer.optimize(
-    eq1,
-    objective,
-    constraints,
-    ftol=1e-4,
-    xtol=1e-6,
-    gtol=1e-6,
-    maxiter=5, 
-    verbose=3,
-    options={"initial_trust_ratio": 2e-3},
-)
-print("Optimization complete!")
 
 
-# Plotting:
-desc.plotting.plot_comparison([eq0, eq1])
+# ----------------------- BALLOONING METRIC (lambda_max) --------------------------
+def ballooning_lambda_max(eq, surfaces, alpha, zeta):
+    """
+    Compute max ideal-ballooning growth rate lambda over (alpha, zeta0, eigen-index)
+    for each rho in `surfaces`.
+    """
+    grid_b = Grid.create_meshgrid([surfaces, alpha, zeta], coordinates="raz")
+    data_b = eq.compute(["ideal ballooning lambda"], grid=grid_b)
+    lam = data_b["ideal ballooning lambda"]  # (rho, alpha, zeta0, eig)
+    lam_rho = np.max(lam.reshape(lam.shape[0], -1), axis=1)
+    lam_global = float(np.max(lam_rho))
+    return lam_rho, lam_global
+
+
+#----------------------- OPTIMIZER FUNCTION --------------------------
+def run_optimization(p_scale, out_dir, fix_pressure: bool):
+    """
+    Build HELIOTRON example as eq_init, copy to eq_0, then optimize.
+    Returns eq_opt, opt_result.
+    Also saves the optimized equilibrium to out_dir.
+    """
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Initial equilibrium: HELIOTRON example (NOT file-based)
+    eq_init = desc.examples.get("HELIOTRON")
+    eq_init.change_resolution(L=12, M=6, N=2, L_grid=18, M_grid=12, N_grid=4)
+    eq_init.surface = eq_init.get_surface_at(rho=1)
+
+    eq_0 = eq_init.copy()
+
+    # Weight to assign to secondary objectives and constraints (not force balance):
+    inferior_weights = 1e0
+
+    if fix_pressure:  # fixed pressure
+        constraints = (
+            ForceBalance(eq=eq_0),
+            FixIota(eq=eq_0),
+            FixPsi(eq=eq_0),
+            FixPressure(eq=eq_0),
+        )
+
+        objective = ObjectiveFunction([
+            ForceBalance(eq=eq_0, target=0, weight=1e1),
+            AspectRatio(eq=eq_0, target=6, weight=inferior_weights),
+            QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP), weight=inferior_weights),
+            BallooningStability(eq=eq_0, target=0.0, weight=inferior_weights),
+            MercierStability(eq=eq_0, target=0.0, weight=inferior_weights),
+        ])
+
+    else:  # optimized pressure
+        pressure_axis_set = LinearObjectiveFromUser(
+            fun=pressure_axis,
+            thing=eq_0,
+            target=p_scale,
+            weight=inferior_weights,
+        )
+        pressure_edge_zero = LinearObjectiveFromUser(
+            fun=pressure_edge,
+            thing=eq_0,
+            target=0.0,
+            weight=inferior_weights,
+        )
+        grad_pressure_axis_zero = LinearObjectiveFromUser(
+            fun=grad_pressure_axis,
+            thing=eq_0,
+            target=0.0,
+            weight=inferior_weights,
+        )
+        grad_pressure_edge_zero = LinearObjectiveFromUser(
+            fun=grad_pressure_edge,
+            thing=eq_0,
+            target=0.0,
+            weight=inferior_weights,
+        )
+
+        constraints = (
+            ForceBalance(eq=eq_0),
+            FixIota(eq=eq_0),
+            FixPsi(eq=eq_0),
+            pressure_axis_set,
+            pressure_edge_zero,
+            grad_pressure_axis_zero,
+            grad_pressure_edge_zero,
+        )
+
+        negative_gradient = ObjectiveFromUser(
+            fun=poly_monotonicity,
+            grid=LinearGrid(rho=200, M=0, N=0),
+            thing=eq_0,
+            target=0.0,
+            weight=inferior_weights,
+            normalize=False,
+        )
+
+        objective = ObjectiveFunction([
+            ForceBalance(eq=eq_0, target=0, weight=1e4),
+            AspectRatio(eq=eq_0, target=6, weight=inferior_weights),
+            QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP), weight=inferior_weights),
+            BallooningStability(eq=eq_0, target=0.0, weight=inferior_weights),
+            MercierStability(eq=eq_0, target=0.0, weight=inferior_weights),
+            negative_gradient,
+        ])
+
+    # Solving optimization:
+    eq_opt, opt_result = eq_0.optimize(
+        objective=objective,
+        constraints=constraints,
+        optimizer=optimizer,
+        ftol=5e-2,
+        xtol=1e-6,
+        gtol=1e-6,
+        maxiter=50,
+        options={
+            "perturb_options": {"order": 2, "verbose": 0},
+            "solve_options": {"ftol": 5e-2, "xtol": 1e-6, "gtol": 1e-6, "verbose": 0},
+        },
+        copy=False,
+        verbose=3,
+    )
+
+    save_name = "opt_FXP.h5" if fix_pressure else "opt.h5"
+    save_path = out_dir / save_name
+    eq_opt.save(save_path)
+
+    return eq_init, eq_opt, opt_result
+
+
+# ------------------------------ DRIVER ---------------------------------
+if __name__ == "__main__":
+    out_dir = "/Users/macdaddi/DESC/scratch/runs/poly/balloon"
+    p_scale = 1.0
+
+    # Build HELIOTRON once for reporting + metrics (same settings as in run_optimization):
+    eq_init = desc.examples.get("HELIOTRON")
+    eq_init.change_resolution(L=12, M=6, N=2, L_grid=18, M_grid=12, N_grid=4)
+    eq_init.surface = eq_init.get_surface_at(rho=1)
+
+    # Run optimizations starting from eq_init copy (inside run_optimization):
+    _, eq_opt_FXD, _ = run_optimization(p_scale=p_scale, out_dir=out_dir, fix_pressure=True)
+    _, eq_opt, _     = run_optimization(p_scale=p_scale, out_dir=out_dir, fix_pressure=False)
+
+    # Ballooning lambda metric for all 3:
+    surfaces = np.array([0.01, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0])
+    alpha = np.linspace(0, np.pi, 8, endpoint=False)
+    nturns = 3
+    N0 = nturns * 200
+    zeta = np.linspace(-np.pi * nturns, np.pi * nturns, N0)
+
+    lam_init_rho, lam_init_global = ballooning_lambda_max(eq_init, surfaces, alpha, zeta)
+    lam_fxd_rho,  lam_fxd_global  = ballooning_lambda_max(eq_opt_FXD, surfaces, alpha, zeta)
+    lam_opt_rho,  lam_opt_global  = ballooning_lambda_max(eq_opt, surfaces, alpha, zeta)
+
+    print("\n--- Ballooning lambda_max metrics ---")
+    print("[eq_init]     lambda_max(rho) =", lam_init_rho)
+    print("[eq_init]     lambda_max global =", f"{lam_init_global:.6e}")
+    print("[eq_opt_FXD]  lambda_max(rho) =", lam_fxd_rho)
+    print("[eq_opt_FXD]  lambda_max global =", f"{lam_fxd_global:.6e}")
+    print("[eq_opt]      lambda_max(rho) =", lam_opt_rho)
+    print("[eq_opt]      lambda_max global =", f"{lam_opt_global:.6e}")
+
+    # Tutorial-style comparison plot:
+    fig, ax = plot_comparison(
+        eqs=[eq_init, eq_opt_FXD, eq_opt],
+        labels=[
+            "Initial Equilibrium",
+            "Optimized (Fixed Pressure)",
+            "Optimized (Optimized Pressure)",
+        ],
+    )
+
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    save_path = out_dir / "toroidal_cuts.png"
+    fig.savefig(save_path, dpi=250, bbox_inches="tight")
+    plt.close(fig)
+    print(f"\nSaved comparison plot: {save_path}")
+
+    # Create ballooning grid (needed below)
+    grid = Grid.create_meshgrid([surfaces, alpha, zeta], coordinates="raz")
+
+    # --- compute lambda_max(rho) for each equilibrium on the SAME grid ---
+    data_init = eq_init.compute(["ideal ballooning lambda"], grid=grid)
+    lambda_max_init = data_init["ideal ballooning lambda"].max(axis=(-1, -2, -3))
+
+    data_fxd = eq_opt_FXD.compute(["ideal ballooning lambda"], grid=grid)
+    lambda_max_fxd = data_fxd["ideal ballooning lambda"].max(axis=(-1, -2, -3))
+
+    data_opt = eq_opt.compute(["ideal ballooning lambda"], grid=grid)
+    lambda_max_opt = data_opt["ideal ballooning lambda"].max(axis=(-1, -2, -3))
+
+    # --- plot + save ---
+    plt.figure()
+    plt.plot(surfaces, lambda_max_init, "-or", ms=4)
+    plt.plot(surfaces, lambda_max_fxd, "-og", ms=4)
+    plt.plot(surfaces, lambda_max_opt, "-ob", ms=4)
+
+    plt.legend(
+        ["eq_init", "eq_opt_FXD (fixed P)", "eq_opt (optimized P)"],
+        fontsize=16,
+    )
+    plt.xlabel(r"$\rho$", fontsize=18)
+    plt.ylabel(r"$\lambda_{\mathrm{max}}$", fontsize=18)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+
+    plt.savefig(out_dir / "lambda_max.png", dpi=250, bbox_inches="tight")
+    plt.close()
