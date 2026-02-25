@@ -22,7 +22,7 @@ def sci_compact(x, sig=2):
 
 
 
-#-------- FIXED VS. OPTIMIZED PRESSURE COMPARISON ---------
+#-------- FIXED VS. OPTIMIZED PRESSURE COMPARISON -----------------------------------------------------------------------
 def comparison(p_maxima: list, n_set: list):
     """
     Runs initial equilibrium solve, then optimization for 
@@ -35,28 +35,27 @@ def comparison(p_maxima: list, n_set: list):
         n in n_set must be >=2.
     """
 
+   
 
 
-    #------------------------------------------
-    # Initializing table of objective values:
-    columns = [
-        'Force error: ',
-        'Quasi-symmetry (1,19) Boozer error: ',
-        #'Aspect ratio error: ',
-        #'Fixed iota profile error: ',
-        #'Fixed Psi error: ',
-        'Ideal ballooning lambda: ',
-        'Mercier Stability: ',
-    ]
 
-    # Converts ..........
+
+
+
+    #----------------
     def _to_float(x):
         try:
             return float(x)
         except Exception:
             return np.nan
-        
+    #--------------------
+
     
+
+
+
+
+    #--------------------------------------------------------------
     # Preps final objective values to be put into comparison table:
     def _extract_f_stats(objval):
         if isinstance(objval, list):
@@ -83,22 +82,34 @@ def comparison(p_maxima: list, n_set: list):
         return val, val, val
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
+    #----------------------------------------------------
 
 
 
-    #--------------------------------------------------
+    #----------------------------------------
+    # Initializing table of objective values:
+    columns = [
+        'Force error: ',
+        'Quasi-symmetry (1,19) Boozer error: ',
+        #'Aspect ratio error: ',
+        #'Fixed iota profile error: ',
+        #'Fixed Psi error: ',
+        'Ideal ballooning lambda: ',
+        'Mercier Stability: ',
+    ]
+
+    
     # Loop over on-axis pressure and polynomial orders:
     for p_scale in p_maxima:
         for n in n_set:
-
-            #---------------------------------------------------------------
+            #
             rows = [] # table row names
             values = [] # table elements (obj vals)
-
             # Generates directory to store equilibria, plots, table: 
             out_dir = os.path.join(base_dir, f"p{sci_compact(p_scale)}_n{n}")
             os.makedirs(out_dir, exist_ok=True)
 
+            #-----------------------------------
             # Running initial equilibrium solve:
             eq_init, n_eff = run_equilibrium(p_scale, n, out_dir=out_dir)
 
@@ -109,15 +120,15 @@ def comparison(p_maxima: list, n_set: list):
             eq_opt, opt_result = run_optimization(
                 p_scale, out_dir=out_dir, fix_pressure=False
             )
+            #-----------------------------------------------
 
-
+            #------------------------------------
             # Generating comparison table labels:
             label_n = n if n_eff == n else f"{n}→{n_eff}"
             group_label = f"Max Pressure = {p_scale}; n = {label_n} (order={2*n_eff})"
             rows.append((group_label, "Fixed Pressure"))
             rows.append((group_label, "Optimized Pressure"))
             rows.append((group_label, "Difference"))
-
             row_FXD = [] # fixed pressure obj vals
             row_OPT = [] # optimized pressure obj vals
             row_DIFF = [] # difference between fixed and opt vals
@@ -130,17 +141,17 @@ def comparison(p_maxima: list, n_set: list):
                 fmin_OPT, fmean_OPT, fmax_OPT = _extract_f_stats(
                     opt_result['Objective values'][key]
                 )
-
+                #
                 row_FXD.append(f"f_min={fmin_FXD:.4g}, f_mean={fmean_FXD:.4g}, f_max={fmax_FXD:.4g}")
                 row_OPT.append(f"f_min={fmin_OPT:.4g}, f_mean={fmean_OPT:.4g}, f_max={fmax_OPT:.4g}")
-
+                #
                 dmin = fmin_OPT - fmin_FXD
                 dmean = fmean_OPT - fmean_FXD
                 dmax = fmax_OPT - fmax_FXD
                 row_DIFF.append(
                     f"f_min diff={dmin:.4g}, f_mean diff={dmean:.4g}, f_max diff={dmax:.4g}"
                 )
-
+        
             # Including Beta in table:
             beta_FXD = float(eq_opt_FXD.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
             beta_OPT = float(eq_opt.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
@@ -150,11 +161,10 @@ def comparison(p_maxima: list, n_set: list):
             row_OPT.append(f"{beta_OPT:.4g}")
             row_DIFF.append(f"{beta_DIFF:.4g}")
             
-            # 
             values.append(row_FXD)
             values.append(row_OPT)
             values.append(row_DIFF)
-
+        
             # Save table inside run folder:
             index = pd.MultiIndex.from_tuples(rows, names=["Run", "Pressure Type"])
             df = pd.DataFrame(
@@ -169,10 +179,9 @@ def comparison(p_maxima: list, n_set: list):
             with open(output_file, "w") as f:
                 f.write("Comparison of Post-Optimization Objectives\n\n")
                 f.write(ascii_table)
-
-
-
-            #------------------------------------------------------------
+            #-----------------------
+        
+            #----------------------------------------
             # Plotting fixed and optimized pressures:
             rho = np.linspace(0.0, 1.0, 400)
             grid = LinearGrid(rho=rho, M=0, N=0)
@@ -196,8 +205,7 @@ def comparison(p_maxima: list, n_set: list):
             pressure_path = os.path.join(out_dir, 'pressure_compare.png')
             plt.savefig(pressure_path, dpi=200)
             plt.close()
-
-
+            #----------
 
             #--------------------------------------------------------
             # Plotting  gridded toroidal cross-sections of B-fields:
@@ -210,8 +218,12 @@ def comparison(p_maxima: list, n_set: list):
             toroidal_cuts_path = os.path.join(out_dir, 'toroidal_cuts.png')
             plt.savefig(toroidal_cuts_path, dpi=200)
             plt.close()
+            #----------
+        #-------------------------------------------
+    #-----------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------
 
 
 
 #-------- RUNNING IT --------
-comparison([1e4], [2,3,4,5,6,7,8])
+comparison([1e4], [2])
