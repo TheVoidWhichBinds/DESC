@@ -4,9 +4,8 @@
 
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 from desc.profiles import _Profile
-from desc.backend import jit, jnp, put, sign, jax
+from desc.backend import jnp, jax
 
 
 
