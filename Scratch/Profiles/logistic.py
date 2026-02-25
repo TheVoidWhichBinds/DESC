@@ -43,11 +43,11 @@ class LogisticProfile(_Profile):
     #------------
     def __init__(
         self,
-        weights=None,
-        p_axis=None,
-        k_range=None,
-        rho_range=None,
-        rho_grid=None,
+        p_axis,
+        k_range,
+        rho_range,
+        weights,
+        rho_grid,
         name="",
     ):
         super().__init__(name)

@@ -65,49 +65,14 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
 
 
     else: # optimized pressure
-        pressure_axis_set = LinearObjectiveFromUser(
-            fun=pressure_axis,
-            thing=eq_0,
-            target=p_scale,
-            weight=inferior_weights,
-        )
-        pressure_edge_zero = LinearObjectiveFromUser(
-            fun=pressure_edge,
-            thing=eq_0,
-            target=0.0,
-            weight=inferior_weights,
-        )
-        grad_pressure_axis_zero = LinearObjectiveFromUser(
-            fun=grad_pressure_axis,
-            thing=eq_0,
-            target=0.0,
-            weight=inferior_weights,
-        )
-        grad_pressure_edge_zero = LinearObjectiveFromUser(
-            fun=grad_pressure_edge,
-            thing=eq_0,
-            target=0.0,
-            weight=inferior_weights,
-        )
+        
         # Compiling constraints:
         constraints = (
             ForceBalance(eq=eq_0),
             FixIota(eq=eq_0),
             FixPsi(eq=eq_0),
-            pressure_axis_set,
-            pressure_edge_zero,
-            grad_pressure_axis_zero,
-            grad_pressure_edge_zero,
         )
-        # Building monotonicity objective with wrapper:
-        negative_gradient = ObjectiveFromUser(
-            fun=poly_monotonicity,
-            grid=LinearGrid(rho=200, M=0, N=0),
-            thing=eq_0,
-            target=0.0,
-            weight=inferior_weights,
-            normalize=False,
-        )
+        
         # Compiling objectives:
         objective = ObjectiveFunction([
             ForceBalance(eq=eq_0, target=0, weight=1e4),
@@ -115,7 +80,6 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
             QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP), weight=inferior_weights),
             BallooningStability(eq=eq_0, target=0.0, weight=inferior_weights),
             MercierStability(eq=eq_0, target=0.0, weight=inferior_weights),
-            negative_gradient,
         ])
 
 

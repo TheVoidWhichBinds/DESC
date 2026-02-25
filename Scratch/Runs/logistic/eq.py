@@ -9,7 +9,7 @@ from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import LogisticProfile, PowerSeriesProfile
 
 
-
+ 
 
 #---------- FIXED INITIAL PARAMETERS ----------
 # Initializing fixed surface: 
@@ -28,21 +28,7 @@ iota_init = PowerSeriesProfile([1, 0, 2])
 
 
 #------------------------ FUNCTIONS ---------------------------
-def coefficients(p_scale, n, min_n=2):
-    """
-    Coeffs for p(rho) = p_scale * (1 - rho^2)^n
-    Guarantees: p(0)=p_scale, p(1)=0, p'(0)=0, p'(1)=0 for n>=2
-    Also nonnegative + monotone decreasing on [0,1].
-    """
-    n_eff = max(int(n), int(min_n))
-    coeff = [0.0] * (2 * n_eff + 1)
-    for k in range(n_eff + 1):
-        coeff[2 * k] = p_scale * comb(n_eff, k) * ((-1) ** k)
-    return coeff, n_eff
-
-
-
-def run_equilibrium(p_scale, n, out_dir):
+def run_equilibrium(p_axis, k_range, rho_range, weights, out_dir):
     """
     Runs equilibirum solve given an on-axis pressure,
     and polynomial order n
@@ -52,15 +38,20 @@ def run_equilibrium(p_scale, n, out_dir):
         n_eff = n if n>=2
     """
 
-    # Creating polynomial coefficients in list form:
-    # Checking that n>=2:
-    coeff, n_eff = coefficients(p_scale, n)
+    # creating initial pressure profile:
+    pressure = LogisticProfile(
+        p_axis = None,
+        k_range = None,
+        rho_range = None,
+        weights = None,
+        rho_grid = None,
+    )
 
     # Prepping equilibrium:
     eq = Equilibrium(
         L=8, M=8, N=3,
         surface=surface_init,
-        pressure=PowerSeriesProfile(coeff),
+        pressure=pressure,
         iota=iota_init,
         Psi=1.0,
     )
@@ -71,14 +62,7 @@ def run_equilibrium(p_scale, n, out_dir):
     save_path = os.path.join(out_dir, 'eq.h5')
     eq_init.save(save_path)
 
-    return eq_init, n_eff
+    return eq_init
 
 
 
-if __name__ == '__main__':
-    # Standalone test run: saves into ./p1.0e4_n2/eq.h5 next to this file
-    dir_name = os.path.dirname(os.path.abspath(__file__))
-    p_scale = 1e4
-    n = 2
-    out_dir = os.path.join(dir_name, f'p{p_scale:.1e}_n{n}')
-    run_equilibrium(p_scale, n, out_dir)
