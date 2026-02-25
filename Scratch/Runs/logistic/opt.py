@@ -1,95 +1,144 @@
-#FIXED BOUNDARY QS OPTIMIZATION MODDED TO TAKE 
-#LOGISTIC FUNCTION FAMILY WEIGHTS AS OPTIMIZATION VARIABLES
-#NOTES:
-#play with lowering ftol
-
-
-#Imports:
 import numpy as np
-import matplotlib.pyplot as plt
+import os
 import sys
 sys.path.append("/Users/macdaddi/DESC")
 import desc.io
 from desc.grid import LinearGrid
+from scratch.objectives.poly_constraints import (
+    pressure_axis,
+    pressure_edge,
+    grad_pressure_axis,
+    grad_pressure_edge,
+    poly_monotonicity
+)
 from desc.objectives import (
     ObjectiveFunction,
-   #FixPressure, #skipping this line
     FixIota,
     FixPsi,
+    FixPressure,
     ForceBalance,
+    AspectRatio,
+    QuasisymmetryBoozer,
+    BallooningStability,
+    MercierStability,
     LinearObjectiveFromUser,
+    ObjectiveFromUser,
 )
 from desc.optimize import Optimizer
 
 
-#Loading Equilibria Family and Making a Copy of Final Iteration:
-eq_init_fixbound= desc.io.load("scratch/runs/logistic/eq.h5") #initial equilibrium load - might need to generalize path
-eq_init= eq_init_fixbound[-1].copy() #copy of final eq in family
+
+#----------- OPTIMIZER SELECTION ------------
+optimizer = Optimizer("proximal-lsq-exact")
 
 
 
 
-#-----------------------------------------------------
-#Objectives of Choice:
-objective= ObjectiveFunction(ForceBalance(eq=eq_init))
+#----------------------- OPTIMIZER FUNCTION --------------------------
+def run_optimization(p_scale, out_dir, fix_pressure: bool):
+    
+    eq_init = desc.io.load(os.path.join(out_dir, 'eq.h5')) # loading initial eq solve
+    eq_0 = eq_init.copy() # copying initial eq solve so as to not alter it
 
 
-#List of Constraints:
-constraints = (
-    ForceBalance(eq=eq_init),  # enforce JxB-grad(p)=0 during optimization
-   #FixPressure(eq=eq_init),  # fix pressure profile - OMITTED
-    FixIota(eq=eq_init),  # fix rotational transform profile
-    FixPsi(eq=eq_init),  # fix total toroidal magnetic flux
-)
-
-#Optimizer of Choice:
-optimizer = Optimizer("proximal-lsq-exact") #choice of optimizer
+    # Weight to assign to secondary objectives and constraints (not force balance):
+    inferior_weights = 1e0 
 
 
+    # Division of constraints and objectives depending on fix_pressure:
+    if fix_pressure: # fixed pressure
+        # Compiling constraints:
+        constraints = (
+            ForceBalance(eq=eq_0),
+            FixIota(eq=eq_0),
+            FixPsi(eq=eq_0),
+            FixPressure(eq=eq_0),
+        )
+        # Compiling objectives:
+        objective = ObjectiveFunction([
+            ForceBalance(eq=eq_0, target=0, weight=1e1),
+            AspectRatio(eq=eq_0, target=6, weight=inferior_weights),
+            QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP), weight=inferior_weights),
+            BallooningStability(eq=eq_0, target=0.0, weight=inferior_weights),
+            MercierStability(eq=eq_0, target=0.0, weight=inferior_weights),
+        ])
 
 
-#----------------------------------
-#Running the Optimizer:
-eq_opt, result = eq_init.optimize(
-    objective=objective,
-    constraints=constraints,
-    optimizer=optimizer,
-    ftol=5e-2,  # stopping tolerance on the function value
-    xtol=1e-6,  # stopping tolerance on the step size
-    gtol=1e-7,  # stopping tolerance on the gradient
-    maxiter=50,  # maximum number of iterations
-    options={
-        "perturb_options": {"order": 2, "verbose": 0},  # use 2nd-order perturbations
-        "solve_options": {
-            "ftol": 5e-3,
-            "xtol": 1e-6,
-            "gtol": 1e-6,
-            "verbose": 0,
-        },  # for equilibrium subproblem
-    },
-    copy=False,  # copy=False we will overwrite the eq_init object with the optimized result
-    verbose=3,
-)
+    else: # optimized pressure
+        pressure_axis_set = LinearObjectiveFromUser(
+            fun=pressure_axis,
+            thing=eq_0,
+            target=p_scale,
+            weight=inferior_weights,
+        )
+        pressure_edge_zero = LinearObjectiveFromUser(
+            fun=pressure_edge,
+            thing=eq_0,
+            target=0.0,
+            weight=inferior_weights,
+        )
+        grad_pressure_axis_zero = LinearObjectiveFromUser(
+            fun=grad_pressure_axis,
+            thing=eq_0,
+            target=0.0,
+            weight=inferior_weights,
+        )
+        grad_pressure_edge_zero = LinearObjectiveFromUser(
+            fun=grad_pressure_edge,
+            thing=eq_0,
+            target=0.0,
+            weight=inferior_weights,
+        )
+        # Compiling constraints:
+        constraints = (
+            ForceBalance(eq=eq_0),
+            FixIota(eq=eq_0),
+            FixPsi(eq=eq_0),
+            pressure_axis_set,
+            pressure_edge_zero,
+            grad_pressure_axis_zero,
+            grad_pressure_edge_zero,
+        )
+        # Building monotonicity objective with wrapper:
+        negative_gradient = ObjectiveFromUser(
+            fun=poly_monotonicity,
+            grid=LinearGrid(rho=200, M=0, N=0),
+            thing=eq_0,
+            target=0.0,
+            weight=inferior_weights,
+            normalize=False,
+        )
+        # Compiling objectives:
+        objective = ObjectiveFunction([
+            ForceBalance(eq=eq_0, target=0, weight=1e4),
+            AspectRatio(eq=eq_0, target=6, weight=inferior_weights),
+            QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP), weight=inferior_weights),
+            BallooningStability(eq=eq_0, target=0.0, weight=inferior_weights),
+            MercierStability(eq=eq_0, target=0.0, weight=inferior_weights),
+            negative_gradient,
+        ])
 
 
+    # Solving optimization:
+    eq_opt, opt_result = eq_0.optimize(
+        objective=objective,
+        constraints=constraints,
+        optimizer=optimizer,
+        ftol=5e-2,
+        xtol=1e-6,
+        gtol=1e-6,
+        maxiter=50,
+        options={
+            "perturb_options": {"order": 2, "verbose": 0},
+            "solve_options": {"ftol": 5e-2, "xtol": 1e-6, "gtol": 1e-6, "verbose": 0},
+        },
+        copy=False,
+        verbose=3,
+    )
 
-# Autosaving optimized equilibrium:
-eq_opt.save('/Users/macdaddi/DESC/scratch/runs/logistic/opt.h5')
-
-
-
-#------ Optimized Pressure Profile Plotting ------#
-rho = np.linspace(0, 1, 400)
-grid = LinearGrid(rho=rho, M=0, N=0)   
-data = eq_opt.compute("p", grid=grid)
-P = data["p"]
-#
-plt.figure(figsize=(7,5))
-plt.plot(rho, P, linewidth=2)
-plt.xlabel(r"$\rho$", fontsize=14)
-plt.ylabel(r"$P(\rho)$", fontsize=14)
-plt.title("Post-Optimization Pressure", fontsize=16)
-plt.grid(True)
-plt.tight_layout()
-plt.savefig('/Users/macdaddi/DESC/scratch/runs/logistic/pressure.png')
-print(eq_opt.pressure.params)
+    
+    save_name = "opt_FXP.h5" if fix_pressure else "opt.h5"
+    save_path = os.path.join(out_dir, save_name)
+    eq_opt.save(save_path)
+    
+    return eq_opt, opt_result
