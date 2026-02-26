@@ -40,10 +40,10 @@ def run_equilibrium(p_axis, k_range, rho_range, weights, out_dir):
 
     # creating initial pressure profile:
     pressure = LogisticProfile(
-        p_axis = None,
-        k_range = None,
-        rho_range = None,
-        weights = None,
+        p_axis = p_axis,
+        k_range = k_range,
+        rho_range = rho_range,
+        weights = weights,
         rho_grid = None,
     )
 

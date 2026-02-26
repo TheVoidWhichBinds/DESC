@@ -123,10 +123,12 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits):
 
                     #------------------------------------
                     # Generating comparison table labels:
-                    group_label = f'p_axis = {p_axis}\n,';  
-                                  f'k_range = {k_range}\n,'
-                                  f'rho_range = {rho_range}\n,'; 
-                                  f'weights = {weights},'
+                    group_label = (
+                        f'p_axis = {p_axis}\n,', 
+                        f'k_range = {k_range}\n,',
+                        f'rho_range = {rho_range}\n,',
+                        f'weights = {weights},'
+                    )
                     rows.append((group_label, "Fixed Pressure"))
                     rows.append((group_label, "Optimized Pressure"))
                     rows.append((group_label, "Difference"))

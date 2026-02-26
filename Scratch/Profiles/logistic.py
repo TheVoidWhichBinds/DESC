@@ -50,55 +50,40 @@ class LogisticProfile(_Profile):
         rho_grid,
         name="",
     ):
-        super().__init__(name)
+        super().__init__(name) # calling parent
 
-        seed = jax.random.PRNGKey(0)
-
+      
+        #-----------------------------
+        # Defaults if inputs are None:
         p_axis_default = 1e4
         k_range_default = jnp.linspace(10, 20, 5)
         rho_range_default = jnp.linspace(-0.2, 0.2, 4)
+        #
+        N_weights = int(k_range.size * rho_range.size)
+        seed = jax.random.PRNGKey(0)
+        weights_default = jax.random.uniform(seed, shape=(N_weights,), minval=0.0, maxval=1.0 / N_weights)
 
+        # Maxima:
         k_max = 40
         rho_shift_absmax = 0.2
 
-        if any(x is None for x in (p_axis, k_range, rho_range)):
+        # Assigning defaults:
+        if any(x is None for x in (p_axis, k_range, rho_range, weights)):
             print(
                 "Default LogisticProfile settings:\n"
                 f"  p_axis   = {p_axis_default}\n"
                 f"  k_range  = {k_range_default}\n"
-                f"  rho_range= {rho_range_default}"
+                f"  rho_range = {rho_range_default}\n"
+                f'  weights = {weights_default}'
             )
+        #---------------------------------------
 
-        if p_axis is None:
-            p_axis = p_axis_default
-        if k_range is None:
-            k_range = k_range_default
-        if rho_range is None:
-            rho_range = rho_range_default
 
-        if rho_grid is None:
-            raise ValueError("rho_grid must be provided.")
-
-        k_range = jnp.atleast_1d(jnp.asarray(k_range))
-        rho_range = jnp.atleast_1d(jnp.asarray(rho_range))
-        rho_grid = jnp.atleast_1d(jnp.asarray(rho_grid))
-
-        N = int(k_range.size * rho_range.size)
-        weights_default = jax.random.uniform(seed, shape=(N,), minval=0.0, maxval=1.0 / N)
-
-        if weights is None:
-            weights = weights_default
-        weights = jnp.atleast_1d(jnp.asarray(weights))
-
-        if int(weights.size) != N:
-            raise ValueError(
-                "weights array must be of length: len(k_range) * len(rho_range). "
-                f"Got {weights.size} but expected {N}."
-            )
-
+        #------------------
+        # Error conditions:
         if p_axis < 0:
             raise ValueError("Pressure must be positive.")
-
+        
         for k in np.asarray(k_range):
             if k < 0:
                 raise ValueError("k must be positive")
@@ -110,14 +95,37 @@ class LogisticProfile(_Profile):
         for rho_shift in np.asarray(rho_range):
             if np.abs(rho_shift) > rho_shift_absmax:
                 raise ValueError("Absolute value of shifts in rho must be less than 0.2.")
+            
+        if int(weights.size) != N_weights:
+            raise ValueError(
+                "weights array must be of length: len(k_range) * len(rho_range). "
+                f"Got {weights.size} but expected {N_weights}."
+            )
+        
+        if float(jnp.min(weights)) < 0:
+            raise ValueError('weights must be positive.')
+        
+        if rho_grid is None:
+            raise ValueError("rho_grid must be provided.")
+        #-------------------------------------------------
 
+        
+        #----------------------------
+        # Ensuring JAX compatibility:
+        k_range = jnp.atleast_1d(jnp.asarray(k_range))
+        rho_range = jnp.atleast_1d(jnp.asarray(rho_range))
+        rho_grid = jnp.atleast_1d(jnp.asarray(rho_grid))
+        weights = jnp.atleast_1d(jnp.asarray(weights))
+
+       
+        # Attribute setup:
         self._p_axis = float(p_axis)
         self._k_range = k_range
         self._rho_range = rho_range
         self._rho_grid = rho_grid
-
         self._params = weights
-    #-------------------------
+        #---------------------
+    #-------------------------------------------------
 
 
 
@@ -150,7 +158,7 @@ class LogisticProfile(_Profile):
 
 
 
-    #-----------------------------------------------
+    #-----------------------------------------------------
     def logistic_super(self, rho=None, params=None, dr=0):
         """
         Generates a family of logistic functions over k_range and rho_range,
@@ -168,6 +176,8 @@ class LogisticProfile(_Profile):
             function permutations of k_range and rho_range,
             weighted by the optimization parameter "weights".
         """
+        #-----------
+        # None cases
         if rho is None:
             rho = self._rho_grid
         else:
@@ -182,7 +192,7 @@ class LogisticProfile(_Profile):
         u = rho_0 - self._rho_range[None, None, :]
         k = self._k_range[None, :, None]
 
-        f = 1 - (1 / (1 + jnp.exp(-k * u)))
+        f = 1 - (1 / (1 + jnp.exp(-k * u))) # vectorized family of logistic funcs
 
         if dr == 0:
             fam = f
@@ -193,14 +203,38 @@ class LogisticProfile(_Profile):
         else:
             raise NotImplementedError("Only dr=0,1,2 implemented for LogisticProfile.")
 
-        fam_flat = fam.reshape(rho.size, -1)
-        superpos = fam_flat @ weights
+        # Collapsing k dimension and rho_shift dimension into one, such that fam_flat[i, j]
+        # gives the value of the jth basis logistic function, evaluated at the ith grid point:
+        fam_flat = fam.reshape(rho.size, -1) 
+        # Multiplying each j logistic function by a weight and summing, giving shape
+        # (# grid points,):
+        superpos = fam_flat @ weights 
+        #----------------------------
+
+
+        # Normalization factor repeats the above process, but using only endpoint values
+        # 
+        #--------------------------------------------------------------------------------
+        eps = 1e-12  # small number to avoid divide-by-zero if s(0) ~ s(1)
+
+        rho_end = jnp.array([0.0, 1.0])  # evaluate endpoints: axis rho = 0 and edge rho = 1
+        rho0_end = rho_end[:, None, None] - 0.5  # reshape to (2,1,1) and shift so rho = 0.5 is logistic center
+        u_end = rho0_end - self._rho_range[None, None, :]  # logistic argument u for each endpoint and each rho_shift (broadcasted)
+        k_end = self._k_range[None, :, None]  # reshape k to broadcast over endpoints and shifts
+        
+        f_end = 1 - (1 / (1 + jnp.exp(-k_end * u_end)))  # dr = 0 logistic basis at endpoints; shape (2, N_k, N_shift)
+        f_end_flat = f_end.reshape(2, -1)  # collapse (k, rho_shift) into basis index; shape (2, N_k * N_shift)
+        s_end = f_end_flat @ weights  # raw superposition at endpoints: s_end[0] = s(0), s_end[1] = s(1)
+        norm_factor = 1.0 / ((s_end[0] - s_end[1]) + eps)  # normalization multiplier based on axis-to-edge drop
 
         if dr == 0:
-            superpos = superpos / (superpos[0] - superpos[-1] + 0.05)
+            superpos = (superpos - s_end[1]) * norm_factor  # shift so value at rho = 1 is 0, then scale so value at rho = 0 is ~1
+        else:
+            superpos = superpos * norm_factor  # derivatives: only scale since constant shifts vanish under d/dρ
+        #-------------------------------------------------------------------------------------------------------
 
         return superpos
-    #------------------
+    #------------------------------------------------------------------------------------------------------------------------------
 
 
     #------------------------------------------------------
