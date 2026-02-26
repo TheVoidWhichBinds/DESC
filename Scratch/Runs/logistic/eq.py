@@ -11,7 +11,12 @@ from desc.profiles import LogisticProfile, PowerSeriesProfile
 
  
 
-#---------- FIXED INITIAL PARAMETERS ----------
+
+
+
+ 
+
+#---------- FIXED INITIAL PARAMETERS ------------------------------------------------------
 # Initializing fixed surface: 
 surface_init = FourierRZToroidalSurface(
     R_lmn=[10.0, -1.0, -0.3, 0.3],
@@ -23,11 +28,18 @@ surface_init = FourierRZToroidalSurface(
 
 # Initializing fixed iota:
 iota_init = PowerSeriesProfile([1, 0, 2])
+#------------------------------------------------------------------------------------------
 
 
 
 
-#------------------------ FUNCTIONS ---------------------------
+
+
+
+
+
+
+#------------------------ FUNCTIONS -------------------------------------------------------
 def run_equilibrium(p_axis, k_range, rho_range, weights, out_dir):
     """
     Runs equilibirum solve given an on-axis pressure,
@@ -63,6 +75,6 @@ def run_equilibrium(p_axis, k_range, rho_range, weights, out_dir):
     eq_init.save(save_path)
 
     return eq_init
-
+#-----------------------------------------------------------------------------------------
 
 

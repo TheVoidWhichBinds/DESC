@@ -28,23 +28,22 @@ from desc.optimize import Optimizer
 
 
 
-#----------- OPTIMIZER SELECTION ------------
+#------------------- OPTIMIZER SELECTION ------------------------------------------------------------------------
 optimizer = Optimizer("proximal-lsq-exact")
+#----------------------------------------------------------------------------------------------------------------
 
 
 
-
-#----------------------- OPTIMIZER FUNCTION --------------------------
-def run_optimization(p_scale, out_dir, fix_pressure: bool):
+#------------------- OPTIMIZER FUNCTION -------------------------------------------------------------------------
+def run_optimization(p_axis, out_dir, fix_pressure: bool):
     
     eq_init = desc.io.load(os.path.join(out_dir, 'eq.h5')) # loading initial eq solve
     eq_0 = eq_init.copy() # copying initial eq solve so as to not alter it
 
-
     # Weight to assign to secondary objectives and constraints (not force balance):
     inferior_weights = 1e0 
 
-
+    #------------------------------------------------------------------
     # Division of constraints and objectives depending on fix_pressure:
     if fix_pressure: # fixed pressure
         # Compiling constraints:
@@ -81,8 +80,10 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
             BallooningStability(eq=eq_0, target=0.0, weight=inferior_weights),
             MercierStability(eq=eq_0, target=0.0, weight=inferior_weights),
         ])
+    #----------------------------------------------------------------------
 
 
+    #----------------------
     # Solving optimization:
     eq_opt, opt_result = eq_0.optimize(
         objective=objective,
@@ -99,6 +100,7 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
         copy=False,
         verbose=3,
     )
+    #-------------
 
     
     save_name = "opt_FXP.h5" if fix_pressure else "opt.h5"
@@ -106,3 +108,4 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
     eq_opt.save(save_path)
     
     return eq_opt, opt_result
+#--------------------------------------------------------------------------------------------------------------------

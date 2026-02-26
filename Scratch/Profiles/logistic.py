@@ -194,6 +194,7 @@ class LogisticProfile(_Profile):
 
         f = 1 - (1 / (1 + jnp.exp(-k * u))) # vectorized family of logistic funcs
 
+        # Derivative order choice:
         if dr == 0:
             fam = f
         elif dr == 1:
@@ -212,9 +213,10 @@ class LogisticProfile(_Profile):
         #----------------------------
 
 
-        # Normalization factor repeats the above process, but using only endpoint values
-        # 
-        #--------------------------------------------------------------------------------
+        # Normalization factor repeats the above process, but using only 
+        # endpoint values such that 0th, 1st and 2nd derivatives always 
+        # normalized, and 0th derivative = 1 at rho = 0 and = 0 and rho = 1:
+        #-------------------------------------------------------------------
         eps = 1e-12  # small number to avoid divide-by-zero if s(0) ~ s(1)
 
         rho_end = jnp.array([0.0, 1.0])  # evaluate endpoints: axis rho = 0 and edge rho = 1
