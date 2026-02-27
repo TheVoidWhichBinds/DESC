@@ -10,14 +10,14 @@ from desc.plotting import plot_comparison
 
 
 
-def sci_compact(x, sig=2):
-    """
+# def sci_compact(x, sig=2):
+#     """
     
-    """
-    s = f"{x:.{sig-1}e}"
-    mant, exp = s.split("e")
-    exp = int(exp)
-    return f"{mant}e{exp}"
+#     """
+#     s = f"{x:.{sig-1}e}"
+#     mant, exp = s.split("e")
+#     exp = int(exp)
+#     return f"{mant}e{exp}"
 
 
 
@@ -80,8 +80,6 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits, rho_grid):
         'Force error: ',
         'Quasi-symmetry (1,19) Boozer error: ',
         'Aspect ratio error: ',
-        'Fixed iota profile error: ',
-        'Fixed Psi error: ',
         'Ideal ballooning lambda: ',
         'Mercier Stability: ',
     ]
@@ -99,7 +97,11 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits, rho_grid):
                     rows = [] # table row names
                     values = [] # table elements (obj vals)
                     # Generates directory to store equilibria, plots, table: 
-                    out_dir = os.path.join(base_dir, 'logistic') # NEEDS NAMING SYSTEM
+                    # NEEDS NAMING SYSTEM. Consider gl1, gl2, gl3, where code 
+                    # checks base_dir for glx and assigns new folder e.g. gl{3+1}
+                    # to the new entry:
+                    x = np.max(f'base_dir/gl{x}')
+                    out_dir = os.path.join(base_dir, f'gl{x+1}') 
                     os.makedirs(out_dir, exist_ok=True)
                     #----------------------------------
 
@@ -124,7 +126,7 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits, rho_grid):
                         out_dir=out_dir, 
                         fix_pressure=False
                     )
-                    #-------------------------------------------------------------------------
+                    #---------------------
 
 
                     #------------------------------------
@@ -223,7 +225,9 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits, rho_grid):
                     plt.title('Toroidal Cross-Sections of Solved Equilibria')
                     fig, ax = plot_comparison(
                         eqs=[eq_init, eq_opt_FXP, eq_opt],
-                        labels=['Initial Equilibrium', 'Optimized (Fixed Pressure)','Optimized (Optimized Pressure)'],
+                        labels=['Initial Equilibrium', 
+                                'Optimized (Fixed Pressure)',
+                                'Optimized (Optimized Pressure)'],
                     )
 
                     toroidal_cuts_path = os.path.join(out_dir, 'toroidal_cuts.png')
@@ -234,7 +238,7 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits, rho_grid):
             #-----------------------------------------------
         #---------------------------------------------------
     #-------------------------------------------------------
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------
 
 
 
@@ -244,8 +248,7 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits, rho_grid):
 
 
 
-
-#-------- LOOP PARAMETERS & RUNS -----------------------------------------------------------------------
+#-------- LOOP PARAMETERS & RUNS ---------------------------------------------------------------------------------
 comparison(
     p_maxima = [1e4],
     k_ranges = [np.linspace(10, 20, 2)],
@@ -253,4 +256,4 @@ comparison(
     weights_inits = None,
     rho_grid = None
 )
-
+#------------------------------------------------------------------------------------------------------------------
