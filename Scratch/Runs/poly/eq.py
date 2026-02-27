@@ -23,11 +23,18 @@ surface_init = FourierRZToroidalSurface(
 
 # Initializing fixed iota:
 iota_init = PowerSeriesProfile([1, 0, 2])
+#----------------------------------------
 
 
 
 
-#------------------------ FUNCTIONS ---------------------------
+
+
+
+
+
+
+#------------------------ POLYNOMIAL INITIALIZER --------------------------------------------------------------
 def coefficients(p_scale, n, min_n=2):
     """
     Coeffs for p(rho) = p_scale * (1 - rho^2)^n
@@ -39,9 +46,18 @@ def coefficients(p_scale, n, min_n=2):
     for k in range(n_eff + 1):
         coeff[2 * k] = p_scale * comb(n_eff, k) * ((-1) ** k)
     return coeff, n_eff
+#----------------------
 
 
 
+
+
+
+
+
+
+
+#------------------------ EQUILIBRIUM SOLVER --------------------------------------------------------------
 def run_equilibrium(p_scale, n, out_dir):
     """
     Runs equilibirum solve given an on-axis pressure,
@@ -72,13 +88,6 @@ def run_equilibrium(p_scale, n, out_dir):
     eq_init.save(save_path)
 
     return eq_init, n_eff
+#----------------------------------------------------------------------------------------------------------
 
 
-
-if __name__ == '__main__':
-    # Standalone test run: saves into ./p1.0e4_n2/eq.h5 next to this file
-    dir_name = os.path.dirname(os.path.abspath(__file__))
-    p_scale = 1e4
-    n = 2
-    out_dir = os.path.join(dir_name, f'p{p_scale:.1e}_n{n}')
-    run_equilibrium(p_scale, n, out_dir)

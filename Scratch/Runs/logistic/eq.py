@@ -39,8 +39,15 @@ iota_init = PowerSeriesProfile([1, 0, 2])
 
 
 
-#------------------------ FUNCTIONS -------------------------------------------------------
-def run_equilibrium(p_axis, k_range, rho_range, weights, out_dir):
+#------------------------ EQUILIBRIUM SOLVER -------------------------------------------------------
+def run_equilibrium(
+        p_axis, 
+        k_range, 
+        rho_range, 
+        weights, 
+        rho_grid, 
+        out_dir
+    ):
     """
     Runs equilibirum solve given an on-axis pressure,
     and polynomial order n
@@ -56,7 +63,7 @@ def run_equilibrium(p_axis, k_range, rho_range, weights, out_dir):
         k_range = k_range,
         rho_range = rho_range,
         weights = weights,
-        rho_grid = None,
+        rho_grid = rho_grid,
     )
 
     # Prepping equilibrium:

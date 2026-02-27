@@ -56,7 +56,6 @@ def run_optimization(out_dir, fix_pressure: bool):
 
 
     else: # optimized pressure
-        
         # Compiling constraints:
         constraints = (
             ForceBalance(eq=eq_0),

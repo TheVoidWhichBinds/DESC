@@ -23,7 +23,7 @@ def sci_compact(x, sig=2):
 
 
 #-------- FIXED VS. OPTIMIZED PRESSURE COMPARISON -----------------------------------------------------------------------
-def comparison(p_maxima, k_ranges, rho_ranges, weights_inits):
+def comparison(p_maxima, k_ranges, rho_ranges, weights_inits, rho_grid):
     """
     Runs initial equilibrium solve, then optimization for 
     both fixed and optimized pressure. Plots, and objective
@@ -79,9 +79,9 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits):
     columns = [
         'Force error: ',
         'Quasi-symmetry (1,19) Boozer error: ',
-        #'Aspect ratio error: ',
-        #'Fixed iota profile error: ',
-        #'Fixed Psi error: ',
+        'Aspect ratio error: ',
+        'Fixed iota profile error: ',
+        'Fixed Psi error: ',
         'Ideal ballooning lambda: ',
         'Mercier Stability: ',
     ]
@@ -94,12 +94,14 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits):
         for k_range in k_ranges:
             for rho_range in rho_ranges:
                 for weights in weights_inits:
-                    #
+                    #----------------------------
+                    # More table and saving prep:
                     rows = [] # table row names
                     values = [] # table elements (obj vals)
                     # Generates directory to store equilibria, plots, table: 
-                    out_dir = os.path.join(base_dir, 'l') # NEEDS NAMING SYSTEM
+                    out_dir = os.path.join(base_dir, 'logistic') # NEEDS NAMING SYSTEM
                     os.makedirs(out_dir, exist_ok=True)
+                    #----------------------------------
 
 
                     #-----------------------------------
@@ -109,11 +111,19 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits):
                         k_range, 
                         rho_range, 
                         weights, 
-                        out_dir=out_dir)
+                        out_dir=out_dir,
+                        rho_grid=rho_grid
+                    )
 
                     # Running fixed and optimized pressure optimizations:
-                    eq_opt_FXP, opt_result_FXP = run_optimization(out_dir=out_dir, fix_pressure=True)
-                    eq_opt, opt_result = run_optimization(out_dir=out_dir, fix_pressure=False)
+                    eq_opt_FXP, opt_result_FXP = run_optimization(
+                        out_dir=out_dir, 
+                        fix_pressure=True
+                    )
+                    eq_opt, opt_result = run_optimization(
+                        out_dir=out_dir, 
+                        fix_pressure=False
+                    )
                     #-------------------------------------------------------------------------
 
 
@@ -240,6 +250,7 @@ comparison(
     p_maxima = [1e4],
     k_ranges = [np.linspace(10, 20, 2)],
     rho_ranges = [np.linspace(-0.2, 0.2, 2)],
-    weights_inits = [None]
+    weights_inits = None,
+    rho_grid = None
 )
 
