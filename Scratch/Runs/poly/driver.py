@@ -103,7 +103,7 @@ def comparison(p_maxima: list, n_set: list):
             eq_init, n_eff = run_equilibrium(p_scale, n, out_dir=out_dir)
 
             # Running fixed and optimized pressure optimizations:
-            eq_opt_FXD, opt_result_FXD = run_optimization(
+            eq_opt_FXP, opt_result_FXP = run_optimization(
                 p_scale, out_dir=out_dir, fix_pressure=True
             )
             eq_opt, opt_result = run_optimization(
@@ -118,40 +118,40 @@ def comparison(p_maxima: list, n_set: list):
             rows.append((group_label, "Optimized Pressure"))
             rows.append((group_label, "Difference"))
 
-            row_FXD = [] # fixed pressure obj vals
+            row_FXP = [] # fixed pressure obj vals
             row_OPT = [] # optimized pressure obj vals
             row_DIFF = [] # difference between fixed and opt vals
 
             # Extracting objective values:
             for key in columns:
-                fmin_FXD, fmean_FXD, fmax_FXD = _extract_f_stats(
-                    opt_result_FXD['Objective values'][key]
+                fmin_FXP, fmean_FXP, fmax_FXP = _extract_f_stats(
+                    opt_result_FXP['Objective values'][key]
                 )
                 fmin_OPT, fmean_OPT, fmax_OPT = _extract_f_stats(
                     opt_result['Objective values'][key]
                 )
 
-                row_FXD.append(f"f_min={fmin_FXD:.4g}, f_mean={fmean_FXD:.4g}, f_max={fmax_FXD:.4g}")
+                row_FXP.append(f"f_min={fmin_FXP:.4g}, f_mean={fmean_FXP:.4g}, f_max={fmax_FXP:.4g}")
                 row_OPT.append(f"f_min={fmin_OPT:.4g}, f_mean={fmean_OPT:.4g}, f_max={fmax_OPT:.4g}")
 
-                dmin = fmin_OPT - fmin_FXD
-                dmean = fmean_OPT - fmean_FXD
-                dmax = fmax_OPT - fmax_FXD
+                dmin = fmin_OPT - fmin_FXP
+                dmean = fmean_OPT - fmean_FXP
+                dmax = fmax_OPT - fmax_FXP
                 row_DIFF.append(
                     f"f_min diff={dmin:.4g}, f_mean diff={dmean:.4g}, f_max diff={dmax:.4g}"
                 )
 
             # Including Beta in table:
-            beta_FXD = float(eq_opt_FXD.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
+            beta_FXP = float(eq_opt_FXP.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
             beta_OPT = float(eq_opt.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
-            beta_DIFF = beta_OPT - beta_FXD
+            beta_DIFF = beta_OPT - beta_FXP
 
-            row_FXD.append(f"{beta_FXD:.4g}")
+            row_FXP.append(f"{beta_FXP:.4g}")
             row_OPT.append(f"{beta_OPT:.4g}")
             row_DIFF.append(f"{beta_DIFF:.4g}")
             
             # 
-            values.append(row_FXD)
+            values.append(row_FXP)
             values.append(row_OPT)
             values.append(row_DIFF)
 
@@ -177,11 +177,11 @@ def comparison(p_maxima: list, n_set: list):
             rho = np.linspace(0.0, 1.0, 400)
             grid = LinearGrid(rho=rho, M=0, N=0)
 
-            p_FXD = eq_opt_FXD.compute("p", grid=grid)["p"]
+            p_FXP = eq_opt_FXP.compute("p", grid=grid)["p"]
             p_OPT = eq_opt.compute("p", grid=grid)["p"]
 
             plt.figure(figsize=(7, 5))
-            plt.plot(rho, p_FXD, linewidth=2, label="Fixed Pressure")
+            plt.plot(rho, p_FXP, linewidth=2, label="Fixed Pressure")
             plt.plot(rho, p_OPT, linewidth=2, label="Optimized Pressure")
             plt.xlabel(r"$\rho$", fontsize=14)
             plt.ylabel("Pressure", fontsize=14)
@@ -203,7 +203,7 @@ def comparison(p_maxima: list, n_set: list):
             # Plotting  gridded toroidal cross-sections of B-fields:
             plt.title('Toroidal Cross-Sections of Solved Equilibria')
             fig, ax = plot_comparison(
-                eqs=[eq_init, eq_opt_FXD, eq_opt],
+                eqs=[eq_init, eq_opt_FXP, eq_opt],
                 labels=['Initial Equilibrium', 'Optimized (Fixed Pressure)','Optimized (Optimized Pressure)'],
             )
 
