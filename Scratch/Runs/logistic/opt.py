@@ -4,13 +4,7 @@ import sys
 sys.path.append("/Users/macdaddi/DESC")
 import desc.io
 from desc.grid import LinearGrid
-from scratch.objectives.poly_constraints import (
-    pressure_axis,
-    pressure_edge,
-    grad_pressure_axis,
-    grad_pressure_edge,
-    poly_monotonicity
-)
+
 from desc.objectives import (
     ObjectiveFunction,
     FixIota,
@@ -21,8 +15,6 @@ from desc.objectives import (
     QuasisymmetryBoozer,
     BallooningStability,
     MercierStability,
-    LinearObjectiveFromUser,
-    ObjectiveFromUser,
 )
 from desc.optimize import Optimizer
 
@@ -35,7 +27,7 @@ optimizer = Optimizer("proximal-lsq-exact")
 
 
 #------------------- OPTIMIZER FUNCTION -------------------------------------------------------------------------
-def run_optimization(p_axis, out_dir, fix_pressure: bool):
+def run_optimization(out_dir, fix_pressure: bool):
     
     eq_init = desc.io.load(os.path.join(out_dir, 'eq.h5')) # loading initial eq solve
     eq_0 = eq_init.copy() # copying initial eq solve so as to not alter it

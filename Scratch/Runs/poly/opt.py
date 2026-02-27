@@ -91,7 +91,6 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
         )
         # Compiling constraints:
         constraints = (
-            ForceBalance(eq=eq_0),
             FixIota(eq=eq_0),
             FixPsi(eq=eq_0),
             pressure_axis_set,

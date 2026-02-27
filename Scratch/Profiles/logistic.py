@@ -58,10 +58,10 @@ class LogisticProfile(_Profile):
         p_axis_default = 1e4
         k_range_default = jnp.linspace(10, 20, 5)
         rho_range_default = jnp.linspace(-0.2, 0.2, 4)
-        #
         N_weights = int(k_range.size * rho_range.size)
         seed = jax.random.PRNGKey(0)
         weights_default = jax.random.uniform(seed, shape=(N_weights,), minval=0.0, maxval=1.0 / N_weights)
+        rho_grid_default = rho_grid = np.linspace(0.0, 1.0, 101)
 
         # Maxima:
         k_max = 40
