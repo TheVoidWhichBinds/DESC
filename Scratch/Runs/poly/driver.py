@@ -42,9 +42,9 @@ def comparison(p_maxima: list, n_set: list):
     columns = [
         'Force error: ',
         'Quasi-symmetry (1,19) Boozer error: ',
-        #'Aspect ratio error: ',
-        #'Fixed iota profile error: ',
-        #'Fixed Psi error: ',
+        'Aspect ratio error: ',
+        'Fixed iota profile error: ',
+        'Fixed Psi error: ',
         'Ideal ballooning lambda: ',
         'Mercier Stability: ',
     ]
