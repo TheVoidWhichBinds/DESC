@@ -71,10 +71,11 @@ class LogisticProfile(_Profile):
         if any(x is None for x in (p_axis, k_range, rho_range, weights)):
             print(
                 "Default LogisticProfile settings:\n"
-                f"  p_axis   = {p_axis_default}\n"
-                f"  k_range  = {k_range_default}\n"
-                f"  rho_range = {rho_range_default}\n"
-                f'  weights = {weights_default}'
+                f" p_axis   = {p_axis_default}\n"
+                f" k_range  = {k_range_default}\n"
+                f" rho_range = {rho_range_default}\n"
+                f' weights = {weights_default}\n'
+                f' rho_grid = {rho_grid_default}'
             )
         #---------------------------------------
 

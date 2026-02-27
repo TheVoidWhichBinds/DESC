@@ -214,4 +214,4 @@ def comparison(p_maxima: list, n_set: list):
 
 
 #-------- RUNNING IT --------
-comparison([1e4], [2,3,4,5,6,7,8])
+comparison([1e4], [2])

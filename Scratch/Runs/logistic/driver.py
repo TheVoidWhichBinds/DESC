@@ -112,22 +112,18 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits):
                         out_dir=out_dir)
 
                     # Running fixed and optimized pressure optimizations:
-                    eq_opt_FXD, opt_result_FXD = run_optimization(
-                        p_axis, out_dir=out_dir, fix_pressure=True
-                    )
-                    eq_opt, opt_result = run_optimization(
-                        p_axis, out_dir=out_dir, fix_pressure=False
-                    )
-                    #-----------------------------------------------
+                    eq_opt_FXD, opt_result_FXD = run_optimization(out_dir=out_dir, fix_pressure=True)
+                    eq_opt, opt_result = run_optimization(out_dir=out_dir, fix_pressure=False)
+                    #-------------------------------------------------------------------------
 
 
                     #------------------------------------
                     # Generating comparison table labels:
                     group_label = (
-                        f'p_axis = {p_axis}\n,', 
-                        f'k_range = {k_range}\n,',
-                        f'rho_range = {rho_range}\n,',
-                        f'weights = {weights},'
+                        f"p_axis = {p_axis}\n"
+                        f"k_range = {k_range}\n"
+                        f"rho_range = {rho_range}\n"
+                        f"weights = {weights}"
                     )
                     rows.append((group_label, "Fixed Pressure"))
                     rows.append((group_label, "Optimized Pressure"))
