@@ -21,9 +21,6 @@ class LogisticProfile(_Profile):
     the midpoint parameter rho_shift from rho = 0.5.
     
     -------- Parameters -----------------------
-    weights: array-like
-        1-D array with optimizable weights for each combo 
-        of elements within k_range and rho_range.
     p_axis: scalar
         Maximum pressure on the axis, un-normalized.
     k_range: array-like
@@ -32,6 +29,12 @@ class LogisticProfile(_Profile):
     rho_range: array-like
         1-D array of parameter rho-shift, horizontal offset
         of the logistic function from its center at rho = 0.5.
+    rho_grid: array-like
+        1-D array of grid points along rho, ranging from 0 to 1.
+    weights: array-like
+        ("params" for optimizer)
+        1-D array with optimizable weights that scales each
+        unique logistic function in the superposition.
     name: str
         Optional name of the profile.
     --------- Returns ---------------

@@ -8,6 +8,7 @@ def pressure_axis(params):
     """
     Pressure on axis (rho=0)
     Target: P(0)=1 (normalized)
+    Target: P(0)=p_axis (defined max)
     """
     c_0 = params['p_l'][0]
     return c_0 # only first coeff survives

@@ -55,7 +55,7 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
             FixPressure(eq=eq_0),
         )
         # Compiling objectives:
-        objective = ObjectiveFunction([
+        objectives = ObjectiveFunction([
             ForceBalance(eq=eq_0, target=0, weight=1e1),
             AspectRatio(eq=eq_0, target=6, weight=inferior_weights),
             QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP), weight=inferior_weights),
@@ -109,7 +109,7 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
             normalize=False,
         )
         # Compiling objectives:
-        objective = ObjectiveFunction([
+        objectives = ObjectiveFunction([
             ForceBalance(eq=eq_0, target=0, weight=1e4),
             AspectRatio(eq=eq_0, target=6, weight=inferior_weights),
             QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP), weight=inferior_weights),
@@ -121,7 +121,7 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
 
     # Solving optimization:
     eq_opt, opt_result = eq_0.optimize(
-        objective=objective,
+        objective=objectives,
         constraints=constraints,
         optimizer=optimizer,
         ftol=5e-2,
