@@ -134,6 +134,7 @@ class LogisticProfile(_Profile):
 
 
 
+
     #--------
     @property
     def params(self):
@@ -157,7 +158,6 @@ class LogisticProfile(_Profile):
         self._params = new
     #---------------------  
     
-
 
 
 
