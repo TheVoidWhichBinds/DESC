@@ -34,7 +34,7 @@ eq_init = eq_0.copy() #
 
 #------------------ Constraints ------------------#
 # Importing custom constraint funcs:
-from scratch.objectives.hermite_constraints import( 
+from scratch.hermite.hermite_constraints import( 
     pressure_axis,
     pressure_edge,
     grad_pressure_axis,

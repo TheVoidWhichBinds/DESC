@@ -11,7 +11,7 @@ sys.path.append("/Users/macdaddi/DESC")
 import desc
 import desc.io
 from desc.grid import LinearGrid, Grid
-from scratch.objectives.poly_constraints import (
+from scratch.poly.poly_constraints import (
     pressure_axis,
     pressure_edge,
     grad_pressure_axis,
