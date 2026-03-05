@@ -73,7 +73,7 @@ def run_equilibrium(
     )
 
     # Solving initial equilibrium and returning last step of opt:
-    eq_init = solve_continuation_automatic(eq.copy(), verbose=3)[-1]
+    eq_init = solve_continuation_automatic(eq.copy(), pert_order=1, verbose=3)[-1]
 
     save_path = os.path.join(out_dir, 'eq.h5')
     eq_init.save(save_path)
