@@ -20,7 +20,7 @@ surface_init = FourierRZToroidalSurface(
     modes_R=[(0, 0), (1, 0), (1, 1), (-1, -1)],
     Z_lmn=[1, -0.3, -0.3],
     modes_Z=[(-1, 0), (-1, 1), (1, -1)],
-    NFP=19,
+    NFP=8,
 )
 
 # Initializing fixed iota:
@@ -65,7 +65,7 @@ def run_equilibrium(
 
     # Prepping equilibrium:
     eq = Equilibrium(
-        L=8, M=8, N=3,
+        L=3, M=3, N=1,
         surface=surface_init,
         pressure=pressure,
         iota=iota_init,

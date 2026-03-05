@@ -275,8 +275,8 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits, rho_grid):
 #-------- LOOP PARAMETERS & RUNS ---------------------------------------------------------------------------------
 comparison(
     p_maxima = [1e4],
-    k_ranges = [np.linspace(10, 20, 2)],
-    rho_ranges = [np.linspace(-0.2, 0.2, 2)],
+    k_ranges = [np.linspace(10, 12, 2)],
+    rho_ranges = [np.linspace(0.0, 0.1, 2)],
     weights_inits = [None],
     rho_grid = None
 )
