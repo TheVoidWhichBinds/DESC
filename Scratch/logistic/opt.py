@@ -3,8 +3,6 @@ import os
 import sys
 sys.path.append("/Users/macdaddi/DESC")
 import desc.io
-from desc.grid import LinearGrid
-
 from desc.objectives import (
     ObjectiveFunction,
     FixIota,

@@ -1,8 +1,5 @@
 #NOTES:
 # consider upper limit to k_max, as decided by theory
-
-
-import os
 import numpy as np
 from desc.profiles import _Profile
 from desc.backend import jnp, jax
@@ -61,31 +58,36 @@ class LogisticProfile(_Profile):
         p_axis_default = 1e4
         k_range_default = jnp.linspace(10, 20, 5)
         rho_range_default = jnp.linspace(-0.2, 0.2, 4)
-        N_weights = int(k_range.size * rho_range.size)
-        seed = jax.random.PRNGKey(0)
-        weights_default = jax.random.uniform(seed, shape=(N_weights,), minval=0.0, maxval=1.0 / N_weights)
-        rho_grid_default = rho_grid = np.linspace(0.0, 1.0, 101)
+        rho_grid_default = np.linspace(0.0, 1.0, 101)
 
         # Maxima:
         k_max = 40
         rho_shift_absmax = 0.2
 
-        # Assigning defaults:
-        if any(x is None for x in (p_axis, k_range, rho_range, weights)):
-            print(
-                "Default LogisticProfile settings:\n"
-                f" p_axis   = {p_axis_default}\n"
-                f" k_range  = {k_range_default}\n"
-                f" rho_range = {rho_range_default}\n"
-                f' weights = {weights_default}\n'
-                f' rho_grid = {rho_grid_default}'
-            )
-        #---------------------------------------
+        # Assigning defaults first (before any .size calls):
+        if p_axis is None:
+            p_axis = p_axis_default
+        if k_range is None:
+            k_range = k_range_default
+        if rho_range is None:
+            rho_range = rho_range_default
+        if rho_grid is None:
+            rho_grid = rho_grid_default
+
+        # Default weights (needs resolved k_range/rho_range):
+        N_weights = int(np.asarray(k_range).size * np.asarray(rho_range).size)
+        seed = jax.random.PRNGKey(0)
+        weights_default = jax.random.uniform(
+            seed, shape = (N_weights,), minval = 0.0, maxval = 1.0 / N_weights
+        )
+        if weights is None:
+            weights = weights_default
+        #----------------------------
 
 
         #------------------
         # Error conditions:
-        if p_axis < 0:
+        if float(p_axis) < 0:
             raise ValueError("Pressure must be positive.")
         
         for k in np.asarray(k_range):
@@ -107,11 +109,8 @@ class LogisticProfile(_Profile):
             )
         
         if float(jnp.min(weights)) < 0:
-            raise ValueError('weights must be positive.')
-        
-        if rho_grid is None:
-            raise ValueError("rho_grid must be provided.")
-        #-------------------------------------------------
+            raise ValueError('weights must be nonnegative.')
+        #------------------------------------------------
 
         
         #----------------------------
@@ -270,15 +269,15 @@ class LogisticProfile(_Profile):
         if dr == 0:
             p = self._p_axis * self.logistic_super(rho=rho, params=params, dr=0)
             return p
-
+        #
         elif dr == 1:
             dpdr = self._p_axis * self.logistic_super(rho=rho, params=params, dr=1)
             return dpdr
-
+        #
         elif dr == 2:
             d2pdr2 = self._p_axis * self.logistic_super(rho=rho, params=params, dr=2)
             return d2pdr2
-
+        #
         else:
             raise NotImplementedError("Only dr=0,1,2 implemented for LogisticProfile.")
     #----------------------------------------------------------------------------------

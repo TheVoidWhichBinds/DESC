@@ -1,14 +1,11 @@
 import sys
 import os
-from math import comb
-sys.path.append("/Users/macdaddi/DESC")
-
 from desc.continuation import solve_continuation_automatic
 from desc.equilibrium import Equilibrium
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
 from logistic import LogisticProfile  
-
+sys.path.append("/Users/macdaddi/DESC")
  
 
 

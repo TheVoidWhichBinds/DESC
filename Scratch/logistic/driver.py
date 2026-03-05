@@ -10,19 +10,42 @@ from desc.plotting import plot_comparison
 
 
 
-# def sci_compact(x, sig=2):
-#     """
+
+
+
+
+
+
+
+#--------------------- HELPER FUNCTIONS ---------------------------------------------------------------------------------------------
+def sci_compact(x, sig=2):
+    """
     
-#     """
-#     s = f"{x:.{sig-1}e}"
-#     mant, exp = s.split("e")
-#     exp = int(exp)
-#     return f"{mant}e{exp}"
+    """
+    s = f"{x:.{sig-1}e}"
+    mant, exp = s.split("e")
+    exp = int(exp)
+    return f"{mant}e{exp}"
+
+
+
+def _to_float(x):
+    try:
+        return float(x)
+    except Exception:
+        return np.nan
+#-------------------------------------------------------------------------------------------------------------------------------------
 
 
 
 
-#-------- FIXED VS. OPTIMIZED PRESSURE COMPARISON -----------------------------------------------------------------------
+
+
+
+
+
+
+#--------------------- FIXED VS. OPTIMIZED PRESSURE COMPARISON -----------------------------------------------------------------------
 def comparison(p_maxima, k_ranges, rho_ranges, weights_inits, rho_grid):
     """
     Runs initial equilibrium solve, then optimization for 
@@ -35,15 +58,6 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits, rho_grid):
         n in n_set must be >=2.
     """
 
-    #----------------
-    def _to_float(x):
-        try:
-            return float(x)
-        except Exception:
-            return np.nan
-    #--------------------
-
-    
     #--------------------------------------------------------------
     # Preps final objective values to be put into comparison table:
     def _extract_f_stats(objval):
@@ -79,7 +93,7 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits, rho_grid):
     columns = [
         'Force error: ',
         'Quasi-symmetry (1,19) Boozer error: ',
-        'Aspect ratio error: ',
+        'Aspect ratio: ',
         'Ideal ballooning lambda: ',
         'Mercier Stability: ',
     ]
@@ -92,16 +106,26 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits, rho_grid):
         for k_range in k_ranges:
             for rho_range in rho_ranges:
                 for weights in weights_inits:
+                    
                     #----------------------------
                     # More table and saving prep:
-                    rows = [] # table row names
-                    values = [] # table elements (obj vals)
-                    # Generates directory to store equilibria, plots, table: 
-                    # NEEDS NAMING SYSTEM. Consider gl1, gl2, gl3, where code 
-                    # checks base_dir for glx and assigns new folder e.g. gl{3+1}
-                    # to the new entry:
-                    x = np.max(f'base_dir/gl{x}')
-                    out_dir = os.path.join(base_dir, f'gl{x+1}') 
+                    rows = []  # table row names
+                    values = []  # table elements (obj vals)
+
+                    # Create next run folder: lg1, lg2, lg3, ...
+                    existing = [
+                        d for d in os.listdir(base_dir)
+                        if os.path.isdir(os.path.join(base_dir, d)) and d.startswith("lg")
+                    ]
+
+                    nums = []
+                    for d in existing:
+                        suffix = d[2:]  # characters after "lg"
+                        if suffix.isdigit():
+                            nums.append(int(suffix))
+
+                    x_max = max(nums) if nums else 0
+                    out_dir = os.path.join(base_dir, f"lg{x_max + 1}")
                     os.makedirs(out_dir, exist_ok=True)
                     #----------------------------------
 
@@ -113,8 +137,8 @@ def comparison(p_maxima, k_ranges, rho_ranges, weights_inits, rho_grid):
                         k_range, 
                         rho_range, 
                         weights, 
+                        rho_grid=rho_grid,
                         out_dir=out_dir,
-                        rho_grid=rho_grid
                     )
 
                     # Running fixed and optimized pressure optimizations:
@@ -253,7 +277,7 @@ comparison(
     p_maxima = [1e4],
     k_ranges = [np.linspace(10, 20, 2)],
     rho_ranges = [np.linspace(-0.2, 0.2, 2)],
-    weights_inits = None,
+    weights_inits = [None],
     rho_grid = None
 )
 #------------------------------------------------------------------------------------------------------------------
