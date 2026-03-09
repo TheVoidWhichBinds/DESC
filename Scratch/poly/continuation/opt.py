@@ -42,7 +42,7 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
 
 
     # Weight to assign to secondary objectives and constraints (not force balance):
-    inferior_weights = 1e0 
+    inferior_weights = 1e2
 
 
     # Division of constraints and objectives depending on fix_pressure:
@@ -125,12 +125,12 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
         constraints=constraints,
         optimizer=optimizer,
         ftol=5e-2,
-        xtol=1e-6,
-        gtol=1e-6,
+        xtol=1e-3,
+        gtol=1e-4,
         maxiter=50,
         options={
             "perturb_options": {"order": 2, "verbose": 0},
-            "solve_options": {"ftol": 5e-2, "xtol": 1e-6, "gtol": 1e-6, "verbose": 0},
+            "solve_options": {"ftol": 5e-2, "xtol": 1e-3, "gtol": 1e-4, "verbose": 0},
         },
         copy=False,
         verbose=3,
