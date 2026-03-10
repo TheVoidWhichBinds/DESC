@@ -28,9 +28,6 @@ from desc.optimize import Optimizer
 
 
 
-#----------- OPTIMIZER SELECTION ------------
-optimizer = Optimizer("proximal-lsq-exact")
-
 
 
 
@@ -56,11 +53,11 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
         )
         # Compiling objectives:
         objectives = ObjectiveFunction([
-            ForceBalance(eq=eq_0, target=0, weight=1e1),
-            AspectRatio(eq=eq_0, target=6, weight=inferior_weights),
-            QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP), weight=inferior_weights),
-            BallooningStability(eq=eq_0, target=0.0, weight=inferior_weights),
-            MercierStability(eq=eq_0, target=0.0, weight=inferior_weights),
+            ForceBalance(eq=eq_0, target=0),
+            AspectRatio(eq=eq_0, target=6),
+            QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP)),
+            BallooningStability(eq=eq_0, target=0.0),
+            MercierStability(eq=eq_0, target=0.0),
         ])
 
 
@@ -101,34 +98,29 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
             grid=LinearGrid(rho=200, M=0, N=0),
             thing=eq_0,
             target=0.0,
-            weight=inferior_weights,
             normalize=False,
         )
         # Compiling objectives:
         objectives = ObjectiveFunction([
-            ForceBalance(eq=eq_0, target=0, weight=1e4),
-            AspectRatio(eq=eq_0, target=6, weight=inferior_weights),
-            QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP), weight=inferior_weights),
-            BallooningStability(eq=eq_0, target=0.0, weight=inferior_weights),
-            MercierStability(eq=eq_0, target=0.0, weight=inferior_weights),
+            ForceBalance(eq=eq_0, target=0),
+            AspectRatio(eq=eq_0, target=6),
+            QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP)),
+            BallooningStability(eq=eq_0, target=0.0),
+            MercierStability(eq=eq_0, target=0.0),
             negative_gradient,
         ])
 
 
     # Solving optimization:
     eq_opt, opt_result = eq_0.optimize(
-        objective=objectives,
-        constraints=constraints,
-        optimizer=optimizer,
-        ftol=5e-2,
-        xtol=1e-3,
-        gtol=1e-4,
-        maxiter=50,
-        options={
-            "perturb_options": {"order": 2, "verbose": 0},
-            "solve_options": {"ftol": 5e-2, "xtol": 1e-3, "gtol": 1e-4, "verbose": 0},
-        },
-        copy=False,
+        objective = objectives,
+        constraints = constraints,
+        optimizer = Optimizer("lsq-auglag"), # trust region augmented lagrangian
+        ftol = 5e-2,
+        xtol = 1e-3,
+        gtol = 1e-4,
+        maxiter=10,
+        copy=True,
         verbose=3,
     )
 
