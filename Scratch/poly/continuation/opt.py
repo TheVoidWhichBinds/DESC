@@ -42,7 +42,7 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
 
 
     # Weight to assign to secondary objectives and constraints (not force balance):
-    inferior_weights = 1e3
+    inferior_weights = 1e4
 
 
     # Division of constraints and objectives depending on fix_pressure:
@@ -69,29 +69,25 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
             fun=pressure_axis,
             thing=eq_0,
             target=p_scale,
-            weight=inferior_weights,
         )
         pressure_edge_zero = LinearObjectiveFromUser(
             fun=pressure_edge,
             thing=eq_0,
             target=0.0,
-            weight=inferior_weights,
         )
         grad_pressure_axis_zero = LinearObjectiveFromUser(
             fun=grad_pressure_axis,
             thing=eq_0,
             target=0.0,
-            weight=inferior_weights,
         )
         grad_pressure_edge_zero = LinearObjectiveFromUser(
             fun=grad_pressure_edge,
             thing=eq_0,
             target=0.0,
-            weight=inferior_weights,
         )
         # Compiling constraints:
-        constraints = (
-            ForceBalance(eq=eq_0),
+        constraints = ( # constraints don't need weights - exactly fulfilled 
+            ForceBalance(eq=eq_0), # nonlinear but can be put into "constraints" via "proximal-xxx" optimizers
             FixIota(eq=eq_0),
             FixPsi(eq=eq_0),
             pressure_axis_set,
