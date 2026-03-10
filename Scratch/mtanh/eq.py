@@ -6,7 +6,7 @@ sys.path.append("/Users/macdaddi/DESC")
 from desc.continuation import solve_continuation_automatic
 from desc.equilibrium import Equilibrium
 from desc.geometry import FourierRZToroidalSurface
-from desc.profiles import PowerSeriesProfile
+from desc.profiles import PowerSeriesProfile, MTanhProfile
 
 
 
@@ -58,7 +58,7 @@ def coefficients(p_scale, n, min_n=2):
 
 
 #------------------------ EQUILIBRIUM SOLVER --------------------------------------------------------------
-def run_equilibrium(p_scale, n, out_dir):
+def run_equilibrium(ped, offset, sym, width, p_scale, n, out_dir):
     """
     Runs equilibirum solve given an on-axis pressure,
     and polynomial order n
@@ -76,7 +76,7 @@ def run_equilibrium(p_scale, n, out_dir):
     eq = Equilibrium(
         L=8, M=8, N=3,
         surface=surface_init,
-        pressure=PowerSeriesProfile(coeff),
+        pressure=MTanhProfile(params=[ped, offset, sym, width, coeff]),
         iota=iota_init,
         Psi=1.0,
     )
@@ -88,6 +88,6 @@ def run_equilibrium(p_scale, n, out_dir):
     eq_init.save(save_path)
 
     return eq_init, n_eff
-#----------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
 
 
