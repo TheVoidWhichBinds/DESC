@@ -119,7 +119,7 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
         ftol = 5e-2,
         xtol = 1e-3,
         gtol = 1e-4,
-        maxiter=10,
+        maxiter=100,
         copy=True,
         verbose=3,
     )
