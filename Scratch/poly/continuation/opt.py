@@ -115,9 +115,9 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
     eq_opt, opt_result = eq_0.optimize(
         objective = objectives,
         constraints = constraints,
-        optimizer = Optimizer("lsq-auglag"), # trust region augmented lagrangian
-        ftol = 5e-2,
-        xtol = 1e-3,
+        optimizer = Optimizer("proximal-lsq-exact"), # trust region augmented lagrangian
+        ftol = 5e-3,
+        xtol = 1e-4,
         gtol = 1e-4,
         maxiter=100,
         copy=True,
