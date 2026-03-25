@@ -6,12 +6,12 @@ sys.path.append("/Users/macdaddi/DESC")
 from desc.continuation import solve_continuation_automatic
 from desc.equilibrium import Equilibrium
 from desc.geometry import FourierRZToroidalSurface
-from desc.profiles import PowerSeriesProfile, MTanhProfile
+from desc.profiles import PowerSeriesProfile
 
 
 
 
-#---------- FIXED INITIAL PARAMETERS ----------
+#============== FIXED INITIAL PARAMETERS ======================================================================================================================
 # Initializing fixed surface: 
 surface_init = FourierRZToroidalSurface(
     R_lmn=[10.0, -1.0, -0.3, 0.3],
@@ -23,7 +23,7 @@ surface_init = FourierRZToroidalSurface(
 
 # Initializing fixed iota:
 iota_init = PowerSeriesProfile([1, 0, 2])
-#----------------------------------------
+#==============================================================================================================================================================
 
 
 
@@ -34,7 +34,7 @@ iota_init = PowerSeriesProfile([1, 0, 2])
 
 
 
-#------------------------ POLYNOMIAL INITIALIZER --------------------------------------------------------------
+#============== POLYNOMIAL INITIALIZER ========================================================================================================================
 def coefficients(p_scale, n, min_n=2):
     """
     Coeffs for p(rho) = p_scale * (1 - rho^2)^n
@@ -46,7 +46,7 @@ def coefficients(p_scale, n, min_n=2):
     for k in range(n_eff + 1):
         coeff[2 * k] = p_scale * comb(n_eff, k) * ((-1) ** k)
     return coeff, n_eff
-#----------------------
+#==============================================================================================================================================================
 
 
 
@@ -56,9 +56,8 @@ def coefficients(p_scale, n, min_n=2):
 
 
 
-
-#------------------------ EQUILIBRIUM SOLVER --------------------------------------------------------------
-def run_equilibrium(ped, offset, sym, width, p_scale, n, out_dir):
+#============== EQUILIBRIUM SOLVER ============================================================================================================================
+def run_equilibrium(p_scale, n, out_dir):
     """
     Runs equilibirum solve given an on-axis pressure,
     and polynomial order n
@@ -76,7 +75,7 @@ def run_equilibrium(ped, offset, sym, width, p_scale, n, out_dir):
     eq = Equilibrium(
         L=8, M=8, N=3,
         surface=surface_init,
-        pressure=MTanhProfile(params=[ped, offset, sym, width, coeff]),
+        pressure=PowerSeriesProfile(coeff),
         iota=iota_init,
         Psi=1.0,
     )
@@ -88,6 +87,6 @@ def run_equilibrium(ped, offset, sym, width, p_scale, n, out_dir):
     eq_init.save(save_path)
 
     return eq_init, n_eff
-#-----------------------------------------------------------------------------------------------------------
+#=============================================================================================================================================================
 
 

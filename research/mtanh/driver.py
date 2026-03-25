@@ -17,27 +17,32 @@ from desc.plotting import plot_comparison
 
 
 
-#------------------ HELPER FUNCTIONS --------------------------------------------------------------------------------------------------------------------------------
+#============== HELPER FUNCTIONS ==============================================================================================================================
+#=========================
 def sci_compact(x, sig=2):
     s = f"{x:.{sig-1}e}"
     mant, exp = s.split("e")
     exp = int(exp)
     return f"{mant}e{exp}"
+#=========================
 
 
-
+#================
 def _to_float(x):
     try:
         return float(x)
     except Exception:
         return np.nan
+#====================
     
-    
-    
+
+#============================
 def _extract_f_stats(objval):
     """
-    Preps final objective values to be put into comparison table
+    Preps final objective values to be put into comparison table.
+    Returns numeric f_min, f_mean, f_max.
     """
+    #---------------------------
     if isinstance(objval, list):
         chosen = None
         for item in objval:
@@ -47,10 +52,18 @@ def _extract_f_stats(objval):
         if chosen is None and len(objval) > 0:
             chosen = objval[0]
         objval = chosen
+    #------------------
 
+    #--------------------------------------------------------------------------------------
     if isinstance(objval, dict) and all(k in objval for k in ("f_min", "f_mean", "f_max")):
-        return _to_float(objval["f_min"]), _to_float(objval["f_mean"]), _to_float(objval["f_max"])
+        return (
+            _to_float(objval["f_min"]),
+            _to_float(objval["f_mean"]),
+            _to_float(objval["f_max"]),
+        )
+    #----------------------------------
 
+    #---------------------------
     if isinstance(objval, dict):
         for v in objval.values():
             val = _to_float(v)
@@ -60,7 +73,9 @@ def _extract_f_stats(objval):
 
     val = _to_float(objval)
     return val, val, val
-#----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #-------------------
+#=======================
+#==============================================================================================================================================================
 
 
 
@@ -70,7 +85,7 @@ def _extract_f_stats(objval):
 
 
 
-#------------------ FIXED VS. OPTIMIZED PRESSURE COMPARISON -----------------------------------------------------------------------------------------------------------
+#============== FIXED VS. OPTIMIZED PRESSURE COMPARISON =======================================================================================================
 def comparison(p_maxima: list, n_set: list):
     """
     Runs initial equilibrium solve, then optimization for 
@@ -83,7 +98,7 @@ def comparison(p_maxima: list, n_set: list):
         n in n_set must be >=2.
     """
 
-    #----------------------------------------
+    #========================================
     # Initializing table of objective values:
     columns = [
         'Force error: ',
@@ -96,10 +111,10 @@ def comparison(p_maxima: list, n_set: list):
     ]
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    #----------------------------------------------------
+    #====================================================
 
 
-    #--------------------------------------------------------------------------
+    #==================================================
     # Loop over on-axis pressure and polynomial orders:
     for p_axis in p_maxima:
         for n in n_set:
@@ -145,14 +160,24 @@ def comparison(p_maxima: list, n_set: list):
                     opt_result['Objective values'][key]
                 )
 
-                row_FXP.append(f"f_min={fmin_FXP:.4g}, f_mean={fmean_FXP:.4g}, f_max={fmax_FXP:.4g}")
-                row_OPT.append(f"f_min={fmin_OPT:.4g}, f_mean={fmean_OPT:.4g}, f_max={fmax_OPT:.4g}")
+                row_FXP.append(
+                    f"f_min={sci_compact(fmin_FXP, sig=4)}, "
+                    f"f_mean={sci_compact(fmean_FXP, sig=4)}, "
+                    f"f_max={sci_compact(fmax_FXP, sig=4)}"
+                )
+                row_OPT.append(
+                    f"f_min={sci_compact(fmin_OPT, sig=4)}, "
+                    f"f_mean={sci_compact(fmean_OPT, sig=4)}, "
+                    f"f_max={sci_compact(fmax_OPT, sig=4)}"
+                )
 
                 dmin = fmin_OPT - fmin_FXP
                 dmean = fmean_OPT - fmean_FXP
                 dmax = fmax_OPT - fmax_FXP
                 row_DIFF.append(
-                    f"f_min diff={dmin:.4g}, f_mean diff={dmean:.4g}, f_max diff={dmax:.4g}"
+                    f"f_min diff={sci_compact(dmin, sig=4)}, "
+                    f"f_mean diff={sci_compact(dmean, sig=4)}, "
+                    f"f_max diff={sci_compact(dmax, sig=4)}"
                 )
 
             # Including Beta in table:
@@ -295,8 +320,8 @@ def comparison(p_maxima: list, n_set: list):
             plt.savefig(iota_path, dpi=200)
             plt.close()
             #----------
-    #------------------------------------------------------------------------------------------------------------
-#----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #==================
+#=============================================================================================================================================================
 
 
 
@@ -307,5 +332,5 @@ def comparison(p_maxima: list, n_set: list):
 
 
 
-####### RUN IT #######
+#============== RUN IT ==============#
 comparison([1e4], [2])
