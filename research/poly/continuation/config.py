@@ -1,15 +1,21 @@
 import sys
 sys.path.append("/Users/macdaddi/DESC")
+from desc import set_device
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
-from driver import run_from_config
 
 
 
 
 
+
+
+
+
+
+#===================================================================================================================================================
 #============== EQUILIBRIUM INPUTS ==============#
-
+#-------------------------
 # Number of field periods:
 NFP = 10
 
@@ -26,8 +32,14 @@ surface_init = FourierRZToroidalSurface(
 iota_init = PowerSeriesProfile([1, 0, 2])
 
 # Equilibrium resolution:
-eq_resolution = [8, 8, 3]
+L = 8
+M = 8
+N = 3
+eq_resolution = [L, M, N]
+#------------------------
 
+
+#--------------------
 # Grouping eq inputs:
 eq_config = {
     "NFP": NFP,
@@ -35,13 +47,20 @@ eq_config = {
     "iota_init": iota_init,
     "eq_resolution": eq_resolution,
 }
+#----------------------------------
 #=================================================#
 
 
 
 
 
+
+
+
+
+
 #============== OPTIMIZATION INPUTS ==============#
+#----------------------
 target_aspect_ratio = 6
 ftol = 5e-3
 xtol = 1e-3
@@ -54,11 +73,11 @@ toggle_FXD = {
     "fix_iota": True,
     "fix_psi": True,
     "fix_pressure": True,
-    "forcebalance_objective": False,
+    "forcebalance_objective": True,
     "aspect_ratio": True,
     "qs": True,
-    "ballooning": False,
-    "mercier": False,
+    "ballooning": True,
+    "mercier": True,
 }
 
 # Optimized-pressure-family toggles (bools):
@@ -67,21 +86,24 @@ toggle_CON = {
     "pressure_edge": True,
     "grad_pressure_axis": True,
     "grad_pressure_edge": True,
-    "forcebalance_constraint": False,
+    "forcebalance_constraint": True,
     "fix_iota": True,
     "fix_psi": True,
-    "forcebalance_objective": False,
+    "forcebalance_objective": True,
     "aspect_ratio": True,
     "qs": True,
-    "ballooning": False,
-    "mercier": False,
+    "ballooning": True,
+    "mercier": True,
     "monotonicity": True,
 }
 
 # Ordered list of optimizers:
 # [optimizer1, optimizer2]
 optimizers = ["proximal-lsq-exact", None]
+#----------------------------------------
 
+
+#---------------------
 # Grouping opt inputs:
 opt_config = {
     "target_aspect_ratio": target_aspect_ratio,
@@ -93,35 +115,60 @@ opt_config = {
     "toggle_CON": toggle_CON,
     "optimizers": optimizers,
 }
+#----------------------------
 #=================================================#
 
 
 
 
 
-#============== DRIVER INPUTS ====================#
+
+
+
+
+
+#================ DRIVER INPUTS ==================#
+#-------------------
+# GPU accessibility:
+GPU_ON = False
+if GPU_ON:
+    set_device("gpu")
+
 # Pressure maxima to test:
 p_maxima = [1e4]
 
 # Polynomial orders to test:
 n_set = [3]
+#----------
 
+
+#------------------------
 # Grouping driver inputs:
 driver_config = {
     "p_maxima": p_maxima,
     "n_set": n_set,
 }
+#------------------
 #=================================================#
+#===================================================================================================================================================
 
 
 
 
 
-#============== RUN IT =======================================================================================================================================
+
+
+
+
+
+#===================================================================================================================================================
+#==================== RUN IT =====================#
+from driver import run_from_config
 if __name__ == "__main__":
     run_from_config(
         eq_config=eq_config,
         opt_config=opt_config,
         driver_config=driver_config,
     )
-#==============================================================================================================================================================
+#=================================================#
+#===================================================================================================================================================

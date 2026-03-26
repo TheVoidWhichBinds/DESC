@@ -31,16 +31,15 @@ from desc.objectives import (
 
 
 #============== OPTIMIZER FUNCTION ============================================================================================================================
-def run_optimization(eq_init, optimizer, p_scale, out_dir, opt_config, FXD: bool):
+def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
     """
     Run optimization with objectives/constraints controlled by config dict.
 
     FXD = True  -> fixed-pressure family
     FXD = False -> constrained/optimized-pressure family
     """
-    eq_0 = eq_init.copy()
 
-    #---------------------------------------------
+    #=============================================
     # Unpacking optimization configuration values:
     target_aspect_ratio = opt_config["target_aspect_ratio"]
     ftol = opt_config["ftol"]
@@ -51,12 +50,14 @@ def run_optimization(eq_init, optimizer, p_scale, out_dir, opt_config, FXD: bool
     toggle_FXD = opt_config["toggle_FXD"]
     toggle_CON = opt_config["toggle_CON"]
     toggle = toggle_FXD if FXD else toggle_CON
-    #---------------------------------------------
+    #=========================================
+
 
     constraints_list = []
     objectives_list = []
 
-    #===========================
+
+    #=========================
     if FXD: # (fixed pressure)
         #----------------------
         # Construction of constraints:
@@ -68,9 +69,9 @@ def run_optimization(eq_init, optimizer, p_scale, out_dir, opt_config, FXD: bool
             constraints_list.append(FixPsi(eq=eq_0))
         if toggle.get("fix_pressure", True):
             constraints_list.append(FixPressure(eq=eq_0))
-        #----------------------
+        #------------------------------------------------
 
-        #----------------------
+        #----------------------------
         # Construction of objectives:
         if toggle.get("forcebalance_objective", False):
             objectives_list.append(ForceBalance(eq=eq_0, target=0.0))
@@ -84,10 +85,11 @@ def run_optimization(eq_init, optimizer, p_scale, out_dir, opt_config, FXD: bool
             objectives_list.append(BallooningStability(eq=eq_0, target=0.0))
         if toggle.get("mercier", False):
             objectives_list.append(MercierStability(eq=eq_0, target=0.0))
-        #----------------------
-    #===========================
+        #----------------------------------------------------------------
+    #====================================================================
 
-    #=========================
+
+    #===========================
     else: # (optimized pressure)
         #------------------------------------
         # Construction of custom constraints:
@@ -123,19 +125,19 @@ def run_optimization(eq_init, optimizer, p_scale, out_dir, opt_config, FXD: bool
                     target=0.0,
                 )
             )
-        #------------------------------------
-
         #----------------------
-        # Construction of constraints:
-        if toggle.get("forcebalance_constraint", False):
+
+        #--------------------------------------
+        # Construction of standard constraints:
+        if toggle.get("forcebalance_constraint", True):
             constraints_list.append(ForceBalance(eq=eq_0))
         if toggle.get("fix_iota", False):
             constraints_list.append(FixIota(eq=eq_0))
         if toggle.get("fix_psi", False):
             constraints_list.append(FixPsi(eq=eq_0))
-        #----------------------
+        #-------------------------------------------
 
-        #----------------------
+        #----------------------------
         # Construction of objectives:
         if toggle.get("forcebalance_objective", False):
             objectives_list.append(ForceBalance(eq=eq_0, target=0.0))
@@ -159,10 +161,11 @@ def run_optimization(eq_init, optimizer, p_scale, out_dir, opt_config, FXD: bool
                     normalize=False,
                 )
             )
-        #----------------------
-    #=========================
+        #---------------------------
+    #===============================
 
-    #---------------------------------------
+
+    #=======================================
     # Finalizing optimization objects/setup:
     constraints = tuple(constraints_list)
 
@@ -170,9 +173,10 @@ def run_optimization(eq_init, optimizer, p_scale, out_dir, opt_config, FXD: bool
         raise ValueError("No optimization objectives were selected.")
 
     objectives = ObjectiveFunction(objectives_list)
-    #---------------------------------------
+    #==============================================
 
-    #-----------------------
+
+    #======================
     # Running optimization:
     eq_opt, opt_result = eq_0.optimize(
         objective=objectives,
@@ -185,7 +189,7 @@ def run_optimization(eq_init, optimizer, p_scale, out_dir, opt_config, FXD: bool
         copy=True,
         verbose=3,
     )
-    #-----------------------
+    #=============
 
     save_name = "opt_FXD.h5" if FXD else "opt_CON.h5"
     save_path = os.path.join(out_dir, save_name)

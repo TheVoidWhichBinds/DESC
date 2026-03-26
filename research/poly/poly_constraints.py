@@ -2,8 +2,13 @@ import numpy as np
 import jax.numpy as jnp
 
 
-#------------------------------------------
-# Polynomial constraints:
+
+
+
+
+#============== PRESSURE CONSTRAINTS/OBJECTIVES =====================================================================================
+#=============
+# Constraints:
 def pressure_axis(params):
     """
     Pressure on axis (rho=0)
@@ -40,12 +45,12 @@ def grad_pressure_edge(params):
     grad_coeff = params['p_l'][1:]
     order = jnp.arange(1, len(grad_coeff)+1)
     return (order * grad_coeff).sum()
+#====================================
 
 
 
-
-#----------------------------------------------------------------
-# Polynomial objective(s):
+#============
+# Objectives:
 def poly_monotonicity(grid, data):
     """
     Ensures monotonic decrease of pressure for polynomial profile
@@ -65,5 +70,5 @@ def poly_monotonicity(grid, data):
     dp = p[1:] - p[:-1] # pressure differences: p[i+1] - p[i]
     violations = jnp.maximum(0.0, dp) # array where nonzero values = positive slope 
     return jnp.sum(violations**2) # largest dp chosen, penalized by optimizer
-
-
+#============================================================================
+#===================================================================================================================================

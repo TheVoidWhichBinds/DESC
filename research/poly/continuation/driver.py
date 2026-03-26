@@ -1,5 +1,3 @@
-from desc import set_device
-set_device("gpu")
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -166,12 +164,13 @@ def comparison(
                 out_dir=out_dir,
                 eq_config=eq_config,
             )
+            eq_0 = eq_init.copy()
             #===================================
 
             #=========================================================
             # 1st round of fixed and optimized pressure optimizations:
             eq_opt_FXD, opt_result_FXD = run_optimization(
-                eq_init,
+                eq_0,
                 optimizer1,
                 p_axis,
                 out_dir=out_dir,
@@ -179,7 +178,7 @@ def comparison(
                 FXD=True,
             )
             eq_opt_CON, opt_result_CON = run_optimization(
-                eq_init,
+                eq_0,
                 optimizer1,
                 p_axis,
                 out_dir=out_dir,
