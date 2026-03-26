@@ -1,14 +1,15 @@
+from desc import set_device
+set_device("gpu")
+
 import numpy as np
 import matplotlib.pyplot as plt
 from desc.grid import LinearGrid
-from eq import run_equilibrium, surface_init, iota_init, eq_resolution, NFP
+from eq import run_equilibrium
 from opt import run_optimization
 import os
 import pandas as pd
 from tabulate import tabulate
 from desc.plotting import plot_comparison
-
-
 
 
 
@@ -33,8 +34,8 @@ def _to_float(x):
         return float(x)
     except Exception:
         return np.nan
-#====================
-    
+#================
+
 
 #============================
 def _extract_f_stats(objval):
@@ -52,16 +53,16 @@ def _extract_f_stats(objval):
         if chosen is None and len(objval) > 0:
             chosen = objval[0]
         objval = chosen
-    #------------------
+    #---------------------------
 
-    #--------------------------------------------------------------------------------------
+    #-----------------------------------------------------------
     if isinstance(objval, dict) and all(k in objval for k in ("f_min", "f_mean", "f_max")):
         return (
             _to_float(objval["f_min"]),
             _to_float(objval["f_mean"]),
             _to_float(objval["f_max"]),
         )
-    #----------------------------------
+    #-----------------------------------------------------------
 
     #---------------------------
     if isinstance(objval, dict):
@@ -70,29 +71,24 @@ def _extract_f_stats(objval):
             if not np.isnan(val):
                 return val, val, val
         return np.nan, np.nan, np.nan
+    #---------------------------
 
     val = _to_float(objval)
     return val, val, val
-    #-------------------
-#=======================
+#============================
 
 
-#============================================================
-def write_readme(out_dir, optimizer1, optimizer2, p_axis, n):
-    readme_path = os.path.join(out_dir, "README.txt")
-    L, M, N = eq_resolution
-
-    with open(readme_path, "w") as f:
-        f.write(f"optimizer1: {optimizer1}\n")
-        f.write(f"optimizer2: {optimizer2}\n")
-        f.write(f"p_axis: {p_axis}\n")
-        f.write(f"n: {n}\n")
-        f.write(f"equilibrium resolution: L={L}, M={M}, N={N}\n")
-        f.write(f"surface_init R modes: {surface_init.R_basis.modes.tolist()}\n")
-        f.write(f"surface_init Z modes: {surface_init.Z_basis.modes.tolist()}\n")
-        f.write(f"surface_init NFP: {NFP}\n")
-        f.write(f"iota_init coefficients: {iota_init.params.tolist()}\n")
-#=================================================================
+#=====================================
+def _safe_extract_from_result(result, label):
+    """
+    Safely gets objective stats from result dict.
+    Returns NaNs if label is absent.
+    """
+    objvals = result.get("Objective values", {})
+    if label not in objvals:
+        return np.nan, np.nan, np.nan
+    return _extract_f_stats(objvals[label])
+#=====================================
 #==============================================================================================================================================================
 
 
@@ -105,36 +101,48 @@ def write_readme(out_dir, optimizer1, optimizer2, p_axis, n):
 
 #============== FIXED VS. OPTIMIZED PRESSURE COMPARISON =======================================================================================================
 def comparison(
-        p_maxima: list, 
+        p_maxima: list,
         n_set: list,
-        optimizer1: str, 
-        optimizer2: str | None = None,
+        eq_config: dict,
+        opt_config: dict,
     ):
     """
-    Runs initial equilibrium solve, then optimization for 
-    both fixed and optimized pressure. Plots, and objective
+    Runs initial equilibrium solve, then optimization for
+    both fixed and optimized pressure. Plots and objective
     table are also generated.
-    p_maxima: 
-        list of maximum pressures to loop over.
-    n_set: 
-        list of polynomial orders (really 2*n) to loop over
-        n in n_set must be >=2.
     """
+
+    #---------------------------------------------
+    # Unpacking config variables needed in driver:
+    NFP = eq_config["NFP"]
+
+    optimizers = opt_config["optimizers"]
+    optimizer1 = optimizers[0]
+    optimizer2 = optimizers[1] if len(optimizers) > 1 else None
+
+    toggle_FXD = opt_config["toggle_FXD"]
+    toggle_CON = opt_config["toggle_CON"]
+    #---------------------------------------------
 
     #========================================
     # Initializing table of objective values:
-    columns = [
-        'Force error: ',
-        f'Quasi-symmetry (1,{NFP}) Boozer error: ',
-        'Aspect ratio: ',
-        'Fixed iota profile error: ',
-        'Fixed Psi error: ',
-        'Ideal ballooning lambda: ',
-        'Mercier Stability: ',
+    column_map = [
+        ("forcebalance_objective", f"Force error: "),
+        ("qs", f"Quasi-symmetry (1,{NFP}) Boozer error: "),
+        ("aspect_ratio", "Aspect ratio: "),
+        ("fix_iota", "Fixed iota profile error: "),
+        ("fix_psi", "Fixed Psi error: "),
+        ("ballooning", "Ideal ballooning lambda: "),
+        ("mercier", "Mercier Stability: "),
     ]
 
+    active_columns = []
+    for key, label in column_map:
+        if toggle_FXD.get(key, False) or toggle_CON.get(key, False):
+            active_columns.append((key, label))
+    #========================================
+
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    #====================================================
 
 
 
@@ -145,82 +153,104 @@ def comparison(
         for n in n_set:
 
             #==========================================
-            # Generates meta-data README and directory: 
+            # Generates meta-data README and directory:
             out_dir = os.path.join(base_dir, f"p{sci_compact(p_axis)}_n{n}")
             os.makedirs(out_dir, exist_ok=True)
+            #==========================================
 
-            write_readme(
-                out_dir=out_dir,
-                optimizer1=optimizer1,
-                optimizer2=optimizer2,
-                p_axis=p_axis,
-                n=n,
-            )
-            #=======
-            
             #===================================
             # Running initial equilibrium solve:
-            eq_init, n_eff = run_equilibrium(p_axis, n, out_dir=out_dir)
-
-            # Running fixed and optimized pressure optimizations:
-            eq_opt_FXP, opt_result_FXP = run_optimization(
-                optimizer1, p_axis, out_dir=out_dir, fix_pressure=True
+            eq_init, n_eff = run_equilibrium(
+                p_axis,
+                n,
+                out_dir=out_dir,
+                eq_config=eq_config,
             )
-            eq_opt, opt_result = run_optimization(
-                optimizer1, p_axis, out_dir=out_dir, fix_pressure=False
-            )
+            #===================================
 
+            #=========================================================
+            # 1st round of fixed and optimized pressure optimizations:
+            eq_opt_FXD, opt_result_FXD = run_optimization(
+                eq_init,
+                optimizer1,
+                p_axis,
+                out_dir=out_dir,
+                opt_config=opt_config,
+                FXD=True,
+            )
+            eq_opt_CON, opt_result_CON = run_optimization(
+                eq_init,
+                optimizer1,
+                p_axis,
+                out_dir=out_dir,
+                opt_config=opt_config,
+                FXD=False,
+            )
+            #=========================================================
+
+            #=========================================================
+            # 2nd round of fixed and optimized pressure optimizations:
             if optimizer2 is not None:
-                 # Running fixed and optimized pressure optimizations:
-                eq_opt_FXP, opt_result_FXP = run_optimization(
-                    optimizer2, p_axis, out_dir=out_dir, fix_pressure=True
+                eq_opt_FXD, opt_result_FXD = run_optimization(
+                    eq_opt_FXD,
+                    optimizer2,
+                    p_axis,
+                    out_dir=out_dir,
+                    opt_config=opt_config,
+                    FXD=True,
                 )
-                eq_opt, opt_result = run_optimization(
-                    optimizer2, p_axis, out_dir=out_dir, fix_pressure=False
+                eq_opt_CON, opt_result_CON = run_optimization(
+                    eq_opt_CON,
+                    optimizer2,
+                    p_axis,
+                    out_dir=out_dir,
+                    opt_config=opt_config,
+                    FXD=False,
                 )
-            #==============================================================
+            #=========================================================
 
 
             #====================================
-            #------------------------------------
             # Generating comparison table labels:
-            rows = [] # table row names
-            values = [] # table elements (obj vals)
+            rows = []
+            values = []
+
             label_n = n if n_eff == n else f"{n}→{n_eff}"
             group_label = f"Max Pressure = {p_axis}; n = {label_n} (order={2*n_eff})"
+
             rows.append((group_label, "Fixed Pressure"))
             rows.append((group_label, "Optimized Pressure"))
             rows.append((group_label, "Difference"))
 
-            row_FXP = [] # fixed pressure obj vals
-            row_OPT = [] # optimized pressure obj vals
-            row_DIFF = [] # difference between fixed and opt vals
-            #----------------------------------------------------
+            row_FXD = []
+            row_CON = []
+            row_DIFF = []
+            #====================================
 
             #-----------------------------
             # Extracting objective values:
-            for key in columns:
-                fmin_FXP, fmean_FXP, fmax_FXP = _extract_f_stats(
-                    opt_result_FXP['Objective values'][key]
+            for key, label in active_columns:
+                fmin_FXD, fmean_FXD, fmax_FXD = _safe_extract_from_result(
+                    opt_result_FXD, label
                 )
-                fmin_OPT, fmean_OPT, fmax_OPT = _extract_f_stats(
-                    opt_result['Objective values'][key]
-                )
-
-                row_FXP.append(
-                    f"f_min={sci_compact(fmin_FXP, sig=4)}, "
-                    f"f_mean={sci_compact(fmean_FXP, sig=4)}, "
-                    f"f_max={sci_compact(fmax_FXP, sig=4)}"
-                )
-                row_OPT.append(
-                    f"f_min={sci_compact(fmin_OPT, sig=4)}, "
-                    f"f_mean={sci_compact(fmean_OPT, sig=4)}, "
-                    f"f_max={sci_compact(fmax_OPT, sig=4)}"
+                fmin_CON, fmean_CON, fmax_CON = _safe_extract_from_result(
+                    opt_result_CON, label
                 )
 
-                dmin = fmin_OPT - fmin_FXP
-                dmean = fmean_OPT - fmean_FXP
-                dmax = fmax_OPT - fmax_FXP
+                row_FXD.append(
+                    f"f_min={sci_compact(fmin_FXD, sig=4)}, "
+                    f"f_mean={sci_compact(fmean_FXD, sig=4)}, "
+                    f"f_max={sci_compact(fmax_FXD, sig=4)}"
+                )
+                row_CON.append(
+                    f"f_min={sci_compact(fmin_CON, sig=4)}, "
+                    f"f_mean={sci_compact(fmean_CON, sig=4)}, "
+                    f"f_max={sci_compact(fmax_CON, sig=4)}"
+                )
+
+                dmin = fmin_CON - fmin_FXD
+                dmean = fmean_CON - fmean_FXD
+                dmax = fmax_CON - fmax_FXD
                 row_DIFF.append(
                     f"f_min diff={sci_compact(dmin, sig=4)}, "
                     f"f_mean diff={sci_compact(dmean, sig=4)}, "
@@ -230,18 +260,18 @@ def comparison(
 
             #-------------------------
             # Including Beta in table:
-            beta_FXP = float(eq_opt_FXP.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
-            beta_OPT = float(eq_opt.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
-            beta_DIFF = beta_OPT - beta_FXP
+            beta_FXD = float(eq_opt_FXD.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
+            beta_CON = float(eq_opt_CON.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
+            beta_DIFF = beta_CON - beta_FXD
 
-            row_FXP.append(f"{beta_FXP:.4g}")
-            row_OPT.append(f"{beta_OPT:.4g}")
+            row_FXD.append(f"{beta_FXD:.4g}")
+            row_CON.append(f"{beta_CON:.4g}")
             row_DIFF.append(f"{beta_DIFF:.4g}")
-            
-            values.append(row_FXP)
-            values.append(row_OPT)
+
+            values.append(row_FXD)
+            values.append(row_CON)
             values.append(row_DIFF)
-            #----------------------
+            #-------------------------
 
             #------------------------------
             # Save table inside run folder:
@@ -249,31 +279,28 @@ def comparison(
             df = pd.DataFrame(
                 values,
                 index=index,
-                columns=[col.replace(': ', '') for col in columns] + ["Beta"],
+                columns=[label.replace(": ", "") for _, label in active_columns] + ["Beta"],
             )
-        
-            ascii_table = tabulate(df, headers='keys', tablefmt='grid')
-            
+
+            ascii_table = tabulate(df, headers="keys", tablefmt="grid")
+
             output_file = os.path.join(out_dir, "comparison.txt")
             with open(output_file, "w") as f:
                 f.write("Comparison of Post-Optimization Objectives\n\n")
                 f.write(ascii_table)
-            #-----------------------
-            #=======================
-
+            #------------------------------
 
             #====================
-            #--------------------
             # Plotting pressures:
             rho = np.linspace(0.0, 1.0, 400)
-            grid = LinearGrid(rho=rho, M=0, N=0, NFP=eq_opt.NFP, sym=eq_opt.sym)
+            grid = LinearGrid(rho=rho, M=0, N=0, NFP=eq_opt_CON.NFP, sym=eq_opt_CON.sym)
 
-            p_FXP = eq_opt_FXP.compute("p", grid=grid)["p"]
-            p_OPT = eq_opt.compute("p", grid=grid)["p"]
+            p_FXD = eq_opt_FXD.compute("p", grid=grid)["p"]
+            p_CON = eq_opt_CON.compute("p", grid=grid)["p"]
 
             plt.figure(figsize=(7, 5))
-            plt.plot(rho, p_FXP, linewidth=2, label="Fixed Pressure", color='blue')
-            plt.plot(rho, p_OPT, linewidth=2, label="Optimized Pressure", color='red')
+            plt.plot(rho, p_FXD, linewidth=2, label="Fixed Pressure", color="blue")
+            plt.plot(rho, p_CON, linewidth=2, label="Optimized Pressure", color="red")
             plt.xlabel(r"$\rho$", fontsize=14)
             plt.ylabel("Pressure", fontsize=14)
             plt.title(
@@ -284,33 +311,37 @@ def comparison(
             plt.legend()
             plt.tight_layout()
 
-            pressure_path = os.path.join(out_dir, 'pressure_compare.png')
+            pressure_path = os.path.join(out_dir, "pressure_compare.png")
             plt.savefig(pressure_path, dpi=200)
             plt.close()
-            #----------
+            #====================
 
             #-------------------------------------------------------
-            # Plotting  gridded toroidal cross-sections of B-fields:
-            plt.title('Toroidal Cross-Sections of Solved Equilibria')
+            # Plotting gridded toroidal cross-sections of B-fields:
+            plt.title("Toroidal Cross-Sections of Solved Equilibria")
             fig, ax = plot_comparison(
-                eqs=[eq_init, eq_opt_FXP, eq_opt],
-                labels=['Initial Equilibrium', 'Optimized (Fixed Pressure)','Optimized (Optimized Pressure)'],
-                color=['green', 'blue', 'red']
+                eqs=[eq_init, eq_opt_FXD, eq_opt_CON],
+                labels=[
+                    "Initial Equilibrium",
+                    "Optimized (Fixed Pressure)",
+                    "Optimized (Optimized Pressure)",
+                ],
+                color=["green", "blue", "red"],
             )
 
-            toroidal_cuts_path = os.path.join(out_dir, 'toroidal_cuts.png')
+            toroidal_cuts_path = os.path.join(out_dir, "toroidal_cuts.png")
             plt.savefig(toroidal_cuts_path, dpi=200)
             plt.close()
-            #----------
+            #-------------------------------------------------------
 
             #-----------------------
-             # |J| vs. rho plotting:
+            # |J| vs. rho plotting:
             rho_grid = np.linspace(0.0, 1.0, 100)
-            grid_J = LinearGrid(rho=rho_grid, M=24, N=24, NFP=eq_opt.NFP, sym=eq_opt.sym)
-            # Helper func for flux-surface averaging of |J|
+            grid_J = LinearGrid(rho=rho_grid, M=24, N=24, NFP=eq_opt_CON.NFP, sym=eq_opt_CON.sym)
+
             def _surface_mean_J_mag(eq):
                 data = eq.compute(["|J|"], grid=grid_J)
-                J_mag = np.asarray(data["|J|"])  # magnitude of J
+                J_mag = np.asarray(data["|J|"])
 
                 rho_nodes = grid_J.nodes[:, 0]
                 rho_unique = np.unique(rho_nodes)
@@ -321,16 +352,13 @@ def comparison(
                     J_mag_fs[i] = np.mean(J_mag[mask])
 
                 return rho_unique, J_mag_fs
-            #------------------------------
 
-            #---------------------------------------------------------------------------
-            # Compute |J| profiles for fixed-pressure and optimized-pressure equilibria:
-            rho_u_FXP, J_mag_FXP = _surface_mean_J_mag(eq_opt_FXP)
-            rho_u_OPT, J_mag_OPT = _surface_mean_J_mag(eq_opt)
+            rho_u_FXD, J_mag_FXD = _surface_mean_J_mag(eq_opt_FXD)
+            rho_u_CON, J_mag_CON = _surface_mean_J_mag(eq_opt_CON)
 
             plt.figure(figsize=(7, 5))
-            plt.plot(rho_u_FXP, J_mag_FXP, linewidth=2, label="Fixed Pressure", color='blue')
-            plt.plot(rho_u_OPT, J_mag_OPT, linewidth=2, label="Optimized Pressure", color='red')
+            plt.plot(rho_u_FXD, J_mag_FXD, linewidth=2, label="Fixed Pressure", color="blue")
+            plt.plot(rho_u_CON, J_mag_CON, linewidth=2, label="Optimized Pressure", color="red")
             plt.xlabel(r"$\rho$", fontsize=14)
             plt.ylabel(r"$\langle |J| \rangle$", fontsize=14)
             plt.title(
@@ -344,18 +372,18 @@ def comparison(
             J_mag_path = os.path.join(out_dir, "J_mag.png")
             plt.savefig(J_mag_path, dpi=200)
             plt.close()
-            #----------
+            #-----------------------
 
             #----------------------
             # iota vs. rho plotting:
-            grid_iota = LinearGrid(rho=rho_grid, M=0, N=0, NFP=eq_opt.NFP, sym=eq_opt.sym)
-            # Compute iota profiles for fixed-pressure and optimized-pressure equilibria
-            iota_FXP = eq_opt_FXP.compute("iota", grid=grid_iota)["iota"]
-            iota_OPT = eq_opt.compute("iota", grid=grid_iota)["iota"]
+            grid_iota = LinearGrid(rho=rho_grid, M=0, N=0, NFP=eq_opt_CON.NFP, sym=eq_opt_CON.sym)
+
+            iota_FXD = eq_opt_FXD.compute("iota", grid=grid_iota)["iota"]
+            iota_CON = eq_opt_CON.compute("iota", grid=grid_iota)["iota"]
 
             plt.figure(figsize=(7, 5))
-            plt.plot(rho_grid, iota_FXP, linewidth=2, label="Fixed Pressure", color='blue')
-            plt.plot(rho_grid, iota_OPT, linewidth=2, label="Optimized Pressure", color='red')
+            plt.plot(rho_grid, iota_FXD, linewidth=2, label="Fixed Pressure", color="blue")
+            plt.plot(rho_grid, iota_CON, linewidth=2, label="Optimized Pressure", color="red")
             plt.xlabel(r"$\rho$", fontsize=14)
             plt.ylabel(r"$\iota$", fontsize=14)
             plt.title(
@@ -369,11 +397,8 @@ def comparison(
             iota_path = os.path.join(out_dir, "iota.png")
             plt.savefig(iota_path, dpi=200)
             plt.close()
-            #----------
-            #==========
-        #==============
-    #==================
-#=============================================================================================================================================================
+            #----------------------
+#==============================================================================================================================================================
 
 
 
@@ -383,7 +408,12 @@ def comparison(
 
 
 
-
-#============== RUN IT =======================================================================================================================================
-comparison([1e4], [4], "proximal-lsq-exact", None)
-#=============================================================================================================================================================
+#============== CONFIG ENTRYPOINT =============================================================================================================================
+def run_from_config(eq_config: dict, opt_config: dict, driver_config: dict):
+    comparison(
+        p_maxima = driver_config["p_maxima"],
+        n_set = driver_config["n_set"],
+        eq_config = eq_config,
+        opt_config = opt_config,
+    )
+#==============================================================================================================================================================

@@ -5,34 +5,7 @@ sys.path.append("/Users/macdaddi/DESC")
 
 from desc.continuation import solve_continuation_automatic
 from desc.equilibrium import Equilibrium
-from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
-
-
-
-
-#============== FIXED INITIAL PARAMETERS ======================================================================================================================
-# Initializing fixed surface: 
-NFP = 10
-surface_init = FourierRZToroidalSurface(
-    R_lmn = [10.0, -1.2, -0.25, 0.25],
-    modes_R = [(0, 0), (1, 0), (1, 1), (-1, -1)],
-    Z_lmn = [1.2, -0.2, -0.2],
-    modes_Z = [(-1, 0), (-1, 1), (1, -1)],
-    NFP = NFP,
-)
-
-# Initializing fixed iota:
-iota_init = PowerSeriesProfile([1, 0, 2])
-
-eq_resolution = [8, 8, 3]
-#==============================================================================================================================================================
-
-
-
-
-
-
 
 
 
@@ -60,21 +33,27 @@ def coefficients(p_scale, n, min_n=2):
 
 
 #============== EQUILIBRIUM SOLVER ============================================================================================================================
-def run_equilibrium(p_scale, n, out_dir):
+def run_equilibrium(p_scale, n, out_dir, eq_config):
     """
-    Runs equilibirum solve given an on-axis pressure,
-    and polynomial order n
-    
-    Returns: 
-        save_path = location where eq_init saved
-        n_eff = n if n>=2
+    Runs equilibrium solve given an on-axis pressure,
+    and polynomial order n.
+
+    Returns:
+        eq_init = solved equilibrium
+        n_eff = n if n>=2, else 2
     """
 
     #-----------------------------------------------
+    # Unpacking equilibrium configuration variables:
+    surface_init = eq_config["surface_init"]
+    iota_init = eq_config["iota_init"]
+    eq_resolution = eq_config["eq_resolution"]
+    #-----------------------------------------------
+
+    #-----------------------------------------------
     # Creating polynomial coefficients in list form:
-    # Checking that n>=2:
     coeff, n_eff = coefficients(p_scale, n)
-    #--------------------------------------
+    #-----------------------------------------------
 
     #----------------------
     # Prepping equilibrium:
@@ -86,18 +65,15 @@ def run_equilibrium(p_scale, n, out_dir):
         iota=iota_init,
         Psi=1.0,
     )
-    #-----------
+    #----------------------
 
     #------------------------------------------------------------
     # Solving initial equilibrium and returning last step of opt:
     eq_init = solve_continuation_automatic(eq.copy(), verbose=3)[-1]
-    #---------------------------------------------------------------
+    #------------------------------------------------------------
 
-    save_path = os.path.join(out_dir, 'eq.h5')
+    save_path = os.path.join(out_dir, "eq.h5")
     eq_init.save(save_path)
 
-
     return eq_init, n_eff
-#=============================================================================================================================================================
-
-
+#==============================================================================================================================================================

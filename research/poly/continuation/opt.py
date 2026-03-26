@@ -2,7 +2,7 @@ import numpy as np
 import os
 import sys
 sys.path.append("/Users/macdaddi/DESC")
-import desc.io
+
 from desc.grid import LinearGrid
 from research.poly.poly_constraints import (
     pressure_axis,
@@ -24,7 +24,6 @@ from desc.objectives import (
     LinearObjectiveFromUser,
     ObjectiveFromUser,
 )
-from desc.optimize import Optimizer
 
 
 
@@ -32,102 +31,165 @@ from desc.optimize import Optimizer
 
 
 #============== OPTIMIZER FUNCTION ============================================================================================================================
-def run_optimization(optimizer, p_scale, out_dir, fix_pressure: bool):
+def run_optimization(eq_init, optimizer, p_scale, out_dir, opt_config, FXD: bool):
     """
-    """
-    eq_init = desc.io.load(os.path.join(out_dir, 'eq.h5')) # loading initial eq solve
-    eq_0 = eq_init.copy() # copying initial eq solve so as to not alter it
+    Run optimization with objectives/constraints controlled by config dict.
 
-    #------------------------------------------------------------------
-    # Division of constraints and objectives depending on fix_pressure:
-    if fix_pressure: # fixed pressure
-        # Compiling constraints:
-        constraints = (
-            ForceBalance(eq=eq_0),
-            FixIota(eq=eq_0),
-            FixPsi(eq=eq_0),
-            FixPressure(eq=eq_0),
-        )
-        # Compiling objectives:
-        objectives = ObjectiveFunction([
-            ForceBalance(eq=eq_0, target=0),
-            AspectRatio(eq=eq_0, target=6),
-            QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP)),
-            BallooningStability(eq=eq_0, target=0.0),
-            MercierStability(eq=eq_0, target=0.0),
-        ])
+    FXD = True  -> fixed-pressure family
+    FXD = False -> constrained/optimized-pressure family
+    """
+    eq_0 = eq_init.copy()
+
+    #---------------------------------------------
+    # Unpacking optimization configuration values:
+    target_aspect_ratio = opt_config["target_aspect_ratio"]
+    ftol = opt_config["ftol"]
+    xtol = opt_config["xtol"]
+    gtol = opt_config["gtol"]
+    maxiter = opt_config["maxiter"]
+
+    toggle_FXD = opt_config["toggle_FXD"]
+    toggle_CON = opt_config["toggle_CON"]
+    toggle = toggle_FXD if FXD else toggle_CON
     #---------------------------------------------
 
-    #-------------------------
-    else: # optimized pressure
-        pressure_axis_set = LinearObjectiveFromUser(
-            fun=pressure_axis,
-            thing=eq_0,
-            target=p_scale,
-        )
-        pressure_edge_zero = LinearObjectiveFromUser(
-            fun=pressure_edge,
-            thing=eq_0,
-            target=0.0,
-        )
-        grad_pressure_axis_zero = LinearObjectiveFromUser(
-            fun=grad_pressure_axis,
-            thing=eq_0,
-            target=0.0,
-        )
-        grad_pressure_edge_zero = LinearObjectiveFromUser(
-            fun=grad_pressure_edge,
-            thing=eq_0,
-            target=0.0,
-        )
-        # Compiling constraints:
-        constraints = ( # constraints don't need weights - exactly fulfilled 
-            ForceBalance(eq=eq_0), # nonlinear but can be put into "constraints" via "proximal-xxx" optimizers
-            FixIota(eq=eq_0),
-            FixPsi(eq=eq_0),
-            pressure_axis_set,
-            pressure_edge_zero,
-            grad_pressure_axis_zero,
-            grad_pressure_edge_zero,
-        )
-        # Building monotonicity objective with wrapper:
-        negative_gradient = ObjectiveFromUser(
-            fun=poly_monotonicity,
-            grid=LinearGrid(rho=200, M=0, N=0),
-            thing=eq_0,
-            target=0.0,
-            normalize=False,
-        )
-        # Compiling objectives:
-        objectives = ObjectiveFunction([
-            ForceBalance(eq=eq_0, target=0),
-            AspectRatio(eq=eq_0, target=6),
-            QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP)),
-            BallooningStability(eq=eq_0, target=0.0),
-            MercierStability(eq=eq_0, target=0.0),
-            negative_gradient,
-        ])
-    #-------------------------
+    constraints_list = []
+    objectives_list = []
 
-    #----------------------
-    # Solving optimization:
+    #===========================
+    if FXD: # (fixed pressure)
+        #----------------------
+        # Construction of constraints:
+        if toggle.get("forcebalance_constraint", False):
+            constraints_list.append(ForceBalance(eq=eq_0))
+        if toggle.get("fix_iota", True):
+            constraints_list.append(FixIota(eq=eq_0))
+        if toggle.get("fix_psi", True):
+            constraints_list.append(FixPsi(eq=eq_0))
+        if toggle.get("fix_pressure", True):
+            constraints_list.append(FixPressure(eq=eq_0))
+        #----------------------
+
+        #----------------------
+        # Construction of objectives:
+        if toggle.get("forcebalance_objective", False):
+            objectives_list.append(ForceBalance(eq=eq_0, target=0.0))
+        if toggle.get("aspect_ratio", False):
+            objectives_list.append(AspectRatio(eq=eq_0, target=target_aspect_ratio))
+        if toggle.get("qs", False):
+            objectives_list.append(
+                QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP))
+            )
+        if toggle.get("ballooning", False):
+            objectives_list.append(BallooningStability(eq=eq_0, target=0.0))
+        if toggle.get("mercier", False):
+            objectives_list.append(MercierStability(eq=eq_0, target=0.0))
+        #----------------------
+    #===========================
+
+    #=========================
+    else: # (optimized pressure)
+        #------------------------------------
+        # Construction of custom constraints:
+        if toggle.get("pressure_axis", False):
+            constraints_list.append(
+                LinearObjectiveFromUser(
+                    fun=pressure_axis,
+                    thing=eq_0,
+                    target=p_scale,
+                )
+            )
+        if toggle.get("pressure_edge", False):
+            constraints_list.append(
+                LinearObjectiveFromUser(
+                    fun=pressure_edge,
+                    thing=eq_0,
+                    target=0.0,
+                )
+            )
+        if toggle.get("grad_pressure_axis", False):
+            constraints_list.append(
+                LinearObjectiveFromUser(
+                    fun=grad_pressure_axis,
+                    thing=eq_0,
+                    target=0.0,
+                )
+            )
+        if toggle.get("grad_pressure_edge", False):
+            constraints_list.append(
+                LinearObjectiveFromUser(
+                    fun=grad_pressure_edge,
+                    thing=eq_0,
+                    target=0.0,
+                )
+            )
+        #------------------------------------
+
+        #----------------------
+        # Construction of constraints:
+        if toggle.get("forcebalance_constraint", False):
+            constraints_list.append(ForceBalance(eq=eq_0))
+        if toggle.get("fix_iota", False):
+            constraints_list.append(FixIota(eq=eq_0))
+        if toggle.get("fix_psi", False):
+            constraints_list.append(FixPsi(eq=eq_0))
+        #----------------------
+
+        #----------------------
+        # Construction of objectives:
+        if toggle.get("forcebalance_objective", False):
+            objectives_list.append(ForceBalance(eq=eq_0, target=0.0))
+        if toggle.get("aspect_ratio", False):
+            objectives_list.append(AspectRatio(eq=eq_0, target=target_aspect_ratio))
+        if toggle.get("qs", False):
+            objectives_list.append(
+                QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP))
+            )
+        if toggle.get("ballooning", False):
+            objectives_list.append(BallooningStability(eq=eq_0, target=0.0))
+        if toggle.get("mercier", False):
+            objectives_list.append(MercierStability(eq=eq_0, target=0.0))
+        if toggle.get("monotonicity", False):
+            objectives_list.append(
+                ObjectiveFromUser(
+                    fun=poly_monotonicity,
+                    grid=LinearGrid(rho=200, M=0, N=0),
+                    thing=eq_0,
+                    target=0.0,
+                    normalize=False,
+                )
+            )
+        #----------------------
+    #=========================
+
+    #---------------------------------------
+    # Finalizing optimization objects/setup:
+    constraints = tuple(constraints_list)
+
+    if len(objectives_list) == 0:
+        raise ValueError("No optimization objectives were selected.")
+
+    objectives = ObjectiveFunction(objectives_list)
+    #---------------------------------------
+
+    #-----------------------
+    # Running optimization:
     eq_opt, opt_result = eq_0.optimize(
-        objective = objectives,
-        constraints = constraints,
-        optimizer = optimizer, # OPTIMIZER!!!
-        ftol = 5e-3,
-        xtol = 1e-3,
-        gtol = 1e-2,
-        maxiter=20,
+        objective=objectives,
+        constraints=constraints,
+        optimizer=optimizer,
+        ftol=ftol,
+        xtol=xtol,
+        gtol=gtol,
+        maxiter=maxiter,
         copy=True,
         verbose=3,
     )
-    #-------------
-    
-    save_name = "opt_FXP.h5" if fix_pressure else "opt.h5"
+    #-----------------------
+
+    save_name = "opt_FXD.h5" if FXD else "opt_CON.h5"
     save_path = os.path.join(out_dir, save_name)
     eq_opt.save(save_path)
-    
 
     return eq_opt, opt_result
-#=============================================================================================================================================================
+#==============================================================================================================================================================
