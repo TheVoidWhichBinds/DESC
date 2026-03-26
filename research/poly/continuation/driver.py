@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from desc.grid import LinearGrid
-from eq import run_equilibrium
+from eq import run_equilibrium, surface_init, iota_init, eq_resolution, NFP
 from opt import run_optimization
 import os
 import pandas as pd
@@ -75,6 +75,24 @@ def _extract_f_stats(objval):
     return val, val, val
     #-------------------
 #=======================
+
+
+#============================================================
+def write_readme(out_dir, optimizer1, optimizer2, p_axis, n):
+    readme_path = os.path.join(out_dir, "README.txt")
+    L, M, N = eq_resolution
+
+    with open(readme_path, "w") as f:
+        f.write(f"optimizer1: {optimizer1}\n")
+        f.write(f"optimizer2: {optimizer2}\n")
+        f.write(f"p_axis: {p_axis}\n")
+        f.write(f"n: {n}\n")
+        f.write(f"equilibrium resolution: L={L}, M={M}, N={N}\n")
+        f.write(f"surface_init R modes: {surface_init.R_basis.modes.tolist()}\n")
+        f.write(f"surface_init Z modes: {surface_init.Z_basis.modes.tolist()}\n")
+        f.write(f"surface_init NFP: {NFP}\n")
+        f.write(f"iota_init coefficients: {iota_init.params.tolist()}\n")
+#=================================================================
 #==============================================================================================================================================================
 
 
@@ -86,7 +104,12 @@ def _extract_f_stats(objval):
 
 
 #============== FIXED VS. OPTIMIZED PRESSURE COMPARISON =======================================================================================================
-def comparison(p_maxima: list, n_set: list):
+def comparison(
+        p_maxima: list, 
+        n_set: list,
+        optimizer1: str, 
+        optimizer2: str | None = None,
+    ):
     """
     Runs initial equilibrium solve, then optimization for 
     both fixed and optimized pressure. Plots, and objective
@@ -102,7 +125,7 @@ def comparison(p_maxima: list, n_set: list):
     # Initializing table of objective values:
     columns = [
         'Force error: ',
-        'Quasi-symmetry (1,19) Boozer error: ',
+        f'Quasi-symmetry (1,{NFP}) Boozer error: ',
         'Aspect ratio: ',
         'Fixed iota profile error: ',
         'Fixed Psi error: ',
@@ -121,22 +144,41 @@ def comparison(p_maxima: list, n_set: list):
     for p_axis in p_maxima:
         for n in n_set:
 
-            #=======================================================
-            # Generates directory to store equilibria, plots, table: 
+            #==========================================
+            # Generates meta-data README and directory: 
             out_dir = os.path.join(base_dir, f"p{sci_compact(p_axis)}_n{n}")
             os.makedirs(out_dir, exist_ok=True)
 
+            write_readme(
+                out_dir=out_dir,
+                optimizer1=optimizer1,
+                optimizer2=optimizer2,
+                p_axis=p_axis,
+                n=n,
+            )
+            #=======
+            
+            #===================================
             # Running initial equilibrium solve:
             eq_init, n_eff = run_equilibrium(p_axis, n, out_dir=out_dir)
 
             # Running fixed and optimized pressure optimizations:
             eq_opt_FXP, opt_result_FXP = run_optimization(
-                p_axis, out_dir=out_dir, fix_pressure=True
+                optimizer1, p_axis, out_dir=out_dir, fix_pressure=True
             )
             eq_opt, opt_result = run_optimization(
-                p_axis, out_dir=out_dir, fix_pressure=False
+                optimizer1, p_axis, out_dir=out_dir, fix_pressure=False
             )
-            #==============================================
+
+            if optimizer2 is not None:
+                 # Running fixed and optimized pressure optimizations:
+                eq_opt_FXP, opt_result_FXP = run_optimization(
+                    optimizer2, p_axis, out_dir=out_dir, fix_pressure=True
+                )
+                eq_opt, opt_result = run_optimization(
+                    optimizer2, p_axis, out_dir=out_dir, fix_pressure=False
+                )
+            #==============================================================
 
 
             #====================================
@@ -219,7 +261,7 @@ def comparison(p_maxima: list, n_set: list):
             #-----------------------
             #=======================
 
-            
+
             #====================
             #--------------------
             # Plotting pressures:
@@ -343,5 +385,5 @@ def comparison(p_maxima: list, n_set: list):
 
 
 #============== RUN IT =======================================================================================================================================
-comparison([1e4], [2])
+comparison([1e4], [4], "proximal-lsq-exact", None)
 #=============================================================================================================================================================

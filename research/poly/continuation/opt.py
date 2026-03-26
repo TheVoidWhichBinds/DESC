@@ -32,15 +32,11 @@ from desc.optimize import Optimizer
 
 
 #============== OPTIMIZER FUNCTION ============================================================================================================================
-def run_optimization(p_scale, out_dir, fix_pressure: bool):
+def run_optimization(optimizer, p_scale, out_dir, fix_pressure: bool):
     """
     """
     eq_init = desc.io.load(os.path.join(out_dir, 'eq.h5')) # loading initial eq solve
     eq_0 = eq_init.copy() # copying initial eq solve so as to not alter it
-
-
-    # Weight to assign to secondary objectives and constraints (not force balance):
-    inferior_weights = 1e4
 
     #------------------------------------------------------------------
     # Division of constraints and objectives depending on fix_pressure:
@@ -118,11 +114,11 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
     eq_opt, opt_result = eq_0.optimize(
         objective = objectives,
         constraints = constraints,
-        optimizer = Optimizer("lsq-auglag"), # trust region augmented lagrangian
+        optimizer = optimizer, # OPTIMIZER!!!
         ftol = 5e-3,
         xtol = 1e-3,
         gtol = 1e-2,
-        maxiter=100,
+        maxiter=20,
         copy=True,
         verbose=3,
     )

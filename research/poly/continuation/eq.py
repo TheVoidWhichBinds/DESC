@@ -13,16 +13,19 @@ from desc.profiles import PowerSeriesProfile
 
 #============== FIXED INITIAL PARAMETERS ======================================================================================================================
 # Initializing fixed surface: 
+NFP = 10
 surface_init = FourierRZToroidalSurface(
-    R_lmn=[10.0, -1.0, -0.3, 0.3],
-    modes_R=[(0, 0), (1, 0), (1, 1), (-1, -1)],
-    Z_lmn=[1, -0.3, -0.3],
-    modes_Z=[(-1, 0), (-1, 1), (1, -1)],
-    NFP=19,
+    R_lmn = [10.0, -1.2, -0.25, 0.25],
+    modes_R = [(0, 0), (1, 0), (1, 1), (-1, -1)],
+    Z_lmn = [1.2, -0.2, -0.2],
+    modes_Z = [(-1, 0), (-1, 1), (1, -1)],
+    NFP = NFP,
 )
 
 # Initializing fixed iota:
 iota_init = PowerSeriesProfile([1, 0, 2])
+
+eq_resolution = [8, 8, 3]
 #==============================================================================================================================================================
 
 
@@ -67,24 +70,32 @@ def run_equilibrium(p_scale, n, out_dir):
         n_eff = n if n>=2
     """
 
+    #-----------------------------------------------
     # Creating polynomial coefficients in list form:
     # Checking that n>=2:
     coeff, n_eff = coefficients(p_scale, n)
+    #--------------------------------------
 
+    #----------------------
     # Prepping equilibrium:
+    L, M, N = eq_resolution
     eq = Equilibrium(
-        L=8, M=8, N=3,
+        L=L, M=M, N=N,
         surface=surface_init,
         pressure=PowerSeriesProfile(coeff),
         iota=iota_init,
         Psi=1.0,
     )
+    #-----------
 
+    #------------------------------------------------------------
     # Solving initial equilibrium and returning last step of opt:
     eq_init = solve_continuation_automatic(eq.copy(), verbose=3)[-1]
+    #---------------------------------------------------------------
 
     save_path = os.path.join(out_dir, 'eq.h5')
     eq_init.save(save_path)
+
 
     return eq_init, n_eff
 #=============================================================================================================================================================
