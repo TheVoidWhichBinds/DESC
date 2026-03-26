@@ -114,12 +114,14 @@ def comparison(p_maxima: list, n_set: list):
     #====================================================
 
 
+
+
     #==================================================
     # Loop over on-axis pressure and polynomial orders:
     for p_axis in p_maxima:
         for n in n_set:
 
-            #-------------------------------------------------------
+            #=======================================================
             # Generates directory to store equilibria, plots, table: 
             out_dir = os.path.join(base_dir, f"p{sci_compact(p_axis)}_n{n}")
             os.makedirs(out_dir, exist_ok=True)
@@ -134,9 +136,10 @@ def comparison(p_maxima: list, n_set: list):
             eq_opt, opt_result = run_optimization(
                 p_axis, out_dir=out_dir, fix_pressure=False
             )
-            #----------------------------------------------
+            #==============================================
 
 
+            #====================================
             #------------------------------------
             # Generating comparison table labels:
             rows = [] # table row names
@@ -150,7 +153,9 @@ def comparison(p_maxima: list, n_set: list):
             row_FXP = [] # fixed pressure obj vals
             row_OPT = [] # optimized pressure obj vals
             row_DIFF = [] # difference between fixed and opt vals
+            #----------------------------------------------------
 
+            #-----------------------------
             # Extracting objective values:
             for key in columns:
                 fmin_FXP, fmean_FXP, fmax_FXP = _extract_f_stats(
@@ -179,7 +184,9 @@ def comparison(p_maxima: list, n_set: list):
                     f"f_mean diff={sci_compact(dmean, sig=4)}, "
                     f"f_max diff={sci_compact(dmax, sig=4)}"
                 )
+            #-----------------------------------------------
 
+            #-------------------------
             # Including Beta in table:
             beta_FXP = float(eq_opt_FXP.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
             beta_OPT = float(eq_opt.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
@@ -189,11 +196,12 @@ def comparison(p_maxima: list, n_set: list):
             row_OPT.append(f"{beta_OPT:.4g}")
             row_DIFF.append(f"{beta_DIFF:.4g}")
             
-            # 
             values.append(row_FXP)
             values.append(row_OPT)
             values.append(row_DIFF)
+            #----------------------
 
+            #------------------------------
             # Save table inside run folder:
             index = pd.MultiIndex.from_tuples(rows, names=["Run", "Pressure Type"])
             df = pd.DataFrame(
@@ -209,8 +217,10 @@ def comparison(p_maxima: list, n_set: list):
                 f.write("Comparison of Post-Optimization Objectives\n\n")
                 f.write(ascii_table)
             #-----------------------
+            #=======================
 
-
+            
+            #====================
             #--------------------
             # Plotting pressures:
             rho = np.linspace(0.0, 1.0, 400)
@@ -237,7 +247,6 @@ def comparison(p_maxima: list, n_set: list):
             plt.close()
             #----------
 
-
             #-------------------------------------------------------
             # Plotting  gridded toroidal cross-sections of B-fields:
             plt.title('Toroidal Cross-Sections of Solved Equilibria')
@@ -252,11 +261,9 @@ def comparison(p_maxima: list, n_set: list):
             plt.close()
             #----------
 
-
-            #------------------------------------
+            #-----------------------
+             # |J| vs. rho plotting:
             rho_grid = np.linspace(0.0, 1.0, 100)
-            #----------------------
-            # |J| vs. rho plotting:
             grid_J = LinearGrid(rho=rho_grid, M=24, N=24, NFP=eq_opt.NFP, sym=eq_opt.sym)
             # Helper func for flux-surface averaging of |J|
             def _surface_mean_J_mag(eq):
@@ -272,8 +279,10 @@ def comparison(p_maxima: list, n_set: list):
                     J_mag_fs[i] = np.mean(J_mag[mask])
 
                 return rho_unique, J_mag_fs
+            #------------------------------
 
-            # Compute |J| profiles for fixed-pressure and optimized-pressure equilibria
+            #---------------------------------------------------------------------------
+            # Compute |J| profiles for fixed-pressure and optimized-pressure equilibria:
             rho_u_FXP, J_mag_FXP = _surface_mean_J_mag(eq_opt_FXP)
             rho_u_OPT, J_mag_OPT = _surface_mean_J_mag(eq_opt)
 
@@ -294,7 +303,6 @@ def comparison(p_maxima: list, n_set: list):
             plt.savefig(J_mag_path, dpi=200)
             plt.close()
             #----------
-
 
             #----------------------
             # iota vs. rho plotting:
@@ -320,6 +328,8 @@ def comparison(p_maxima: list, n_set: list):
             plt.savefig(iota_path, dpi=200)
             plt.close()
             #----------
+            #==========
+        #==============
     #==================
 #=============================================================================================================================================================
 
@@ -332,5 +342,6 @@ def comparison(p_maxima: list, n_set: list):
 
 
 
-#============== RUN IT ==============#
+#============== RUN IT =======================================================================================================================================
 comparison([1e4], [2])
+#=============================================================================================================================================================
