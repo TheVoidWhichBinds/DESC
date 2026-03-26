@@ -119,10 +119,10 @@ def run_optimization(p_scale, out_dir, fix_pressure: bool):
         objective = objectives,
         constraints = constraints,
         optimizer = Optimizer("lsq-auglag"), # trust region augmented lagrangian
-        ftol = 5e-2,
+        ftol = 5e-3,
         xtol = 1e-3,
-        gtol = 1e-4,
-        maxiter=200,
+        gtol = 1e-2,
+        maxiter=100,
         copy=True,
         verbose=3,
     )
