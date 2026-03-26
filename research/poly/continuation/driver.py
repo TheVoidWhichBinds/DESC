@@ -149,12 +149,12 @@ def comparison(
     # Loop over on-axis pressure and polynomial orders:
     for p_axis in p_maxima:
         for n in n_set:
-
             #==========================================
             # Generates meta-data README and directory:
             out_dir = os.path.join(base_dir, f"p{sci_compact(p_axis)}_n{n}")
             os.makedirs(out_dir, exist_ok=True)
-            #==========================================
+            #==================================
+
 
             #===================================
             # Running initial equilibrium solve:
@@ -164,13 +164,13 @@ def comparison(
                 out_dir=out_dir,
                 eq_config=eq_config,
             )
-            eq_0 = eq_init.copy()
             #===================================
+
 
             #=========================================================
             # 1st round of fixed and optimized pressure optimizations:
             eq_opt_FXD, opt_result_FXD = run_optimization(
-                eq_0,
+                eq_init.copy(),
                 optimizer1,
                 p_axis,
                 out_dir=out_dir,
@@ -178,16 +178,16 @@ def comparison(
                 FXD=True,
             )
             eq_opt_CON, opt_result_CON = run_optimization(
-                eq_0,
+                eq_init.copy(),
                 optimizer1,
                 p_axis,
                 out_dir=out_dir,
                 opt_config=opt_config,
                 FXD=False,
             )
-            #=========================================================
+            #-------------
 
-            #=========================================================
+            #---------------------------------------------------------
             # 2nd round of fixed and optimized pressure optimizations:
             if optimizer2 is not None:
                 eq_opt_FXD, opt_result_FXD = run_optimization(
@@ -206,7 +206,7 @@ def comparison(
                     opt_config=opt_config,
                     FXD=False,
                 )
-            #=========================================================
+            #=================
 
 
             #====================================
@@ -226,6 +226,8 @@ def comparison(
             row_DIFF = []
             #====================================
 
+
+            #=============================
             #-----------------------------
             # Extracting objective values:
             for key, label in active_columns:
@@ -287,7 +289,8 @@ def comparison(
             with open(output_file, "w") as f:
                 f.write("Comparison of Post-Optimization Objectives\n\n")
                 f.write(ascii_table)
-            #------------------------------
+            #=======================
+
 
             #====================
             # Plotting pressures:
@@ -313,7 +316,7 @@ def comparison(
             pressure_path = os.path.join(out_dir, "pressure_compare.png")
             plt.savefig(pressure_path, dpi=200)
             plt.close()
-            #====================
+            #----------
 
             #-------------------------------------------------------
             # Plotting gridded toroidal cross-sections of B-fields:
@@ -397,6 +400,8 @@ def comparison(
             plt.savefig(iota_path, dpi=200)
             plt.close()
             #----------------------
+        #==========================
+    #==============================
 #==============================================================================================================================================================
 
 
@@ -407,7 +412,7 @@ def comparison(
 
 
 
-#============== CONFIG ENTRYPOINT =============================================================================================================================
+#============== CONFIGURATION ENTRYPOINT ==========================================================================================================================
 def run_from_config(eq_config: dict, opt_config: dict, driver_config: dict):
     comparison(
         p_maxima = driver_config["p_maxima"],

@@ -63,8 +63,8 @@ eq_config = {
 #----------------------
 target_aspect_ratio = 6
 ftol = 5e-3
-xtol = 1e-3
-gtol = 1e-2
+xtol = 1e-4
+gtol = 1e-3
 maxiter = 20
 
 # Fixed-pressure-family toggles (bools):
