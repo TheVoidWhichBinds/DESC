@@ -1,10 +1,18 @@
+import jax
+print("jax devices:", jax.devices())
+import os
 
 from desc import set_device
+print("after importing set_device:", repr(os.environ.get("CUDA_VISIBLE_DEVICES")))
+
+set_device("gpu")   # or whatever your intended call is
+print("after set_device:", repr(os.environ.get("CUDA_VISIBLE_DEVICES")))
+
+print("before desc import:", repr(os.environ.get("CUDA_VISIBLE_DEVICES")))
+
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
 from .driver import run_from_config
-
-
 
 
 
@@ -129,7 +137,7 @@ opt_config = {
 #================ DRIVER INPUTS ==================#
 #-------------------
 # GPU accessibility:
-GPU_ON = False
+GPU_ON = True
 if GPU_ON:
     set_device("gpu")
 
