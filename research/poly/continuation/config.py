@@ -89,41 +89,69 @@ xtol = 1e-4
 gtol = 1e-3
 maxiter = 20
 
-# Fixed-pressure-family toggles (bools):
-toggle_FXD = {
-    "forcebalance_constraint": True,
-    "fix_iota": True,
-    "fix_psi": True,
-    "fix_pressure": True,
-    "forcebalance_objective": True,
-    "aspect_ratio": True,
-    "qs": True,
-    "ballooning": True,
-    "mercier": True,
-}
+optimizer_configs = [
+    { # 1st stage optimization:
+        "name": "proximal-lsq-exact", # optimizer choice
+        "toggle_FXD": { # fixed profiles
+            "forcebalance_constraint": True,
+            "fix_iota": True,
+            "fix_psi": True,
+            "fix_pressure": True,
+            "forcebalance_objective": True,
+            "aspect_ratio": True,
+            "qs": True,
+            "ballooning": True,
+            "mercier": True,
+        },
+        "toggle_CON": { # free profiles
+            "pressure_axis": True,
+            "pressure_edge": True,
+            "grad_pressure_axis": True,
+            "grad_pressure_edge": True,
+            "forcebalance_constraint": True,
+            "fix_iota": True,
+            "fix_psi": True,
+            "forcebalance_objective": True,
+            "aspect_ratio": True,
+            "qs": True,
+            "ballooning": True,
+            "mercier": True,
+            "monotonicity": True,
+        },
+    },
 
-# Optimized-pressure-family toggles (bools):
-toggle_CON = {
-    "pressure_axis": True,
-    "pressure_edge": True,
-    "grad_pressure_axis": True,
-    "grad_pressure_edge": True,
-    "forcebalance_constraint": True,
-    "fix_iota": True,
-    "fix_psi": True,
-    "forcebalance_objective": True,
-    "aspect_ratio": True,
-    "qs": True,
-    "ballooning": True,
-    "mercier": True,
-    "monotonicity": True,
-}
 
-# Ordered list of optimizers:
-# [optimizer1, optimizer2]
-optimizers = ["proximal-lsq-exact", None]
+    { # 2nd stage optimization:
+        "name": None,
+        "toggle_FXD": {
+            "forcebalance_constraint": False,
+            "fix_iota": False,
+            "fix_psi": False,
+            "fix_pressure": False,
+            "forcebalance_objective": False,
+            "aspect_ratio": False,
+            "qs": False,
+            "ballooning": False,
+            "mercier": False,
+        },
+        "toggle_CON": {
+            "pressure_axis": False,
+            "pressure_edge": False,
+            "grad_pressure_axis": False,
+            "grad_pressure_edge": False,
+            "forcebalance_constraint": False,
+            "fix_iota": False,
+            "fix_psi": False,
+            "forcebalance_objective": False,
+            "aspect_ratio": False,
+            "qs": False,
+            "ballooning": False,
+            "mercier": False,
+            "monotonicity": False,
+        },
+    },
+]
 #----------------------------------------
-
 
 #---------------------
 # Grouping opt inputs:
@@ -133,9 +161,7 @@ opt_config = {
     "xtol": xtol,
     "gtol": gtol,
     "maxiter": maxiter,
-    "toggle_FXD": toggle_FXD,
-    "toggle_CON": toggle_CON,
-    "optimizers": optimizers,
+    "optimizer_configs": optimizer_configs,
 }
 #----------------------------
 #=================================================#

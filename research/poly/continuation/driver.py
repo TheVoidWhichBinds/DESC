@@ -113,13 +113,7 @@ def comparison(
     #---------------------------------------------
     # Unpacking config variables needed in driver:
     NFP = eq_config["NFP"]
-
-    optimizers = opt_config["optimizers"]
-    optimizer1 = optimizers[0]
-    optimizer2 = optimizers[1] if len(optimizers) > 1 else None
-
-    toggle_FXD = opt_config["toggle_FXD"]
-    toggle_CON = opt_config["toggle_CON"]
+    optimizer_configs = opt_config["optimizer_configs"]
     #---------------------------------------------
 
     #========================================
@@ -136,14 +130,15 @@ def comparison(
 
     active_columns = []
     for key, label in column_map:
-        if toggle_FXD.get(key, False) or toggle_CON.get(key, False):
+        if any(
+            config["toggle_FXD"].get(key, False) or config["toggle_CON"].get(key, False)
+            for config in optimizer_configs
+            if config["name"] is not None
+        ):
             active_columns.append((key, label))
     #========================================
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
-
-
-
 
     #==================================================
     # Loop over on-axis pressure and polynomial orders:
@@ -153,8 +148,7 @@ def comparison(
             # Generates meta-data README and directory:
             out_dir = os.path.join(base_dir, f"p{sci_compact(p_axis)}_n{n}")
             os.makedirs(out_dir, exist_ok=True)
-            #==================================
-
+            #==========================================
 
             #===================================
             # Running initial equilibrium solve:
@@ -166,48 +160,43 @@ def comparison(
             )
             #===================================
 
-
             #=========================================================
-            # 1st round of fixed and optimized pressure optimizations:
-            eq_opt_FXD, opt_result_FXD = run_optimization(
-                eq_init.copy(),
-                optimizer1,
-                p_axis,
-                out_dir=out_dir,
-                opt_config=opt_config,
-                FXD=True,
-            )
-            eq_opt_CON, opt_result_CON = run_optimization(
-                eq_init.copy(),
-                optimizer1,
-                p_axis,
-                out_dir=out_dir,
-                opt_config=opt_config,
-                FXD=False,
-            )
-            #-------------
+            # Run optimizer stages in order. Later stages overwrite
+            # earlier results, which is intended here.
+            eq_opt_FXD = eq_init.copy()
+            eq_opt_CON = eq_init.copy()
+            opt_result_FXD = None
+            opt_result_CON = None
 
-            #---------------------------------------------------------
-            # 2nd round of fixed and optimized pressure optimizations:
-            if optimizer2 is not None:
+            for config in optimizer_configs:
+                optimizer = config["name"]
+                if optimizer is None:
+                    continue
+
+                stage_opt_config = {
+                    **opt_config,
+                    "toggle_FXD": config["toggle_FXD"],
+                    "toggle_CON": config["toggle_CON"],
+                }
+
                 eq_opt_FXD, opt_result_FXD = run_optimization(
                     eq_opt_FXD,
-                    optimizer2,
+                    optimizer,
                     p_axis,
                     out_dir=out_dir,
-                    opt_config=opt_config,
+                    opt_config=stage_opt_config,
                     FXD=True,
                 )
+
                 eq_opt_CON, opt_result_CON = run_optimization(
                     eq_opt_CON,
-                    optimizer2,
+                    optimizer,
                     p_axis,
                     out_dir=out_dir,
-                    opt_config=opt_config,
+                    opt_config=stage_opt_config,
                     FXD=False,
                 )
-            #=================
-
+            #=========================================================
 
             #====================================
             # Generating comparison table labels:
@@ -226,9 +215,7 @@ def comparison(
             row_DIFF = []
             #====================================
 
-
             #=============================
-            #-----------------------------
             # Extracting objective values:
             for key, label in active_columns:
                 fmin_FXD, fmean_FXD, fmax_FXD = _safe_extract_from_result(
@@ -261,8 +248,12 @@ def comparison(
 
             #-------------------------
             # Including Beta in table:
-            beta_FXD = float(eq_opt_FXD.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
-            beta_CON = float(eq_opt_CON.compute("<beta>_vol", override_grid=True)["<beta>_vol"])
+            beta_FXD = float(
+                eq_opt_FXD.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
+            )
+            beta_CON = float(
+                eq_opt_CON.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
+            )
             beta_DIFF = beta_CON - beta_FXD
 
             row_FXD.append(f"{beta_FXD:.4g}")
@@ -289,8 +280,7 @@ def comparison(
             with open(output_file, "w") as f:
                 f.write("Comparison of Post-Optimization Objectives\n\n")
                 f.write(ascii_table)
-            #=======================
-
+            #===========================
 
             #====================
             # Plotting pressures:
@@ -316,7 +306,7 @@ def comparison(
             pressure_path = os.path.join(out_dir, "pressure_compare.png")
             plt.savefig(pressure_path, dpi=200)
             plt.close()
-            #----------
+            #--------------------
 
             #-------------------------------------------------------
             # Plotting gridded toroidal cross-sections of B-fields:
