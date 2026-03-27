@@ -1,12 +1,17 @@
 from pathlib import Path
 import os
-import jax
 
 #================ ENVIRONMENT TOGGLE =================#
 USE_SUPERCOMPUTER = False
 #====================================================#
 
-# Repo root = DESC/
+from desc import set_device
+
+if USE_SUPERCOMPUTER:
+    set_device("gpu")
+
+import jax
+
 repo_root = Path(__file__).resolve().parents[3]
 
 if USE_SUPERCOMPUTER:
@@ -15,11 +20,6 @@ if USE_SUPERCOMPUTER:
     jax.config.update("jax_compilation_cache_dir", str(cache_dir))
     jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
     jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
-
-from desc import set_device
-
-if USE_SUPERCOMPUTER:
-    set_device("gpu")
 
 print("CUDA_VISIBLE_DEVICES:", repr(os.environ.get("CUDA_VISIBLE_DEVICES")))
 print("jax devices:", jax.devices())
