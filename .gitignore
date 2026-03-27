@@ -34,3 +34,4 @@ uv.lock
 # Environments
 .env
 .venv
+jax-caches/

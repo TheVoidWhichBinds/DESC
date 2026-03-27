@@ -3,7 +3,7 @@ import os
 import jax
 
 #================ ENVIRONMENT TOGGLE =================#
-USE_SUPERCOMPUTER = True
+USE_SUPERCOMPUTER = False
 #====================================================#
 
 # Repo root = DESC/
