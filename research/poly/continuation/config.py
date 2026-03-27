@@ -93,10 +93,10 @@ eq_config = {
 #============== OPTIMIZATION INPUTS ==============#
 #======================
 target_aspect_ratio = 6
-ftol = 5e-3
+ftol = 5e-4
 xtol = 1e-4
 gtol = 1e-3
-maxiter = 20
+maxiter = 25
 #===========
 
 
@@ -106,13 +106,14 @@ optimizer_configs = [
     {  # 1st stage optimization
         "name": "proximal-lsq-exact", # optimizer 
         "toggle_FXD": { # fixed profiles
-            # constraints
+            # Constraints:
+                # Standard:
             "forcebalance_con": True,
             "fix_iota_con":     True,
             "fix_psi_con":      True,
             "fix_pressure_con": True,
 
-            # objectives
+            # Objectives:
             "forcebalance_obj": obj(True, 1e4),
             "aspect_ratio_obj": obj(True, 1e0),
             "qs_obj":           obj(True, 1e0),
@@ -121,16 +122,19 @@ optimizer_configs = [
         },
 
         "toggle_CON": { # free profiles
-            # constraints
+            # Constraints:
+                # Standard:
+            "forcebalance_con":       True,
+            "fix_iota_con":           True,
+            "fix_psi_con":            True,
+            "fix_pressure_con":       False,
+                # Custom:
             "pressure_axis_con":      True,
             "pressure_edge_con":      True,
             "grad_pressure_axis_con": True,
             "grad_pressure_edge_con": True,
-            "forcebalance_con":       True,
-            "fix_iota_con":           True,
-            "fix_psi_con":            True,
 
-            # objectives
+            # Objectives:
             "forcebalance_obj": obj(True, 1e4),
             "aspect_ratio_obj": obj(True, 1e0),
             "qs_obj":           obj(True, 1e0),
@@ -210,7 +214,7 @@ opt_config = {
 p_maxima = [1e4]
 
 # Polynomial orders to test:
-n_set = [3]
+n_set = [3,4,5,6]
 #==========
 
 
