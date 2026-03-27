@@ -1,18 +1,33 @@
-import jax
-print("jax devices:", jax.devices())
+from pathlib import Path
 import os
+import jax
+
+#================ ENVIRONMENT TOGGLE =================#
+USE_SUPERCOMPUTER = True
+#====================================================#
+
+# Repo root = DESC/
+repo_root = Path(__file__).resolve().parents[3]
+
+if USE_SUPERCOMPUTER:
+    cache_dir = repo_root / "jax-caches"
+    cache_dir.mkdir(exist_ok=True)
+    jax.config.update("jax_compilation_cache_dir", str(cache_dir))
+    jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
+    jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
 
 from desc import set_device
-print("after importing set_device:", repr(os.environ.get("CUDA_VISIBLE_DEVICES")))
 
-set_device("gpu")   # or whatever your intended call is
-print("after set_device:", repr(os.environ.get("CUDA_VISIBLE_DEVICES")))
+if USE_SUPERCOMPUTER:
+    set_device("gpu")
 
-print("before desc import:", repr(os.environ.get("CUDA_VISIBLE_DEVICES")))
+print("CUDA_VISIBLE_DEVICES:", repr(os.environ.get("CUDA_VISIBLE_DEVICES")))
+print("jax devices:", jax.devices())
 
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
 from .driver import run_from_config
+
 
 
 
@@ -136,11 +151,6 @@ opt_config = {
 
 #================ DRIVER INPUTS ==================#
 #-------------------
-# GPU accessibility:
-GPU_ON = True
-if GPU_ON:
-    set_device("gpu")
-
 # Pressure maxima to test:
 p_maxima = [1e4]
 
