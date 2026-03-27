@@ -48,15 +48,15 @@ def obj(use: bool, weight=None):
 #============== EQUILIBRIUM INPUTS ==============#
 #=========================
 # Number of field periods:
-NFP = 10
+NFP = 19
 
 # Initializing fixed surface:
 surface_init = FourierRZToroidalSurface(
-    R_lmn=[10.0, -1.2, -0.25, 0.25],
-    modes_R=[(0, 0), (1, 0), (1, 1), (-1, -1)],
-    Z_lmn=[1.2, -0.2, -0.2],
-    modes_Z=[(-1, 0), (-1, 1), (1, -1)],
-    NFP=NFP,
+    R_lmn =   [ 10.0,   -1.0,   -0.3,    0.3   ],
+    modes_R = [(0, 0), (1, 0), (1, 1), (-1, -1)],
+    Z_lmn =   [  1.0,    -0.3,    -0.3  ],
+    modes_Z = [(-1, 0), (-1, 1), (1, -1)],
+    NFP = NFP,
 )
 
 # Initializing fixed iota:
