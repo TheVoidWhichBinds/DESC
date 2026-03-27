@@ -30,6 +30,22 @@ from desc.objectives import (
 
 
 
+
+def _obj_settings(toggle_dict, key):
+    """
+    Return objective settings as:
+        use (bool), weight (number or None)
+
+    Missing objective keys default to off.
+    """
+    entry = toggle_dict.get(key, {"use": False, "weight": None})
+    return entry.get("use", False), entry.get("weight", None)
+
+
+
+
+
+
 #============== OPTIMIZER FUNCTION ============================================================================================================================
 def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
     """
@@ -59,30 +75,52 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
     if FXD:  # (fixed pressure)
         #----------------------
         # Construction of constraints:
-        if toggle.get("forcebalance_constraint", False):
+        if toggle.get("forcebalance_con", False):
             constraints_list.append(ForceBalance(eq=eq_0))
-        if toggle.get("fix_iota", True):
+        if toggle.get("fix_iota_con", True):
             constraints_list.append(FixIota(eq=eq_0))
-        if toggle.get("fix_psi", True):
+        if toggle.get("fix_psi_con", True):
             constraints_list.append(FixPsi(eq=eq_0))
-        if toggle.get("fix_pressure", True):
+        if toggle.get("fix_pressure_con", True):
             constraints_list.append(FixPressure(eq=eq_0))
         #------------------------------------------------
 
         #----------------------------
         # Construction of objectives:
-        if toggle.get("forcebalance_objective", False):
-            objectives_list.append(ForceBalance(eq=eq_0, target=0.0))
-        if toggle.get("aspect_ratio", False):
-            objectives_list.append(AspectRatio(eq=eq_0, target=target_aspect_ratio))
-        if toggle.get("qs", False):
-            objectives_list.append(
-                QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP))
-            )
-        if toggle.get("ballooning", False):
-            objectives_list.append(BallooningStability(eq=eq_0, target=0.0))
-        if toggle.get("mercier", False):
-            objectives_list.append(MercierStability(eq=eq_0, target=0.0))
+        use, weight = _obj_settings(toggle, "forcebalance_obj")
+        if use:
+            kwargs = {"eq": eq_0, "target": 0.0}
+            if weight is not None:
+                kwargs["weight"] = weight
+            objectives_list.append(ForceBalance(**kwargs))
+
+        use, weight = _obj_settings(toggle, "aspect_ratio_obj")
+        if use:
+            kwargs = {"eq": eq_0, "target": target_aspect_ratio}
+            if weight is not None:
+                kwargs["weight"] = weight
+            objectives_list.append(AspectRatio(**kwargs))
+
+        use, weight = _obj_settings(toggle, "qs_obj")
+        if use:
+            kwargs = {"eq": eq_0, "helicity": (1, eq_0.NFP)}
+            if weight is not None:
+                kwargs["weight"] = weight
+            objectives_list.append(QuasisymmetryBoozer(**kwargs))
+
+        use, weight = _obj_settings(toggle, "ballooning_obj")
+        if use:
+            kwargs = {"eq": eq_0, "target": 0.0}
+            if weight is not None:
+                kwargs["weight"] = weight
+            objectives_list.append(BallooningStability(**kwargs))
+
+        use, weight = _obj_settings(toggle, "mercier_obj")
+        if use:
+            kwargs = {"eq": eq_0, "target": 0.0}
+            if weight is not None:
+                kwargs["weight"] = weight
+            objectives_list.append(MercierStability(**kwargs))
         #----------------------------------------------------------------
     #====================================================================
 
@@ -90,7 +128,7 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
     else:  # (optimized pressure)
         #------------------------------------
         # Construction of custom constraints:
-        if toggle.get("pressure_axis", False):
+        if toggle.get("pressure_axis_con", False):
             constraints_list.append(
                 LinearObjectiveFromUser(
                     fun=pressure_axis,
@@ -98,7 +136,7 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
                     target=p_scale,
                 )
             )
-        if toggle.get("pressure_edge", False):
+        if toggle.get("pressure_edge_con", False):
             constraints_list.append(
                 LinearObjectiveFromUser(
                     fun=pressure_edge,
@@ -106,7 +144,7 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
                     target=0.0,
                 )
             )
-        if toggle.get("grad_pressure_axis", False):
+        if toggle.get("grad_pressure_axis_con", False):
             constraints_list.append(
                 LinearObjectiveFromUser(
                     fun=grad_pressure_axis,
@@ -114,7 +152,7 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
                     target=0.0,
                 )
             )
-        if toggle.get("grad_pressure_edge", False):
+        if toggle.get("grad_pressure_edge_con", False):
             constraints_list.append(
                 LinearObjectiveFromUser(
                     fun=grad_pressure_edge,
@@ -126,38 +164,63 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
 
         #--------------------------------------
         # Construction of standard constraints:
-        if toggle.get("forcebalance_constraint", False):
+        if toggle.get("forcebalance_con", False):
             constraints_list.append(ForceBalance(eq=eq_0))
-        if toggle.get("fix_iota", False):
+        if toggle.get("fix_iota_con", False):
             constraints_list.append(FixIota(eq=eq_0))
-        if toggle.get("fix_psi", False):
+        if toggle.get("fix_psi_con", False):
             constraints_list.append(FixPsi(eq=eq_0))
         #--------------------------------------
 
         #----------------------------
         # Construction of objectives:
-        if toggle.get("forcebalance_objective", False):
-            objectives_list.append(ForceBalance(eq=eq_0, target=0.0))
-        if toggle.get("aspect_ratio", False):
-            objectives_list.append(AspectRatio(eq=eq_0, target=target_aspect_ratio))
-        if toggle.get("qs", False):
-            objectives_list.append(
-                QuasisymmetryBoozer(eq=eq_0, helicity=(1, eq_0.NFP))
-            )
-        if toggle.get("ballooning", False):
-            objectives_list.append(BallooningStability(eq=eq_0, target=0.0))
-        if toggle.get("mercier", False):
-            objectives_list.append(MercierStability(eq=eq_0, target=0.0))
-        if toggle.get("monotonicity", False):
-            objectives_list.append(
-                ObjectiveFromUser(
-                    fun=poly_monotonicity,
-                    grid=LinearGrid(rho=200, M=0, N=0),
-                    thing=eq_0,
-                    target=0.0,
-                    normalize=False,
-                )
-            )
+        use, weight = _obj_settings(toggle, "forcebalance_obj")
+        if use:
+            kwargs = {"eq": eq_0, "target": 0.0}
+            if weight is not None:
+                kwargs["weight"] = weight
+            objectives_list.append(ForceBalance(**kwargs))
+
+        use, weight = _obj_settings(toggle, "aspect_ratio_obj")
+        if use:
+            kwargs = {"eq": eq_0, "target": target_aspect_ratio}
+            if weight is not None:
+                kwargs["weight"] = weight
+            objectives_list.append(AspectRatio(**kwargs))
+
+        use, weight = _obj_settings(toggle, "qs_obj")
+        if use:
+            kwargs = {"eq": eq_0, "helicity": (1, eq_0.NFP)}
+            if weight is not None:
+                kwargs["weight"] = weight
+            objectives_list.append(QuasisymmetryBoozer(**kwargs))
+
+        use, weight = _obj_settings(toggle, "ballooning_obj")
+        if use:
+            kwargs = {"eq": eq_0, "target": 0.0}
+            if weight is not None:
+                kwargs["weight"] = weight
+            objectives_list.append(BallooningStability(**kwargs))
+
+        use, weight = _obj_settings(toggle, "mercier_obj")
+        if use:
+            kwargs = {"eq": eq_0, "target": 0.0}
+            if weight is not None:
+                kwargs["weight"] = weight
+            objectives_list.append(MercierStability(**kwargs))
+
+        use, weight = _obj_settings(toggle, "monotonicity_obj")
+        if use:
+            kwargs = {
+                "fun": poly_monotonicity,
+                "grid": LinearGrid(rho=200, M=0, N=0),
+                "thing": eq_0,
+                "target": 0.0,
+                "normalize": False,
+            }
+            if weight is not None:
+                kwargs["weight"] = weight
+            objectives_list.append(ObjectiveFromUser(**kwargs))
         #---------------------------
     #===============================
 

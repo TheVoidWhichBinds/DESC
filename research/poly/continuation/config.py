@@ -29,6 +29,13 @@ from desc.profiles import PowerSeriesProfile
 from .driver import run_from_config
 
 
+def obj(use: bool, weight=None):
+    return {"use": use, "weight": weight}
+#===================================================================================================================================================
+
+
+
+
 
 
 
@@ -64,21 +71,13 @@ eq_resolution = [L, M, N]
 #--------------------
 # Grouping eq inputs:
 eq_config = {
-    "NFP": NFP,
-    "surface_init": surface_init,
-    "iota_init": iota_init,
+    "NFP":           NFP,
+    "surface_init":  surface_init,
+    "iota_init":     iota_init,
     "eq_resolution": eq_resolution,
 }
 #----------------------------------
 #=================================================#
-
-
-
-
-
-
-
-
 
 
 #============== OPTIMIZATION INPUTS ==============#
@@ -90,64 +89,75 @@ gtol = 1e-3
 maxiter = 20
 
 optimizer_configs = [
-    { # 1st stage optimization:
-        "name": "proximal-lsq-exact", # optimizer choice
-        "toggle_FXD": { # fixed profiles
-            "forcebalance_constraint": True,
-            "fix_iota": True,
-            "fix_psi": True,
-            "fix_pressure": True,
-            "forcebalance_objective": True,
-            "aspect_ratio": True,
-            "qs": True,
-            "ballooning": True,
-            "mercier": True,
+    {  # 1st stage optimization
+        "name": "proximal-lsq-exact",
+        "toggle_FXD": {  # fixed profiles
+            # constraints
+            "forcebalance_con": True,
+            "fix_iota_con":     True,
+            "fix_psi_con":      True,
+            "fix_pressure_con": True,
+
+            # objectives
+            "forcebalance_obj": obj(True, None),
+            "aspect_ratio_obj": obj(True, None),
+            "qs_obj":           obj(True, None),
+            "ballooning_obj":   obj(True, None),
+            "mercier_obj":      obj(True, None),
         },
-        "toggle_CON": { # free profiles
-            "pressure_axis": True,
-            "pressure_edge": True,
-            "grad_pressure_axis": True,
-            "grad_pressure_edge": True,
-            "forcebalance_constraint": True,
-            "fix_iota": True,
-            "fix_psi": True,
-            "forcebalance_objective": True,
-            "aspect_ratio": True,
-            "qs": True,
-            "ballooning": True,
-            "mercier": True,
-            "monotonicity": True,
+        "toggle_CON": {  # free profiles
+            # constraints
+            "pressure_axis_con":      True,
+            "pressure_edge_con":      True,
+            "grad_pressure_axis_con": True,
+            "grad_pressure_edge_con": True,
+            "forcebalance_con":       True,
+            "fix_iota_con":           True,
+            "fix_psi_con":            True,
+
+            # objectives
+            "forcebalance_obj": obj(True, None),
+            "aspect_ratio_obj": obj(True, None),
+            "qs_obj":           obj(True, None),
+            "ballooning_obj":   obj(True, None),
+            "mercier_obj":      obj(True, None),
+            "monotonicity_obj": obj(True, None),
         },
     },
 
-
-    { # 2nd stage optimization:
+    {  # 2nd stage optimization
         "name": None,
         "toggle_FXD": {
-            "forcebalance_constraint": False,
-            "fix_iota": False,
-            "fix_psi": False,
-            "fix_pressure": False,
-            "forcebalance_objective": False,
-            "aspect_ratio": False,
-            "qs": False,
-            "ballooning": False,
-            "mercier": False,
+            # constraints
+            "forcebalance_con": False,
+            "fix_iota_con":     False,
+            "fix_psi_con":      False,
+            "fix_pressure_con": False,
+
+            # objectives
+            "forcebalance_obj": obj(False, None),
+            "aspect_ratio_obj": obj(False, None),
+            "qs_obj":           obj(False, None),
+            "ballooning_obj":   obj(False, None),
+            "mercier_obj":      obj(False, None),
         },
         "toggle_CON": {
-            "pressure_axis": False,
-            "pressure_edge": False,
-            "grad_pressure_axis": False,
-            "grad_pressure_edge": False,
-            "forcebalance_constraint": False,
-            "fix_iota": False,
-            "fix_psi": False,
-            "forcebalance_objective": False,
-            "aspect_ratio": False,
-            "qs": False,
-            "ballooning": False,
-            "mercier": False,
-            "monotonicity": False,
+            # constraints
+            "pressure_axis_con":      False,
+            "pressure_edge_con":      False,
+            "grad_pressure_axis_con": False,
+            "grad_pressure_edge_con": False,
+            "forcebalance_con":       False,
+            "fix_iota_con":           False,
+            "fix_psi_con":            False,
+
+            # objectives
+            "forcebalance_obj": obj(False, None),
+            "aspect_ratio_obj": obj(False, None),
+            "qs_obj":           obj(False, None),
+            "ballooning_obj":   obj(False, None),
+            "mercier_obj":      obj(False, None),
+            "monotonicity_obj": obj(False, None),
         },
     },
 ]
@@ -157,22 +167,14 @@ optimizer_configs = [
 # Grouping opt inputs:
 opt_config = {
     "target_aspect_ratio": target_aspect_ratio,
-    "ftol": ftol,
-    "xtol": xtol,
-    "gtol": gtol,
-    "maxiter": maxiter,
-    "optimizer_configs": optimizer_configs,
+    "ftol":                ftol,
+    "xtol":                xtol,
+    "gtol":                gtol,
+    "maxiter":             maxiter,
+    "optimizer_configs":   optimizer_configs,
 }
 #----------------------------
 #=================================================#
-
-
-
-
-
-
-
-
 
 
 #================ DRIVER INPUTS ==================#
@@ -189,7 +191,7 @@ n_set = [3]
 # Grouping driver inputs:
 driver_config = {
     "p_maxima": p_maxima,
-    "n_set": n_set,
+    "n_set":    n_set,
 }
 #------------------
 #=================================================#

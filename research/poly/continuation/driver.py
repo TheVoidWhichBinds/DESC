@@ -119,19 +119,18 @@ def comparison(
     #========================================
     # Initializing table of objective values:
     column_map = [
-        ("forcebalance_objective", f"Force error: "),
-        ("qs", f"Quasi-symmetry (1,{NFP}) Boozer error: "),
-        ("aspect_ratio", "Aspect ratio: "),
-        ("fix_iota", "Fixed iota profile error: "),
-        ("fix_psi", "Fixed Psi error: "),
-        ("ballooning", "Ideal ballooning lambda: "),
-        ("mercier", "Mercier Stability: "),
-    ]
+    ("forcebalance_obj", f"Force error: "),
+    ("qs_obj", f"Quasi-symmetry (1,{NFP}) Boozer error: "),
+    ("aspect_ratio_obj", "Aspect ratio: "),
+    ("ballooning_obj", "Ideal ballooning lambda: "),
+    ("mercier_obj", "Mercier Stability: "),
+]
 
     active_columns = []
     for key, label in column_map:
         if any(
-            config["toggle_FXD"].get(key, False) or config["toggle_CON"].get(key, False)
+            config["toggle_FXD"].get(key, {}).get("use", False)
+            or config["toggle_CON"].get(key, {}).get("use", False)
             for config in optimizer_configs
             if config["name"] is not None
         ):
