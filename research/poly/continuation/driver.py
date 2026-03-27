@@ -2,8 +2,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from desc.grid import LinearGrid
-from eq import run_equilibrium
-from opt import run_optimization
+from .eq import run_equilibrium
+from .opt import run_optimization
 import os
 import pandas as pd
 from tabulate import tabulate

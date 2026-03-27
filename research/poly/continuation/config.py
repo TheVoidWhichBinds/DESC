@@ -1,9 +1,8 @@
-import sys
-sys.path.append("/Users/macdaddi/DESC")
+
 from desc import set_device
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
-
+from .driver import run_from_config
 
 
 
@@ -163,12 +162,14 @@ driver_config = {
 
 #===================================================================================================================================================
 #==================== RUN IT =====================#
-from driver import run_from_config
-if __name__ == "__main__":
+def main():
     run_from_config(
         eq_config=eq_config,
         opt_config=opt_config,
         driver_config=driver_config,
     )
+
+if __name__ == "__main__":
+    main()
 #=================================================#
 #===================================================================================================================================================
