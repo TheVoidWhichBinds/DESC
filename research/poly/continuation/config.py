@@ -43,10 +43,10 @@ def obj(use: bool, weight=None):
 
 #===================================================================================================================================================
 def iota_between_rationals(
-        iota_axis:float, 
-        iota_edge:float,
-        N_knots:int
-     ):
+    iota_axis: float,
+    iota_edge: float,
+    N_knots: int,
+):
     """
     Generates bounds for iota optimizer constraint
     that are between low-order rational surfaces.
@@ -64,22 +64,25 @@ def iota_between_rationals(
         (3.0,    4.0),
     ]
 
-    lower_bound = None
-    upper_bound = None
+    matched_lower = None
+    matched_upper = None
 
     for lower, upper in allowed_ranges:
         if lower <= iota_axis <= upper:
-            lower_bound = lower * jnp.ones(N_knots)
-            upper_bound = upper * jnp.ones(N_knots)
+            matched_lower = lower
+            matched_upper = upper
             break
 
-    if lower_bound is None:
+    if matched_lower is None:
         raise ValueError("iota_axis is outside all allowed rational intervals.")
-    if not (lower_bound <= iota_edge <= upper_bound):
+
+    if not (matched_lower <= iota_edge <= matched_upper):
         raise ValueError("iota_axis and iota_edge are not in the same allowed interval.")
 
-    return lower_bound, upper_bound
+    lower_bound = matched_lower * jnp.ones(N_knots)
+    upper_bound = matched_upper * jnp.ones(N_knots)
 
+    return lower_bound, upper_bound
 #===================================================================================================================================================
 
 
@@ -113,7 +116,7 @@ surface_init = FourierRZToroidalSurface(
 #-------------------------
 # Initializing fixed iota:
 iota_axis = 0.52
-iota_edge = 0.64,
+iota_edge = 0.64
 iota_N_knots = 3
 iota_values = jnp.linspace(iota_axis, iota_edge, iota_N_knots)
 #----------------------------------------
@@ -169,7 +172,7 @@ iota_lower, iota_upper = iota_between_rationals(
 ftol = 5e-4
 xtol = 1e-4
 gtol = 1e-3
-maxiter = 25
+maxiter = 2
 #-----------
 #===========
 
@@ -199,7 +202,7 @@ opt_toggles = [
             # Constraints:
                 # Standard:
             "forcebalance_con":       True,
-            "fix_iota_con":           True,
+            "fix_iota_con":           False,
             "fix_psi_con":            True,
             "fix_pressure_con":       False,
                 # Custom:

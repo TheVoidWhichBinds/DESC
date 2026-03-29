@@ -46,8 +46,6 @@ def run_equilibrium(p_scale, n, out_dir, eq_config):
     # Unpacking equilibrium configuration variables:
     surface_init = eq_config["surface_init"]
     iota_values = eq_config["iota_values"]
-    iota_lower = eq_config["iota_lower"]
-    iota_upper = eq_config[""]
     eq_resolution = eq_config["eq_resolution"]
     #-----------------------------------------------
 
