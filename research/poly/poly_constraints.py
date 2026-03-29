@@ -50,7 +50,7 @@ def grad_pressure_edge(params):
 
 #============
 # Objectives:
-def poly_monotonicity(grid, data):
+def pressure_monotonicity(grid, data):
     """
     Ensures monotonic decrease of pressure for polynomial profile
     Parameters
@@ -84,12 +84,22 @@ def poly_monotonicity(grid, data):
 #============== IOTA CONSTRAINTS/OBJECTIVES ========================================================================================
 #=============
 # Constraints:
+def iota_rationals(params):
+    """
+    
+    """
+    iota_axis = params['i_l'][0]
+    iota_edge = params['i_l'][len(params)//2]
+    return jnp.array([iota_axis, iota_edge])
+
 #===================
 
 
 
 #============
 # Objectives:
+
+
 #===================
 #===================================================================================================================================
 

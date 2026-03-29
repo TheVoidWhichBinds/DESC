@@ -1,21 +1,17 @@
 
 #===================================================================================================================================================
 from pathlib import Path
+repo_root = Path(__file__).resolve().parents[3]
 import os
-
 #================ ENVIRONMENT TOGGLE =================#
 USE_SUPERCOMPUTER = False
 #====================================================#
-
 from desc import set_device
-
 if USE_SUPERCOMPUTER:
     set_device("gpu")
 
 import jax
-
-repo_root = Path(__file__).resolve().parents[3]
-
+import jax.numpy as jnp
 if USE_SUPERCOMPUTER:
     cache_dir = repo_root / "jax-caches"
     cache_dir.mkdir(exist_ok=True)
@@ -44,12 +40,66 @@ def obj(use: bool, weight=None):
 
 
 
+
+#===================================================================================================================================================
+def iota_between_rationals(
+        iota_axis:float, 
+        iota_edge:float,
+        N_knots:int
+     ):
+    """
+    Generates bounds for iota optimizer constraint
+    that are between low-order rational surfaces.
+    """
+    allowed_ranges = [
+        (0.25,   0.3333),
+        (0.3333, 0.5),
+        (0.5,    0.6667),
+        (0.6667, 0.75),
+        (0.75,   1.0),
+        (1.0,    1.3333),
+        (1.3333, 1.5),
+        (1.5,    2.0),
+        (2.0,    3.0),
+        (3.0,    4.0),
+    ]
+
+    lower_bound = None
+    upper_bound = None
+
+    for lower, upper in allowed_ranges:
+        if lower <= iota_axis <= upper:
+            lower_bound = lower * jnp.ones(N_knots)
+            upper_bound = upper * jnp.ones(N_knots)
+            break
+
+    if lower_bound is None:
+        raise ValueError("iota_axis is outside all allowed rational intervals.")
+    if not (lower_bound <= iota_edge <= upper_bound):
+        raise ValueError("iota_axis and iota_edge are not in the same allowed interval.")
+
+    return lower_bound, upper_bound
+
+#===================================================================================================================================================
+
+
+
+
+
+
+
+
+
+
 #===================================================================================================================================================
 #============== EQUILIBRIUM INPUTS ==============#
 #=========================
+#-------------------------
 # Number of field periods:
 NFP = 19
+#-------
 
+#----------------------------
 # Initializing fixed surface:
 surface_init = FourierRZToroidalSurface(
     R_lmn =   [ 10.0,   -1.0,   -0.3,    0.3   ],
@@ -58,15 +108,23 @@ surface_init = FourierRZToroidalSurface(
     modes_Z = [(-1, 0), (-1, 1), (1, -1)],
     NFP = NFP,
 )
+#-------------
 
+#-------------------------
 # Initializing fixed iota:
-iota_init = PowerSeriesProfile([1, 0, 2])
+iota_axis = 0.52
+iota_edge = 0.64,
+iota_N_knots = 3
+iota_values = jnp.linspace(iota_axis, iota_edge, iota_N_knots)
+#----------------------------------------
 
+#------------------------
 # Equilibrium resolution:
 L = 8
 M = 8
 N = 3
 eq_resolution = [L, M, N]
+#------------------------
 #========================
 
 
@@ -75,7 +133,7 @@ eq_resolution = [L, M, N]
 eq_config = {
     "NFP":           NFP,
     "surface_init":  surface_init,
-    "iota_init":     iota_init,
+    "iota_values":   iota_values,
     "eq_resolution": eq_resolution,
 }
 #==================================
@@ -91,17 +149,32 @@ eq_config = {
 
 
 #============== OPTIMIZATION INPUTS ==============#
-#======================
+#=============================
+#-----------------------------
+# AspectRatio objective target
 target_aspect_ratio = 6
+#----------------------
+
+#----------------------------------------------------------
+# Iota between rationals constraint target vector generator
+iota_lower, iota_upper = iota_between_rationals(
+    iota_axis = 0.52, 
+    iota_edge = 0.64,
+    N_knots = iota_N_knots
+    )
+#-------------------------
+
+#----------
 ftol = 5e-4
 xtol = 1e-4
 gtol = 1e-3
 maxiter = 25
+#-----------
 #===========
 
 
-#====================
-optimizer_configs = [
+#==============
+opt_toggles = [
     #--------------------------
     {  # 1st stage optimization
         "name": "proximal-lsq-exact", # optimizer 
@@ -190,11 +263,13 @@ optimizer_configs = [
 # Grouping opt inputs:
 opt_config = {
     "target_aspect_ratio": target_aspect_ratio,
+    "iota_lower":          iota_lower,
+    "iota_upper":          iota_upper,
     "ftol":                ftol,
     "xtol":                xtol,
     "gtol":                gtol,
     "maxiter":             maxiter,
-    "optimizer_configs":   optimizer_configs,
+    "opt_toggles":         opt_toggles,
 }
 #=============================================
 #=================================================#

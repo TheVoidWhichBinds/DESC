@@ -5,8 +5,7 @@ sys.path.append("/Users/macdaddi/DESC")
 
 from desc.continuation import solve_continuation_automatic
 from desc.equilibrium import Equilibrium
-from desc.profiles import PowerSeriesProfile
-
+from desc.profiles import PowerSeriesProfile, SplineProfile
 
 
 
@@ -46,7 +45,9 @@ def run_equilibrium(p_scale, n, out_dir, eq_config):
     #-----------------------------------------------
     # Unpacking equilibrium configuration variables:
     surface_init = eq_config["surface_init"]
-    iota_init = eq_config["iota_init"]
+    iota_values = eq_config["iota_values"]
+    iota_lower = eq_config["iota_lower"]
+    iota_upper = eq_config[""]
     eq_resolution = eq_config["eq_resolution"]
     #-----------------------------------------------
 
@@ -60,10 +61,10 @@ def run_equilibrium(p_scale, n, out_dir, eq_config):
     L, M, N = eq_resolution
     eq = Equilibrium(
         L=L, M=M, N=N,
-        surface=surface_init,
-        pressure=PowerSeriesProfile(coeff),
-        iota=iota_init,
-        Psi=1.0,
+        surface = surface_init,
+        pressure = PowerSeriesProfile(coeff),
+        iota = SplineProfile(values=iota_values),
+        Psi = 1.0,
     )
     #----------------------
 

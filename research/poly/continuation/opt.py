@@ -9,7 +9,8 @@ from research.poly.poly_constraints import (
     pressure_edge,
     grad_pressure_axis,
     grad_pressure_edge,
-    poly_monotonicity
+    pressure_monotonicity,
+    iota_rationals
 )
 from desc.objectives import (
     ObjectiveFunction,
@@ -58,11 +59,12 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
     #=============================================
     # Unpacking optimization configuration values:
     target_aspect_ratio = opt_config["target_aspect_ratio"]
+    iota_upper = opt_config["iota_upper"]
+    iota_lower = opt_config["iota_lower"]
     ftol = opt_config["ftol"]
     xtol = opt_config["xtol"]
     gtol = opt_config["gtol"]
     maxiter = opt_config["maxiter"]
-
     toggle_FXD = opt_config["toggle_FXD"]
     toggle_CON = opt_config["toggle_CON"]
     toggle = toggle_FXD if FXD else toggle_CON
@@ -72,7 +74,7 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
     objectives_list = []
 
     #=========================
-    if FXD:  # (fixed pressure)
+    if FXD:  # (fixed profiles)
         #----------------------
         # Construction of constraints:
         if toggle.get("forcebalance_con", False):
@@ -125,7 +127,7 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
     #====================================================================
 
     #===========================
-    else:  # (optimized pressure)
+    else:  # (free profiles)
         #------------------------------------
         # Construction of custom constraints:
         if toggle.get("pressure_axis_con", False):
@@ -139,27 +141,34 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
         if toggle.get("pressure_edge_con", False):
             constraints_list.append(
                 LinearObjectiveFromUser(
-                    fun=pressure_edge,
-                    thing=eq_0,
-                    target=0.0,
+                    fun = pressure_edge,
+                    thing = eq_0,
+                    target = 0.0,
                 )
             )
         if toggle.get("grad_pressure_axis_con", False):
             constraints_list.append(
                 LinearObjectiveFromUser(
                     fun=grad_pressure_axis,
-                    thing=eq_0,
-                    target=0.0,
+                    thing = eq_0,
+                    target = 0.0,
                 )
             )
         if toggle.get("grad_pressure_edge_con", False):
             constraints_list.append(
                 LinearObjectiveFromUser(
                     fun=grad_pressure_edge,
-                    thing=eq_0,
-                    target=0.0,
+                    thing = eq_0,
+                    target = 0.0,
                 )
             )
+        constraints_list.append(
+            LinearObjectiveFromUser(
+                fun = iota_rationals,
+                bounds = (iota_lower, iota_upper),
+                thing = eq_0
+            )
+        )
         #------------------------------------
 
         #--------------------------------------
@@ -212,7 +221,7 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
         use, weight = _obj_settings(toggle, "monotonicity_obj")
         if use:
             kwargs = {
-                "fun": poly_monotonicity,
+                "fun": pressure_monotonicity,
                 "grid": LinearGrid(rho=200, M=0, N=0),
                 "thing": eq_0,
                 "target": 0.0,

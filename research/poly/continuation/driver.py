@@ -113,7 +113,7 @@ def comparison(
     #---------------------------------------------
     # Unpacking config variables needed in driver:
     NFP = eq_config["NFP"]
-    optimizer_configs = opt_config["optimizer_configs"]
+    opt_toggles = opt_config["opt_toggles"]
     #---------------------------------------------
 
     #========================================
@@ -131,7 +131,7 @@ def comparison(
         if any(
             config["toggle_FXD"].get(key, {}).get("use", False)
             or config["toggle_CON"].get(key, {}).get("use", False)
-            for config in optimizer_configs
+            for config in opt_toggles
             if config["name"] is not None
         ):
             active_columns.append((key, label))
@@ -167,7 +167,7 @@ def comparison(
             opt_result_FXD = None
             opt_result_CON = None
 
-            for config in optimizer_configs:
+            for config in opt_toggles:
                 optimizer = config["name"]
                 if optimizer is None:
                     continue
