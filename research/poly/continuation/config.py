@@ -158,8 +158,9 @@ target_aspect_ratio = 6
 #----------------------------------------------------------
 # Iota between rationals constraint target vector generator
 iota_lower, iota_upper = iota_between_rationals(
-    iota_axis = 0.52, 
-    iota_edge = 0.64,
+    iota_axis = iota_axis,  
+    # BAD PRACTICE GLOBAL VARIABLE HAS LOCAL VAR NAME
+    iota_edge = iota_edge,
     N_knots = iota_N_knots
     )
 #-------------------------
