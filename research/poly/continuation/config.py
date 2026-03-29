@@ -117,7 +117,7 @@ surface_init = FourierRZToroidalSurface(
 # Initializing fixed iota:
 iota_axis = 0.52
 iota_edge = 0.64
-iota_N_knots = 3
+iota_N_knots = 6
 iota_values = jnp.linspace(iota_axis, iota_edge, iota_N_knots)
 #----------------------------------------
 
@@ -293,7 +293,7 @@ opt_config = {
 p_maxima = [1e4]
 
 # Polynomial orders to test:
-n_set = [3,4,5,6]
+n_set = [3]
 #==========
 
 

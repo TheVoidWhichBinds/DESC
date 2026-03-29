@@ -65,7 +65,6 @@ def pressure_monotonicity(grid, data):
         largest dp over all grid points
     """
     p = data["p"] # pressure at grid points
-    rho = grid.nodes[:, 0] # rho gridpoints
     dp = p[1:] - p[:-1] # pressure differences: p[i+1] - p[i]
     violations = jnp.maximum(0.0, dp) # array where nonzero values = positive slope 
     return jnp.sum(violations**2) # largest dp chosen, penalized by optimizer
@@ -84,13 +83,6 @@ def pressure_monotonicity(grid, data):
 #============== IOTA CONSTRAINTS/OBJECTIVES ========================================================================================
 #=============
 # Constraints:
-def iota_rationals(params):
-    """
-    
-    """
-    iota_axis = params['i_l'][0]
-    iota_edge = params['i_l'][len(params)//2]
-    return jnp.array([iota_axis, iota_edge])
 
 #===================
 
@@ -98,7 +90,12 @@ def iota_rationals(params):
 
 #============
 # Objectives:
-
+def iota_rationals(grid, data):
+    """
+    
+    """
+    iota_values = data["iota"]
+    return iota_values
 
 #===================
 #===================================================================================================================================

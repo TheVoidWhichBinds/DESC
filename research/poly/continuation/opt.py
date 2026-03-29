@@ -162,14 +162,7 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
                     target = 0.0,
                 )
             )
-        constraints_list.append(
-            LinearObjectiveFromUser(
-                fun = iota_rationals,
-                bounds = (iota_lower, iota_upper),
-                thing = eq_0
-            )
-        )
-        #------------------------------------
+        #------------------------
 
         #--------------------------------------
         # Construction of standard constraints:
@@ -181,8 +174,34 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
             constraints_list.append(FixPsi(eq=eq_0))
         #--------------------------------------
 
-        #----------------------------
-        # Construction of objectives:
+        #----------------------------------
+        # Construction of custom objectives:
+        #if toggle.get("iota_between_rationals", False):
+        objectives_list.append(
+            ObjectiveFromUser(
+                fun = iota_rationals,
+                thing = eq_0,
+                bounds = (iota_lower, iota_upper),
+                grid = LinearGrid(rho=200, M=0, N=0),
+                normalize = False,
+            )
+        )
+        use, weight = _obj_settings(toggle, "monotonicity_obj")
+        if use:
+            kwargs = {
+                "fun": pressure_monotonicity,
+                "grid": LinearGrid(rho=200, M=0, N=0),
+                "thing": eq_0,
+                "target": 0.0,
+                "normalize": False,
+            }
+            if weight is not None:
+                kwargs["weight"] = weight
+            objectives_list.append(ObjectiveFromUser(**kwargs))
+        #------------------------------------------------------
+
+        #-------------------------------------
+        # Construction of standard objectives:
         use, weight = _obj_settings(toggle, "forcebalance_obj")
         if use:
             kwargs = {"eq": eq_0, "target": 0.0}
@@ -217,20 +236,8 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
             if weight is not None:
                 kwargs["weight"] = weight
             objectives_list.append(MercierStability(**kwargs))
-
-        use, weight = _obj_settings(toggle, "monotonicity_obj")
-        if use:
-            kwargs = {
-                "fun": pressure_monotonicity,
-                "grid": LinearGrid(rho=200, M=0, N=0),
-                "thing": eq_0,
-                "target": 0.0,
-                "normalize": False,
-            }
-            if weight is not None:
-                kwargs["weight"] = weight
-            objectives_list.append(ObjectiveFromUser(**kwargs))
-        #---------------------------
+        #-----------------------------------------------------
+        
     #===============================
 
     #=======================================
