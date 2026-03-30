@@ -110,11 +110,12 @@ def comparison(
     table are also generated.
     """
 
-    #---------------------------------------------
+    #=============================================
     # Unpacking config variables needed in driver:
     NFP = eq_config["NFP"]
     opt_toggles = opt_config["opt_toggles"]
-    #---------------------------------------------
+    #======================================
+    
 
     #========================================
     # Initializing table of objective values:
@@ -205,14 +206,14 @@ def comparison(
             label_n = n if n_eff == n else f"{n}→{n_eff}"
             group_label = f"Max Pressure = {p_axis}; n = {label_n} (order={2*n_eff})"
 
-            rows.append((group_label, "Fixed Pressure"))
-            rows.append((group_label, "Optimized Pressure"))
+            rows.append((group_label, "Fixed Profiles"))
+            rows.append((group_label, "Free Profiles"))
             rows.append((group_label, "Difference"))
 
             row_FXD = []
             row_CON = []
             row_DIFF = []
-            #====================================
+            #============
 
             #=============================
             # Extracting objective values:
@@ -243,9 +244,9 @@ def comparison(
                     f"f_mean diff={sci_compact(dmean, sig=4)}, "
                     f"f_max diff={sci_compact(dmax, sig=4)}"
                 )
-            #-----------------------------------------------
+            #===============================================
 
-            #-------------------------
+            #=========================
             # Including Beta in table:
             beta_FXD = float(
                 eq_opt_FXD.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
@@ -262,9 +263,9 @@ def comparison(
             values.append(row_FXD)
             values.append(row_CON)
             values.append(row_DIFF)
-            #-------------------------
+            #======================
 
-            #------------------------------
+            #==============================
             # Save table inside run folder:
             index = pd.MultiIndex.from_tuples(rows, names=["Run", "Pressure Type"])
             df = pd.DataFrame(
@@ -279,9 +280,10 @@ def comparison(
             with open(output_file, "w") as f:
                 f.write("Comparison of Post-Optimization Objectives\n\n")
                 f.write(ascii_table)
-            #===========================
+            #=======================
 
             #====================
+            #--------------------
             # Plotting pressures:
             rho = np.linspace(0.0, 1.0, 400)
             grid = LinearGrid(rho=rho, M=0, N=0, NFP=eq_opt_CON.NFP, sym=eq_opt_CON.sym)
@@ -305,9 +307,9 @@ def comparison(
             pressure_path = os.path.join(out_dir, "pressure_compare.png")
             plt.savefig(pressure_path, dpi=200)
             plt.close()
-            #--------------------
+            #----------
 
-            #-------------------------------------------------------
+            #------------------------------------------------------
             # Plotting gridded toroidal cross-sections of B-fields:
             plt.title("Toroidal Cross-Sections of Solved Equilibria")
             fig, ax = plot_comparison(
@@ -323,9 +325,9 @@ def comparison(
             toroidal_cuts_path = os.path.join(out_dir, "toroidal_cuts.png")
             plt.savefig(toroidal_cuts_path, dpi=200)
             plt.close()
-            #-------------------------------------------------------
+            #----------
 
-            #-----------------------
+            #----------------------
             # |J| vs. rho plotting:
             rho_grid = np.linspace(0.0, 1.0, 100)
             grid_J = LinearGrid(rho=rho_grid, M=24, N=24, NFP=eq_opt_CON.NFP, sym=eq_opt_CON.sym)
@@ -363,9 +365,9 @@ def comparison(
             J_mag_path = os.path.join(out_dir, "J_mag.png")
             plt.savefig(J_mag_path, dpi=200)
             plt.close()
-            #-----------------------
+            #----------
 
-            #----------------------
+            #-----------------------
             # iota vs. rho plotting:
             grid_iota = LinearGrid(rho=rho_grid, M=0, N=0, NFP=eq_opt_CON.NFP, sym=eq_opt_CON.sym)
 
@@ -388,9 +390,9 @@ def comparison(
             iota_path = os.path.join(out_dir, "iota.png")
             plt.savefig(iota_path, dpi=200)
             plt.close()
-            #----------------------
-        #==========================
-    #==============================
+            #----------
+        #==============
+    #======================
 #==============================================================================================================================================================
 
 

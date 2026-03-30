@@ -82,7 +82,8 @@ def iota_between_rationals(
 #===============================
 def obj(use: bool, weight=None):
     """
-    
+    Compactifies True/False toggle for objectives,
+    and their weights in the optimizer.
     """
     return {"use": use, "weight": weight}
 #========================================
@@ -118,7 +119,7 @@ surface_init = FourierRZToroidalSurface(
 #-------------
 
 #-------------------------
-# Initializing fixed iota:
+# Initializing iota:
 iota_axis = 0.52
 iota_init = PowerSeriesProfile([iota_axis, 0, 0.07])
 iota_lower, iota_upper = iota_between_rationals(iota_axis = iota_axis)
@@ -222,7 +223,7 @@ opt_toggles = [
             "mercier_obj":        obj(True, 1e0),
                 # Custom:
             "monotonicity_obj":   obj(True, 1e0),
-            "iota_rationals_con": True,
+            "iota_rationals_con": obj(True, 1e0)
         },
         #--------------------------------------
     },

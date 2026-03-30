@@ -238,28 +238,26 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
                 kwargs["weight"] = weight
             objectives_list.append(ObjectiveFromUser(**kwargs))
         
-        if toggle.get("iota_rationals_obj", False):
-            objectives_list.append(
-                ObjectiveFromUser(
-                    fun = iota_rationals,
-                    thing = eq_0,
-                    bounds = (iota_lower, iota_upper),
-                    grid = LinearGrid(rho=200, M=0, N=0),
-                    normalize = False,
-                )
-            )
+        use, weight = _obj_settings(toggle, "iota_rationals_obj")
+        if use:
+            kwargs = {
+                "fun": iota_rationals,
+                "grid": LinearGrid(rho=200, M=0, N=0),
+                "thing": eq_0,
+                "bounds": (iota_lower, iota_upper),
+                "normalize": False,
+            }
+            if weight is not None:
+                kwargs["weight"] = weight
+            objectives_list.append(ObjectiveFromUser(**kwargs))
+        
         #------------------------------------------------------
-    #==========================================================
-
-
-    #=======================================
+  
+    #---------------------------------------
     # Finalizing optimization objects/setup:
     constraints = tuple(constraints_list)
-
-    if len(objectives_list) == 0:
-        raise ValueError("No optimization objectives were selected.")
-
     objectives = ObjectiveFunction(objectives_list)
+    #----------------------------------------------
     #==============================================
 
 
