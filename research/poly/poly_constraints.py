@@ -180,7 +180,7 @@ def iota_positive(grid, data):
     at iota = 0.25.
     """
     iota_axis = data["iota"][0]
-    violation = jnp.minimum(0.0, iota_axis - 0.25)
+    violation = jnp.maximum(0.25 - iota_axis, 0.0)
     return violation
 #====================
 #===================================================================================================================================

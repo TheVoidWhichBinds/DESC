@@ -273,7 +273,7 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
             fun = iota_positive,
             thing = eq_0,
             target = 0.0,
-            weight = 1e0,
+            weight = 1e5,
         ))
         #------------------------------------------------------
   
