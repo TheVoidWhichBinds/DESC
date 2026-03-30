@@ -203,17 +203,18 @@ opt_toggles = [
         "toggle_CON": { # free profiles
             # Constraints:
                 # Standard:
-            "forcebalance_con":       True,
-            "fix_iota_con":           False,
-            "fix_psi_con":            True,
-            "fix_pressure_con":       False,
+            "forcebalance_con":        True,
+            "fix_iota_con":            False,
+            "fix_psi_con":             True,
+            "fix_pressure_con":        False,
                 # Custom:
-            "pressure_axis_con":      True,
-            "pressure_edge_con":      True,
-            "grad_pressure_axis_con": True,
-            "grad_pressure_edge_con": True,
-            "grad_iota_axis_con":     True,
-            "iota_rationals_con":     True, 
+            "pressure_axis_con":       True,
+            "pressure_edge_con":       True,
+            "grad_pressure_axis_con":  True,
+            "grad_pressure_edge_con":  True,
+            "grad_iota_axis_con":      True,
+            "iota_rational_edge_con":  True, 
+            "iota_rational_range_con": True,
             
             # Objectives:
                 # Standard:

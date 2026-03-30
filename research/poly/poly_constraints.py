@@ -157,15 +157,26 @@ def grad_iota_axis(params):
 #-------------
 
 #--------------------------
-def iota_rationals(params):
+def iota_rational_edge(params):
     """
     Iota on edge (b = 0 using grad_iota_axis).
-    P(rho = 1) = a + c
+    P(rho=1) = a + c = upper rational iota.
     """
     c_0 = params["i_l"][0]
     c_2 = params["i_l"][2]
     return c_2 + c_0
 #-------------------
+
+#-------------------------------
+def iota_rational_range(params):
+    """
+    Iota range.
+    P(rho=1) - P(rho=0) = (a+c) - c = delta(iota)
+    between rational iota.
+    """
+    c_2 = params["i_l"][2]
+    return c_2
+#-------------
 #=====================
 
 
