@@ -146,29 +146,43 @@ def pressure_monotonicity(grid, data):
 #============== IOTA CONSTRAINTS/OBJECTIVES ========================================================================================
 #=============
 # Constraints:
-#------------------------------
-def iota_rationals(grid, data):
-    """
-    """
-    iota_values = data["iota"]
-    return iota_values
-#---------------------
-
 #--------------------------
 def grad_iota_axis(params):
     """
+    Iota gradient on axis (rho=0).
+    Target: GradP=0 (no discontinuity).
     """
     c_1 = params['i_l'][1]
     return c_1
 #-------------
+
+#--------------------------
+def iota_rationals(params):
+    """
+    Iota on edge (b = 0 using grad_iota_axis).
+    P(rho = 1) = a + c
+    """
+    c_0 = params["i_l"][0]
+    c_2 = params["i_l"][2]
+    return c_2 + c_0
+#-------------------
 #=====================
 
 
 
 #============
 # Objectives:
-
-#=====================
+#-----------------------------
+def iota_positive(grid, data):
+    """
+    Iota on axis greater than at least
+    the first low-order rational surface
+    at iota = 0.25.
+    """
+    iota_axis = data["iota"][0]
+    violation = jnp.minimum(0.0, iota_axis - 0.25)
+    return violation
+#====================
 #===================================================================================================================================
 
 

@@ -11,7 +11,8 @@ from research.poly.poly_constraints import (
     grad_pressure_edge,
     pressure_monotonicity,
     iota_rationals,
-    grad_iota_axis
+    grad_iota_axis,
+    iota_positive,
 )
 from desc.objectives import (
     ObjectiveFunction,
@@ -182,42 +183,70 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
                     target = 0.0,
                 )
             )
-        #-----------------------------
+        if toggle.get("iota_rationals_con", False):
+            constraints_list.append(
+                LinearObjectiveFromUser(
+                    fun = iota_rationals,
+                    thing = eq_0,
+                    target = iota_upper
+                )
+            )
+        #------------------------------
 
 
         #---------------------
         # Standard objectives:
         use, weight = _obj_settings(toggle, "forcebalance_obj")
         if use:
-            kwargs = {"eq": eq_0, "target": 0.0}
+            kwargs = {
+                "name": "Force Balance",
+                "eq": eq_0, 
+                "target": 0.0,
+            }
             if weight is not None:
                 kwargs["weight"] = weight
             objectives_list.append(ForceBalance(**kwargs))
 
         use, weight = _obj_settings(toggle, "aspect_ratio_obj")
         if use:
-            kwargs = {"eq": eq_0, "target": target_aspect_ratio}
+            kwargs = {
+                "name": "Aspect Ratio",
+                "eq": eq_0, 
+                "target": target_aspect_ratio,
+            }
             if weight is not None:
                 kwargs["weight"] = weight
             objectives_list.append(AspectRatio(**kwargs))
 
         use, weight = _obj_settings(toggle, "qs_obj")
         if use:
-            kwargs = {"eq": eq_0, "helicity": (1, eq_0.NFP)}
+            kwargs = {
+                "name": "Boozer Quasi-Symmetry",
+                "eq": eq_0, 
+                "helicity": (1, eq_0.NFP),
+            }
             if weight is not None:
                 kwargs["weight"] = weight
             objectives_list.append(QuasisymmetryBoozer(**kwargs))
 
         use, weight = _obj_settings(toggle, "ballooning_obj")
         if use:
-            kwargs = {"eq": eq_0, "target": 0.0}
+            kwargs = {
+                "name": "Ideal Ballooning Lambda",
+                "eq": eq_0, 
+                "target": 0.0,
+            }
             if weight is not None:
                 kwargs["weight"] = weight
             objectives_list.append(BallooningStability(**kwargs))
 
         use, weight = _obj_settings(toggle, "mercier_obj")
         if use:
-            kwargs = {"eq": eq_0, "target": 0.0}
+            kwargs = {
+                "name": "Mercier Stability",
+                "eq": eq_0, 
+                "target": 0.0,
+            }
             if weight is not None:
                 kwargs["weight"] = weight
             objectives_list.append(MercierStability(**kwargs))
@@ -228,6 +257,7 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
         use, weight = _obj_settings(toggle, "monotonicity_obj")
         if use:
             kwargs = {
+                "name": "Pressure Monotonicity",
                 "fun": pressure_monotonicity,
                 "grid": LinearGrid(rho=200, M=0, N=0),
                 "thing": eq_0,
@@ -237,20 +267,14 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
             if weight is not None:
                 kwargs["weight"] = weight
             objectives_list.append(ObjectiveFromUser(**kwargs))
-        
-        use, weight = _obj_settings(toggle, "iota_rationals_obj")
-        if use:
-            kwargs = {
-                "fun": iota_rationals,
-                "grid": LinearGrid(rho=200, M=0, N=0),
-                "thing": eq_0,
-                "bounds": (iota_lower, iota_upper),
-                "normalize": False,
-            }
-            if weight is not None:
-                kwargs["weight"] = weight
-            objectives_list.append(ObjectiveFromUser(**kwargs))
-        
+
+        objectives_list.append(ObjectiveFromUser(
+            name = "Iota Positivity",
+            fun = iota_positive,
+            thing = eq_0,
+            target = 0.0,
+            weight = 1e0,
+        ))
         #------------------------------------------------------
   
     #---------------------------------------

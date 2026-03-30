@@ -213,7 +213,8 @@ opt_toggles = [
             "grad_pressure_axis_con": True,
             "grad_pressure_edge_con": True,
             "grad_iota_axis_con":     True,
-
+            "iota_rationals_con":     True, 
+            
             # Objectives:
                 # Standard:
             "forcebalance_obj":   obj(True, 1e4),
@@ -223,67 +224,66 @@ opt_toggles = [
             "mercier_obj":        obj(True, 1e0),
                 # Custom:
             "monotonicity_obj":   obj(True, 1e0),
-            "iota_rationals_con": obj(True, 1e0)
         },
         #--------------------------------------
     },
     #==========================================
 
 
-    #==========================
-    {  # 2nd stage optimization
-        #----------------------------------------
-        "name": None, # optimizer 
-        #----------------------------------------
+    # #==========================
+    # {  # 2nd stage optimization
+    #     #----------------------------------------
+    #     "name": None, # optimizer 
+    #     #----------------------------------------
 
-        #-------------------------------
-        "toggle_FXD": { # fixed profiles
-            # Constraints:
-                # Standard:
-            "forcebalance_con": True,
-            "fix_iota_con":     True,
-            "fix_psi_con":      True,
-            "fix_pressure_con": True,
+    #     #-------------------------------
+    #     "toggle_FXD": { # fixed profiles
+    #         # Constraints:
+    #             # Standard:
+    #         "forcebalance_con": True,
+    #         "fix_iota_con":     True,
+    #         "fix_psi_con":      True,
+    #         "fix_pressure_con": True,
 
-            # Objectives:
-                # Standard:
-            "forcebalance_obj": obj(True, 1e4),
-            "aspect_ratio_obj": obj(True, 1e0),
-            "qs_obj":           obj(True, 1e0),
-            "ballooning_obj":   obj(True, 1e0),
-            "mercier_obj":      obj(True, 1e0),
-        },
-        #--------------------------------------
+    #         # Objectives:
+    #             # Standard:
+    #         "forcebalance_obj": obj(True, 1e4),
+    #         "aspect_ratio_obj": obj(True, 1e0),
+    #         "qs_obj":           obj(True, 1e0),
+    #         "ballooning_obj":   obj(True, 1e0),
+    #         "mercier_obj":      obj(True, 1e0),
+    #     },
+    #     #--------------------------------------
 
-        #------------------------------
-        "toggle_CON": { # free profiles
-            # Constraints:
-                # Standard:
-            "forcebalance_con":       True,
-            "fix_iota_con":           False,
-            "fix_psi_con":            True,
-            "fix_pressure_con":       False,
-                # Custom:
-            "pressure_axis_con":      True,
-            "pressure_edge_con":      True,
-            "grad_pressure_axis_con": True,
-            "grad_pressure_edge_con": True,
-            "grad_iota_axis_con":     True,
+    #     #------------------------------
+    #     "toggle_CON": { # free profiles
+    #         # Constraints:
+    #             # Standard:
+    #         "forcebalance_con":       True,
+    #         "fix_iota_con":           False,
+    #         "fix_psi_con":            True,
+    #         "fix_pressure_con":       False,
+    #             # Custom:
+    #         "pressure_axis_con":      True,
+    #         "pressure_edge_con":      True,
+    #         "grad_pressure_axis_con": True,
+    #         "grad_pressure_edge_con": True,
+    #         "grad_iota_axis_con":     True,
+    #         "iota_rationals_con":     True,
             
 
-            # Objectives:
-                # Standard:
-            "forcebalance_obj":   obj(True, 1e4),
-            "aspect_ratio_obj":   obj(True, 1e0),
-            "qs_obj":             obj(True, 1e0),
-            "ballooning_obj":     obj(True, 1e0),
-            "mercier_obj":        obj(True, 1e0),
-                # Custom:
-            "monotonicity_obj":   obj(True, 1e0),
-            "iota_rationals_obj": True,
-        },
-        #--------------------------------------
-    },
+    #         # Objectives:
+    #             # Standard:
+    #         "forcebalance_obj":   obj(True, 1e4),
+    #         "aspect_ratio_obj":   obj(True, 1e0),
+    #         "qs_obj":             obj(True, 1e0),
+    #         "ballooning_obj":     obj(True, 1e0),
+    #         "mercier_obj":        obj(True, 1e0),
+    #             # Custom:
+    #         "monotonicity_obj":   obj(True, 1e0),
+    #     },
+    #     #--------------------------------------
+    # },
 ]   #==========================================
 #================================================
 
