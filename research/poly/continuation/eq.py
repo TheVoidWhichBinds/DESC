@@ -45,13 +45,14 @@ def run_equilibrium(p_scale, n, out_dir, eq_config):
     #-----------------------------------------------
     # Unpacking equilibrium configuration variables:
     surface_init = eq_config["surface_init"]
-    iota_values = eq_config["iota_values"]
+    iota_init = eq_config["iota_init"]
     eq_resolution = eq_config["eq_resolution"]
     #-----------------------------------------------
 
     #-----------------------------------------------
     # Creating polynomial coefficients in list form:
     coeff, n_eff = coefficients(p_scale, n)
+    pressure_init = PowerSeriesProfile(coeff)
     #-----------------------------------------------
 
     #----------------------
@@ -60,8 +61,8 @@ def run_equilibrium(p_scale, n, out_dir, eq_config):
     eq = Equilibrium(
         L=L, M=M, N=N,
         surface = surface_init,
-        pressure = PowerSeriesProfile(coeff),
-        iota = SplineProfile(values=iota_values),
+        pressure = pressure_init,
+        iota = iota_init,
         Psi = 1.0,
     )
     #----------------------

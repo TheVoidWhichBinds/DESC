@@ -10,7 +10,8 @@ from research.poly.poly_constraints import (
     grad_pressure_axis,
     grad_pressure_edge,
     pressure_monotonicity,
-    iota_rationals
+    iota_rationals,
+    grad_iota_axis
 )
 from desc.objectives import (
     ObjectiveFunction,
@@ -70,13 +71,13 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
     toggle = toggle_FXD if FXD else toggle_CON
     #=============================================
 
+
     constraints_list = []
     objectives_list = []
-
     #=========================
     if FXD:  # (fixed profiles)
-        #----------------------
-        # Construction of constraints:
+        #--------------------------------------
+        # Standard constraints:
         if toggle.get("forcebalance_con", False):
             constraints_list.append(ForceBalance(eq=eq_0))
         if toggle.get("fix_iota_con", True):
@@ -87,8 +88,8 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
             constraints_list.append(FixPressure(eq=eq_0))
         #------------------------------------------------
 
-        #----------------------------
-        # Construction of objectives:
+        #---------------------
+        # Standard objectives:
         use, weight = _obj_settings(toggle, "forcebalance_obj")
         if use:
             kwargs = {"eq": eq_0, "target": 0.0}
@@ -126,10 +127,21 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
         #----------------------------------------------------------------
     #====================================================================
 
+
     #===========================
     else:  # (free profiles)
+        #--------------------------------------
+        # Standard constraints:
+        if toggle.get("forcebalance_con", False):
+            constraints_list.append(ForceBalance(eq=eq_0))
+        if toggle.get("fix_iota_con", False):
+            constraints_list.append(FixIota(eq=eq_0))
+        if toggle.get("fix_psi_con", False):
+            constraints_list.append(FixPsi(eq=eq_0))
+        #-------------------------------------------
+
         #------------------------------------
-        # Construction of custom constraints:
+        # Custom constraints:
         if toggle.get("pressure_axis_con", False):
             constraints_list.append(
                 LinearObjectiveFromUser(
@@ -157,51 +169,24 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
         if toggle.get("grad_pressure_edge_con", False):
             constraints_list.append(
                 LinearObjectiveFromUser(
-                    fun=grad_pressure_edge,
+                    fun = grad_pressure_edge,
                     thing = eq_0,
                     target = 0.0,
                 )
             )
-        #------------------------
-
-        #--------------------------------------
-        # Construction of standard constraints:
-        if toggle.get("forcebalance_con", False):
-            constraints_list.append(ForceBalance(eq=eq_0))
-        if toggle.get("fix_iota_con", False):
-            constraints_list.append(FixIota(eq=eq_0))
-        if toggle.get("fix_psi_con", False):
-            constraints_list.append(FixPsi(eq=eq_0))
-        #--------------------------------------
-
-        #----------------------------------
-        # Construction of custom objectives:
-        #if toggle.get("iota_between_rationals", False):
-        objectives_list.append(
-            ObjectiveFromUser(
-                fun = iota_rationals,
-                thing = eq_0,
-                bounds = (iota_lower, iota_upper),
-                grid = LinearGrid(rho=200, M=0, N=0),
-                normalize = False,
+        if toggle.get("grad_iota_axis_con", False):
+            constraints_list.append(
+                LinearObjectiveFromUser(
+                    fun = grad_iota_axis,
+                    thing = eq_0,
+                    target = 0.0,
+                )
             )
-        )
-        use, weight = _obj_settings(toggle, "monotonicity_obj")
-        if use:
-            kwargs = {
-                "fun": pressure_monotonicity,
-                "grid": LinearGrid(rho=200, M=0, N=0),
-                "thing": eq_0,
-                "target": 0.0,
-                "normalize": False,
-            }
-            if weight is not None:
-                kwargs["weight"] = weight
-            objectives_list.append(ObjectiveFromUser(**kwargs))
-        #------------------------------------------------------
+        #-----------------------------
 
-        #-------------------------------------
-        # Construction of standard objectives:
+
+        #---------------------
+        # Standard objectives:
         use, weight = _obj_settings(toggle, "forcebalance_obj")
         if use:
             kwargs = {"eq": eq_0, "target": 0.0}
@@ -237,8 +222,35 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
                 kwargs["weight"] = weight
             objectives_list.append(MercierStability(**kwargs))
         #-----------------------------------------------------
+
+        #-------------------
+        # Custom objectives:
+        use, weight = _obj_settings(toggle, "monotonicity_obj")
+        if use:
+            kwargs = {
+                "fun": pressure_monotonicity,
+                "grid": LinearGrid(rho=200, M=0, N=0),
+                "thing": eq_0,
+                "target": 0.0,
+                "normalize": False,
+            }
+            if weight is not None:
+                kwargs["weight"] = weight
+            objectives_list.append(ObjectiveFromUser(**kwargs))
         
-    #===============================
+        if toggle.get("iota_rationals_obj", False):
+            objectives_list.append(
+                ObjectiveFromUser(
+                    fun = iota_rationals,
+                    thing = eq_0,
+                    bounds = (iota_lower, iota_upper),
+                    grid = LinearGrid(rho=200, M=0, N=0),
+                    normalize = False,
+                )
+            )
+        #------------------------------------------------------
+    #==========================================================
+
 
     #=======================================
     # Finalizing optimization objects/setup:
@@ -248,7 +260,8 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
         raise ValueError("No optimization objectives were selected.")
 
     objectives = ObjectiveFunction(objectives_list)
-    #=======================================
+    #==============================================
+
 
     #======================
     # Running optimization:
@@ -263,7 +276,8 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
         copy=True,
         verbose=3,
     )
-    #======================
+    #=============
+
 
     save_name = "opt_FXD.h5" if FXD else "opt_CON.h5"
     save_path = os.path.join(out_dir, save_name)

@@ -25,10 +25,6 @@ print("jax devices:", jax.devices())
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
 from .driver import run_from_config
-
-
-def obj(use: bool, weight=None):
-    return {"use": use, "weight": weight}
 #===================================================================================================================================================
 
 
@@ -42,10 +38,10 @@ def obj(use: bool, weight=None):
 
 
 #===================================================================================================================================================
+#============== HELPER FUNCTIONS ==============#
+#==========================
 def iota_between_rationals(
     iota_axis: float,
-    iota_edge: float,
-    N_knots: int,
 ):
     """
     Generates bounds for iota optimizer constraint
@@ -76,13 +72,21 @@ def iota_between_rationals(
     if matched_lower is None:
         raise ValueError("iota_axis is outside all allowed rational intervals.")
 
-    if not (matched_lower <= iota_edge <= matched_upper):
-        raise ValueError("iota_axis and iota_edge are not in the same allowed interval.")
-
-    lower_bound = matched_lower * jnp.ones(N_knots)
-    upper_bound = matched_upper * jnp.ones(N_knots)
+    lower_bound = matched_lower
+    upper_bound = matched_upper 
 
     return lower_bound, upper_bound
+#==================================
+
+
+#===============================
+def obj(use: bool, weight=None):
+    """
+    
+    """
+    return {"use": use, "weight": weight}
+#========================================
+#=================================================#
 #===================================================================================================================================================
 
 
@@ -116,10 +120,9 @@ surface_init = FourierRZToroidalSurface(
 #-------------------------
 # Initializing fixed iota:
 iota_axis = 0.52
-iota_edge = 0.64
-iota_N_knots = 6
-iota_values = jnp.linspace(iota_axis, iota_edge, iota_N_knots)
-#----------------------------------------
+iota_init = PowerSeriesProfile([iota_axis, 0, 0.07])
+iota_lower, iota_upper = iota_between_rationals(iota_axis = iota_axis)
+#---------------------------------------------------------------------
 
 #------------------------
 # Equilibrium resolution:
@@ -136,7 +139,7 @@ eq_resolution = [L, M, N]
 eq_config = {
     "NFP":           NFP,
     "surface_init":  surface_init,
-    "iota_values":   iota_values,
+    "iota_init":     iota_init,
     "eq_resolution": eq_resolution,
 }
 #==================================
@@ -158,15 +161,6 @@ eq_config = {
 target_aspect_ratio = 6
 #----------------------
 
-#----------------------------------------------------------
-# Iota between rationals constraint target vector generator
-iota_lower, iota_upper = iota_between_rationals(
-    iota_axis = iota_axis,  
-    # BAD PRACTICE GLOBAL VARIABLE HAS LOCAL VAR NAME
-    iota_edge = iota_edge,
-    N_knots = iota_N_knots
-    )
-#-------------------------
 
 #----------
 ftol = 5e-4
@@ -179,9 +173,13 @@ maxiter = 2
 
 #==============
 opt_toggles = [
-    #--------------------------
+    #==========================
     {  # 1st stage optimization
+        #----------------------------------------
         "name": "proximal-lsq-exact", # optimizer 
+        #----------------------------------------
+
+        #-------------------------------
         "toggle_FXD": { # fixed profiles
             # Constraints:
                 # Standard:
@@ -191,13 +189,16 @@ opt_toggles = [
             "fix_pressure_con": True,
 
             # Objectives:
+                # Standard:
             "forcebalance_obj": obj(True, 1e4),
             "aspect_ratio_obj": obj(True, 1e0),
             "qs_obj":           obj(True, 1e0),
             "ballooning_obj":   obj(True, 1e0),
             "mercier_obj":      obj(True, 1e0),
         },
+        #--------------------------------------
 
+        #------------------------------
         "toggle_CON": { # free profiles
             # Constraints:
                 # Standard:
@@ -210,56 +211,79 @@ opt_toggles = [
             "pressure_edge_con":      True,
             "grad_pressure_axis_con": True,
             "grad_pressure_edge_con": True,
+            "grad_iota_axis_con":     True,
 
             # Objectives:
+                # Standard:
+            "forcebalance_obj":   obj(True, 1e4),
+            "aspect_ratio_obj":   obj(True, 1e0),
+            "qs_obj":             obj(True, 1e0),
+            "ballooning_obj":     obj(True, 1e0),
+            "mercier_obj":        obj(True, 1e0),
+                # Custom:
+            "monotonicity_obj":   obj(True, 1e0),
+            "iota_rationals_con": True,
+        },
+        #--------------------------------------
+    },
+    #==========================================
+
+
+    #==========================
+    {  # 2nd stage optimization
+        #----------------------------------------
+        "name": None, # optimizer 
+        #----------------------------------------
+
+        #-------------------------------
+        "toggle_FXD": { # fixed profiles
+            # Constraints:
+                # Standard:
+            "forcebalance_con": True,
+            "fix_iota_con":     True,
+            "fix_psi_con":      True,
+            "fix_pressure_con": True,
+
+            # Objectives:
+                # Standard:
             "forcebalance_obj": obj(True, 1e4),
             "aspect_ratio_obj": obj(True, 1e0),
             "qs_obj":           obj(True, 1e0),
             "ballooning_obj":   obj(True, 1e0),
             "mercier_obj":      obj(True, 1e0),
-            "monotonicity_obj": obj(True, 1e0),
         },
-    },
-    #-------------------------------------------
+        #--------------------------------------
 
-    #--------------------------
-    {  # 2nd stage optimization
-        "name": None, # optimizer
-        "toggle_FXD": { # fixed profiles
-            # Constraints:
-            "forcebalance_con": False,
-            "fix_iota_con":     False,
-            "fix_psi_con":      False,
-            "fix_pressure_con": False,
-
-            # Objectives:
-            "forcebalance_obj": obj(False, None),
-            "aspect_ratio_obj": obj(False, None),
-            "qs_obj":           obj(False, None),
-            "ballooning_obj":   obj(False, None),
-            "mercier_obj":      obj(False, None),
-        },
-
+        #------------------------------
         "toggle_CON": { # free profiles
             # Constraints:
-            "pressure_axis_con":      False,
-            "pressure_edge_con":      False,
-            "grad_pressure_axis_con": False,
-            "grad_pressure_edge_con": False,
-            "forcebalance_con":       False,
+                # Standard:
+            "forcebalance_con":       True,
             "fix_iota_con":           False,
-            "fix_psi_con":            False,
+            "fix_psi_con":            True,
+            "fix_pressure_con":       False,
+                # Custom:
+            "pressure_axis_con":      True,
+            "pressure_edge_con":      True,
+            "grad_pressure_axis_con": True,
+            "grad_pressure_edge_con": True,
+            "grad_iota_axis_con":     True,
+            
 
             # Objectives:
-            "forcebalance_obj": obj(False, None),
-            "aspect_ratio_obj": obj(False, None),
-            "qs_obj":           obj(False, None),
-            "ballooning_obj":   obj(False, None),
-            "mercier_obj":      obj(False, None),
-            "monotonicity_obj": obj(False, None),
+                # Standard:
+            "forcebalance_obj":   obj(True, 1e4),
+            "aspect_ratio_obj":   obj(True, 1e0),
+            "qs_obj":             obj(True, 1e0),
+            "ballooning_obj":     obj(True, 1e0),
+            "mercier_obj":        obj(True, 1e0),
+                # Custom:
+            "monotonicity_obj":   obj(True, 1e0),
+            "iota_rationals_obj": True,
         },
+        #--------------------------------------
     },
-]   #--------------------------------------------
+]   #==========================================
 #================================================
 
 
@@ -267,8 +291,8 @@ opt_toggles = [
 # Grouping opt inputs:
 opt_config = {
     "target_aspect_ratio": target_aspect_ratio,
-    "iota_lower":          iota_lower,
     "iota_upper":          iota_upper,
+    "iota_lower":          iota_lower,
     "ftol":                ftol,
     "xtol":                xtol,
     "gtol":                gtol,
