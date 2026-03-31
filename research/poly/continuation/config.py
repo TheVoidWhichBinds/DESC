@@ -33,7 +33,7 @@ from research.poly.poly_constraints import (
     iota_rational_edge,
     iota_rational_range,
     grad_iota_axis,
-    iota_positive,
+    iota_plateau,
 )
 from .driver import run_from_config
 from .opt import resolve_from_context
@@ -122,7 +122,6 @@ surface_init = FourierRZToroidalSurface(
 # Initializing iota:
 iota_axis = 0.52
 iota_init = PowerSeriesProfile([iota_axis, 0, 0.2, -0.2, 1.2, -1.1])
-iota_lower, iota_upper = iota_between_rationals(iota_axis = iota_axis)
 #---------------------------------------------------------------------
 
 #------------------------
@@ -157,12 +156,17 @@ eq_config = {
 
 #============== OPTIMIZATION INPUTS ==============#
 #=============================
-#-----------------------------
-# AspectRatio objective target
+#------------------------------
+# AspectRatio objective target:
 target_aspect_ratio = 6
-#-----------------------------
+#----------------------
 
-#----------
+#--------------
+# Iota targets:
+iota_lower, iota_upper = iota_between_rationals(iota_axis = iota_axis)
+islands_location = 0.9
+#----------------------
+# Optimizer thresholds:
 ftol = 5e-4
 xtol = 1e-4
 gtol = 1e-3
@@ -321,6 +325,14 @@ opt_toggles = [
                     "target": iota_upper - iota_lower,
                 },
             },
+            "iota_plateau": {
+                "use": True,
+                "kwargs": {
+                    "name": "iota_plateau",
+                    "fun": iota_plateau,
+                    "target": islands_location,
+                },
+            },
 
             # Objectives:
                 # Standard:
@@ -369,15 +381,6 @@ opt_toggles = [
                     "target": 0.0,
                     "normalize": False,
                     "weight": 1e0,
-                },
-            },
-            "iota_positivity_obj": {
-                "use": True,
-                "kwargs": {
-                    "name": "iota_positivity",
-                    "fun": iota_positive,
-                    "target": 0.0,
-                    "weight": 1e5,
                 },
             },
         },

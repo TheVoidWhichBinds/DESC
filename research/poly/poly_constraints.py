@@ -8,7 +8,7 @@ import jax.numpy as jnp
 
 
 #============== HELPER FUNCTIONS ==============================================================================================================================
-#--------------------------
+#==========================
 def iota_between_rationals(
     iota_axis: float,
     iota_edge: float,
@@ -49,16 +49,8 @@ def iota_between_rationals(
     upper_bound = matched_upper 
 
     return lower_bound, upper_bound
-#-------------------------
-
-
-
-
-
-
-
-
-
+#==================================
+#===================================================================================================================================
 
 
 
@@ -171,28 +163,32 @@ def iota_rational_edge(params):
 def iota_rational_range(params):
     """
     Iota range.
-    P(rho=1) - P(rho=0) = (a+c) - c = delta(iota)
     between rational iota.
     """
     c_2 = params["i_l"][2]
     return c_2
 #-------------
-#=====================
+
+
+#---------------------------
+def iota_plateau(params):
+    """
+    For a cubic PowerSeriesProfile in iota,
+    with zero axis gradient (c[1] = 0),
+
+    """
+    c = params['i_l']
+    rho = 0.9
+    plat = 3*c[3]*rho**2 + 2*c[2]*rho
+    return plat
+#-----------------------------------------
+#=========================================
 
 
 
 #============
 # Objectives:
-#-----------------------------
-def iota_positive(grid, data):
-    """
-    Iota on axis greater than at least
-    the first low-order rational surface
-    at iota = 0.25.
-    """
-    iota_axis = data["iota"][0]
-    violation = jnp.maximum(0.25 - iota_axis, 0.0)
-    return violation
+
 #====================
 #===================================================================================================================================
 

@@ -255,12 +255,6 @@ OBJECTIVE_REGISTRY_CON = {
             "thing": _eq,
         },
     },
-    "iota_positivity_obj": {
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
 }
 
 
@@ -354,6 +348,12 @@ CONSTRAINT_REGISTRY_CON = {
         },
     },
     "iota_rational_range_con": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "iota_plateau": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
