@@ -255,6 +255,18 @@ OBJECTIVE_REGISTRY_CON = {
             "thing": _eq,
         },
     },
+    "iota_axis_bounds":{
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "iota_edge_bounds":{
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
 }
 
 
@@ -347,7 +359,7 @@ CONSTRAINT_REGISTRY_CON = {
             "thing": _eq,
         },
     },
-    "iota_plateau": {
+    "iota_axis": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,

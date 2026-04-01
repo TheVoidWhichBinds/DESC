@@ -173,27 +173,30 @@ def grad_iota_axis(params):
     c = params["i_l"] 
     return c[1]
 #--------------
-
-#---------------------------
-def iota_plateau(params):
-    """
-    For a cubic PowerSeriesProfile in iota,
-    with zero axis gradient (c[1] = 0),
-
-    """
-    c = params['i_l']
-    rho = islands_loc
-    iota = (3*c[3]*rho**3 + 2*c[2]*rho**2 +
-    return plat
-#--------------
 #==============
 
 
 
 #============
 # Objectives:
+#--------------------------
+def iota_axis_bounds(grid, data):
+    """
+    
+    """
+    iota = data['iota']
+    return iota[0]
+#---------------------
 
-#====================
+#--------------------------
+def iota_edge_bounds(grid, data):
+    """
+
+    """
+    iota = data['iota']
+    return iota[-1]
+#---------------------
+#=====================
 #===================================================================================================================================
 
 

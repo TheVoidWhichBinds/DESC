@@ -32,9 +32,9 @@ from research.poly.poly_constraints import (
     pressure_monotonicity,
     iota_edge,
     iota_axis,
-    iota_rational_range,
     grad_iota_axis,
-    iota_plateau,
+    iota_axis_bounds,
+    iota_edge_bounds
 )
 from .driver import run_from_config
 from .opt import resolve_from_context
@@ -92,17 +92,7 @@ def iota_between_rationals(
 
 
 #=======================
-def iota_plateau_target(
-        iota_edge,
-        island_chain: bool,
-    ):
-    """
-    Takes a desired iota value on the edge,
-    and generates the corresponding location,
-    and iota value for a magnetic island which
-    can be chosen to be within the plasma. 
-    """
-    
+
 
 #===================================================================================================================================================
 
@@ -136,8 +126,8 @@ surface_init = FourierRZToroidalSurface(
 
 #-------------------
 # Initializing iota:
-iota_axis = 0.52
-iota_init = PowerSeriesProfile([iota_axis, 0, 0.1, 0])
+iota_init_axis = 0.52
+iota_init = PowerSeriesProfile([iota_init_axis, 0, 0.15])
 #-----------------------------------------------------
 
 #------------------------
@@ -179,15 +169,14 @@ target_aspect_ratio = 6
 
 #--------------
 # Iota targets:
-iota_lower, iota_upper = iota_between_rationals(iota_axis = iota_axis)
-
+iota_lower, iota_upper = iota_between_rationals(iota_axis = iota_init_axis)
 #----------------------
 # Optimizer thresholds:
 ftol = 5e-4
 xtol = 1e-4
 gtol = 1e-3
 ctol = 1e-10
-maxiter = 0
+maxiter = 4
 #----------
 #==========
 
@@ -288,6 +277,7 @@ opt_toggles = [
                 "use": False,
                 "kwargs": {},
             },
+
                 # Custom:
             "pressure_axis": {
                 "use": True,
@@ -329,20 +319,20 @@ opt_toggles = [
                     "target": 0.0,
                 },
             },
+            "iota_axis": {
+                "use": True, ###############
+                "kwargs": {
+                    "name": "iota_axis",
+                    "fun": iota_axis,
+                    "target": (iota_lower),
+                },
+            },    
             "iota_edge": {
                 "use": False, ###############
                 "kwargs": {
                     "name": "iota_edge",
                     "fun": iota_edge,
-                    "target": iota_upper,
-                },
-            },
-            "iota_plateau": {
-                "use": True, ###############
-                "kwargs": {
-                    "name": "iota_plateau",
-                    "fun": iota_plateau,
-                    "target": 0.4,
+                    "target": (iota_upper),
                 },
             },
             #---------------------
@@ -385,15 +375,38 @@ opt_toggles = [
                     "target": 0.0,
                 },
             },
+
                 # Custom:
             "pressure_monotonicity": {
                 "use": True,
                 "kwargs": {
                     "name": "pressure_monotonicity",
                     "fun": pressure_monotonicity,
-                    "grid": LinearGrid(rho=200, M=0, N=0),
                     "target": 0.0,
+                    "grid": LinearGrid(rho=200, M=0, N=0),
                     "normalize": False,
+                    "weight": 1e0,
+                },
+            },
+            "iota_axis_bounds": {
+                "use": False, ###############
+                "kwargs": {
+                    "name": "iota_axis_bounds",
+                    "fun": iota_axis_bounds,
+                    "bounds": (iota_lower, iota_upper),
+                    "grid": LinearGrid(rho=200, M=0, N=0),
+                    "normalize": False,                    
+                    "weight": 1e0,
+                },
+            },
+            "iota_edge_bounds": {
+                "use": True, ###############
+                "kwargs": {
+                    "name": "iota_edge_bounds",
+                    "fun": iota_edge_bounds,
+                    "bounds": (iota_lower, iota_upper),
+                    "grid": LinearGrid(rho=200, M=0, N=0),
+                    "normalize": False,                    
                     "weight": 1e0,
                 },
             },
