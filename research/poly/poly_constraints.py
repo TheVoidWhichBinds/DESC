@@ -7,7 +7,8 @@ import jax.numpy as jnp
 
 
 
-#============== HELPER FUNCTIONS ==============================================================================================================================
+
+#============== HELPER FUNCTION & VARIABLE ======================================================================================================================
 #==========================
 def iota_between_rationals(
     iota_axis: float,
@@ -50,6 +51,11 @@ def iota_between_rationals(
 
     return lower_bound, upper_bound
 #==================================
+
+
+#===========================================================
+islands_loc = 0.4 # desired radial location of island chain
+#===========================================================
 #===================================================================================================================================
 
 
@@ -138,37 +144,35 @@ def pressure_monotonicity(grid, data):
 #============== IOTA CONSTRAINTS/OBJECTIVES ========================================================================================
 #=============
 # Constraints:
+#---------------------
+def iota_axis(params):
+    """
+    Iota on axis (only constant term survives)
+    P(rho=0) = d
+    """
+    c = params["i_l"] 
+    return c[0]
+#--------------
+
+#---------------------
+def iota_edge(params):
+    """
+    Iota on edge (b = 0 using grad_iota_axis).
+    P(rho=1) = a + c = upper rational iota.
+    """
+    c = params["i_l"] 
+    return c.sum() 
+#-----------------
+
 #--------------------------
 def grad_iota_axis(params):
     """
     Iota gradient on axis (rho=0).
     Target: GradP=0 (no discontinuity).
     """
-    c_1 = params['i_l'][1]
-    return c_1
-#-------------
-
-#--------------------------
-def iota_rational_edge(params):
-    """
-    Iota on edge (b = 0 using grad_iota_axis).
-    P(rho=1) = a + c = upper rational iota.
-    """
-    c_0 = params["i_l"][0]
-    c_2 = params["i_l"][2]
-    return c_2 + c_0
-#-------------------
-
-#-------------------------------
-def iota_rational_range(params):
-    """
-    Iota range.
-    between rational iota.
-    """
-    c_2 = params["i_l"][2]
-    return c_2
-#-------------
-
+    c = params["i_l"] 
+    return c[1]
+#--------------
 
 #---------------------------
 def iota_plateau(params):
@@ -178,11 +182,11 @@ def iota_plateau(params):
 
     """
     c = params['i_l']
-    rho = 0.9
-    plat = 3*c[3]*rho**2 + 2*c[2]*rho
+    rho = islands_loc
+    iota = (3*c[3]*rho**3 + 2*c[2]*rho**2 +
     return plat
-#-----------------------------------------
-#=========================================
+#--------------
+#==============
 
 
 

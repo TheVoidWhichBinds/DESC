@@ -29,7 +29,7 @@ from desc.objectives import (
 
 
 #============== HELPER FUNCTIONS ============================================================================================================================
-#=========================
+#==============================
 def resolve_from_context(func):
     """
     Mark a callable as something that should be resolved
@@ -37,17 +37,17 @@ def resolve_from_context(func):
     """
     func._resolve_from_context = True
     return func
-#-------------------------
+#==============
 
 
-#=========================
+#====================
 @resolve_from_context
 def _eq(ctx):
     return ctx["eq_0"]
-#--------------------------------------------------------------------------------------------------------------------------------------------------
+#=====================
 
 
-#=========================
+#==================================
 def _resolve_value(value, context):
     """
     Resolve a config value.
@@ -58,10 +58,10 @@ def _resolve_value(value, context):
     if callable(value) and getattr(value, "_resolve_from_context", False):
         return value(context)
     return value
-#--------------------------------------------------------------------------------------------------------------------------------------------------
+#===============
 
 
-#=========================
+#====================================
 def _resolve_kwargs(kwargs, context):
     """
     Resolve all values in a kwargs dict.
@@ -70,10 +70,10 @@ def _resolve_kwargs(kwargs, context):
         key: _resolve_value(value, context)
         for key, value in kwargs.items()
     }
-#-------------------------
+#=======================================
 
 
-#=========================
+#===============================================
 def _validate_kwargs(entry, key, wrapper, kind):
     """
     Validate user-provided kwargs against wrapper signature.
@@ -88,7 +88,7 @@ def _validate_kwargs(entry, key, wrapper, kind):
             f"'{wrapper.__name__}': {sorted(invalid_keys)}. "
             f"Valid kwargs are: {sorted(valid_params)}"
         )
-#-------------------------
+#======================================================
 
 
 #=========================
@@ -185,31 +185,31 @@ def _append_terms(term_list, toggle, registry, context, kind):
 
 #============== REGISTRIES ============================================================================================================================
 OBJECTIVE_REGISTRY_FXD = {
-    "forcebalance_obj": {
+    "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
             "eq": _eq,
         },
     },
-    "aspect_ratio_obj": {
+    "aspect_ratio": {
         "wrapper": AspectRatio,
         "defaults": {
             "eq": _eq,
         },
     },
-    "qs_obj": {
+    "qs": {
         "wrapper": QuasisymmetryBoozer,
         "defaults": {
             "eq": _eq,
         },
     },
-    "ballooning_obj": {
+    "ballooning": {
         "wrapper": BallooningStability,
         "defaults": {
             "eq": _eq,
         },
     },
-    "mercier_obj": {
+    "mercier": {
         "wrapper": MercierStability,
         "defaults": {
             "eq": _eq,
@@ -219,37 +219,37 @@ OBJECTIVE_REGISTRY_FXD = {
 
 
 OBJECTIVE_REGISTRY_CON = {
-    "forcebalance_obj": {
+    "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
             "eq": _eq,
         },
     },
-    "aspect_ratio_obj": {
+    "aspect_ratio": {
         "wrapper": AspectRatio,
         "defaults": {
             "eq": _eq,
         },
     },
-    "qs_obj": {
+    "qs": {
         "wrapper": QuasisymmetryBoozer,
         "defaults": {
             "eq": _eq,
         },
     },
-    "ballooning_obj": {
+    "ballooning": {
         "wrapper": BallooningStability,
         "defaults": {
             "eq": _eq,
         },
     },
-    "mercier_obj": {
+    "mercier": {
         "wrapper": MercierStability,
         "defaults": {
             "eq": _eq,
         },
     },
-    "pressure_monotonicity_obj": {
+    "pressure_monotonicity": {
         "wrapper": ObjectiveFromUser,
         "defaults": {
             "thing": _eq,
@@ -259,25 +259,25 @@ OBJECTIVE_REGISTRY_CON = {
 
 
 CONSTRAINT_REGISTRY_FXD = {
-    "forcebalance_con": {
+    "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
             "eq": _eq,
         },
     },
-    "fix_iota_con": {
+    "fix_iota": {
         "wrapper": FixIota,
         "defaults": {
             "eq": _eq,
         },
     },
-    "fix_psi_con": {
+    "fix_psi": {
         "wrapper": FixPsi,
         "defaults": {
             "eq": _eq,
         },
     },
-    "fix_pressure_con": {
+    "fix_pressure": {
         "wrapper": FixPressure,
         "defaults": {
             "eq": _eq,
@@ -287,67 +287,61 @@ CONSTRAINT_REGISTRY_FXD = {
 
 
 CONSTRAINT_REGISTRY_CON = {
-    "forcebalance_con": {
+    "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
             "eq": _eq,
         },
     },
-    "fix_iota_con": {
+    "fix_iota": {
         "wrapper": FixIota,
         "defaults": {
             "eq": _eq,
         },
     },
-    "fix_psi_con": {
+    "fix_psi": {
         "wrapper": FixPsi,
         "defaults": {
             "eq": _eq,
         },
     },
-    "fix_pressure_con": {
+    "fix_pressure": {
         "wrapper": FixPressure,
         "defaults": {
             "eq": _eq,
         },
     },
-    "pressure_axis_con": {
+    "pressure_axis": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "pressure_edge_con": {
+    "pressure_edge": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "grad_pressure_axis_con": {
+    "grad_pressure_axis": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "grad_pressure_edge_con": {
+    "grad_pressure_edge": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "grad_iota_axis_con": {
+    "grad_iota_axis": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "iota_rational_edge_con": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "iota_rational_range_con": {
+    "iota_edge": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
@@ -385,6 +379,7 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
     ftol = opt_config["ftol"]
     xtol = opt_config["xtol"]
     gtol = opt_config["gtol"]
+    ctol = opt_config["ctol"]
     maxiter = opt_config["maxiter"]
     toggle_FXD = opt_config["toggle_FXD"]
     toggle_CON = opt_config["toggle_CON"]
@@ -464,6 +459,7 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
         ftol = ftol,
         xtol = xtol,
         gtol = gtol,
+        ctol = ctol,
         maxiter = maxiter,
         copy = True,
         verbose = 3,

@@ -10,7 +10,11 @@ from desc.profiles import PowerSeriesProfile, SplineProfile
 
 
 #============== POLYNOMIAL INITIALIZER ========================================================================================================================
-def coefficients(p_scale, n, min_n=2):
+def coefficients(
+        p_scale, 
+        n, 
+        min_n=2
+    ):
     """
     Coeffs for p(rho) = p_scale * (1 - rho^2)^n
     Guarantees: p(0)=p_scale, p(1)=0, p'(0)=0, p'(1)=0 for n>=2
@@ -32,7 +36,12 @@ def coefficients(p_scale, n, min_n=2):
 
 
 #============== EQUILIBRIUM SOLVER ============================================================================================================================
-def run_equilibrium(p_scale, n, out_dir, eq_config):
+def run_equilibrium(
+        p_scale, 
+        n, 
+        out_dir, 
+        eq_config
+    ):
     """
     Runs equilibrium solve given an on-axis pressure,
     and polynomial order n.

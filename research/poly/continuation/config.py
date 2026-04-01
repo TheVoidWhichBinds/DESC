@@ -30,7 +30,8 @@ from research.poly.poly_constraints import (
     grad_pressure_axis,
     grad_pressure_edge,
     pressure_monotonicity,
-    iota_rational_edge,
+    iota_edge,
+    iota_axis,
     iota_rational_range,
     grad_iota_axis,
     iota_plateau,
@@ -88,6 +89,21 @@ def iota_between_rationals(
 
     return lower_bound, upper_bound
 #==================================
+
+
+#=======================
+def iota_plateau_target(
+        iota_edge,
+        island_chain: bool,
+    ):
+    """
+    Takes a desired iota value on the edge,
+    and generates the corresponding location,
+    and iota value for a magnetic island which
+    can be chosen to be within the plasma. 
+    """
+    
+
 #===================================================================================================================================================
 
 
@@ -101,10 +117,10 @@ def iota_between_rationals(
 
 #===================================================================================================================================================
 #============== EQUILIBRIUM INPUTS ==============#
-#=========================
-#-------------------------
-# Number of field periods:
-NFP = 19
+#=================================
+#---------------------------------
+# Number of toroidalfield periods:
+NFP = 4
 #-------
 
 #----------------------------
@@ -118,11 +134,11 @@ surface_init = FourierRZToroidalSurface(
 )
 #-------------
 
-#-------------------------
+#-------------------
 # Initializing iota:
 iota_axis = 0.52
-iota_init = PowerSeriesProfile([iota_axis, 0, 0.2, -0.2, 1.2, -1.1])
-#---------------------------------------------------------------------
+iota_init = PowerSeriesProfile([iota_axis, 0, 0.1, 0])
+#-----------------------------------------------------
 
 #------------------------
 # Equilibrium resolution:
@@ -155,7 +171,7 @@ eq_config = {
 
 
 #============== OPTIMIZATION INPUTS ==============#
-#=============================
+#==============================
 #------------------------------
 # AspectRatio objective target:
 target_aspect_ratio = 6
@@ -164,13 +180,14 @@ target_aspect_ratio = 6
 #--------------
 # Iota targets:
 iota_lower, iota_upper = iota_between_rationals(iota_axis = iota_axis)
-islands_location = 0.9
+
 #----------------------
 # Optimizer thresholds:
 ftol = 5e-4
 xtol = 1e-4
 gtol = 1e-3
-maxiter = 1
+ctol = 1e-10
+maxiter = 0
 #----------
 #==========
 
@@ -179,64 +196,64 @@ maxiter = 1
 opt_toggles = [
     #==========================
     {  # 1st stage optimization
-        #----------------------------------------
         "name": "proximal-lsq-exact", # optimizer
-        #----------------------------------------
-
-        #-------------------------------
+        #===============================
         "toggle_FXD": { # fixed profiles
+            #-------------
             # Constraints:
                 # Standard:
-            "forcebalance_con": {
+            "forcebalance": {
                 "use": True,
                 "kwargs": {
                     "target": 0.0,
                 },
             },
-            "fix_iota_con": {
+            "fix_iota": {
                 "use": True,
                 "kwargs": {},
             },
-            "fix_psi_con": {
+            "fix_psi": {
                 "use": True,
                 "kwargs": {},
             },
-            "fix_pressure_con": {
+            "fix_pressure": {
                 "use": True,
                 "kwargs": {},
             },
-
+            #----------------
+            
+            #------------
             # Objectives:
                 # Standard:
-            "forcebalance_obj": {
+            "forcebalance": {
                 "use": True,
                 "kwargs": {
                     "weight": 1e4,
                     "target": 0.0,
                 },
             },
-            "aspect_ratio_obj": {
+            "aspect_ratio": {
                 "use": True,
                 "kwargs": {
                     "weight": 1e0,
                     "target": target_aspect_ratio,
                 },
             },
-            "qs_obj": {
+            "qs": {
                 "use": True,
                 "kwargs": {
                     "weight": 1e0,
                     "helicity": (1, NFP),
                 },
             },
-            "ballooning_obj": {
+            "ballooning": {
                 "use": True,
                 "kwargs": {
                     "weight": 1e0,
                     "target": 0.0,
                 },
             },
-            "mercier_obj": {
+            "mercier": {
                 "use": True,
                 "kwargs": {
                     "weight": 1e0,
@@ -244,32 +261,35 @@ opt_toggles = [
                 },
             },
         },
-        #--------------------------------------
+            #---------------------
+        #=========================
 
-        #------------------------------
+
+        #==============================
         "toggle_CON": { # free profiles
+            #-------------
             # Constraints:
                 # Standard:
-            "forcebalance_con": {
+            "forcebalance": {
                 "use": True,
                 "kwargs": {
                     "target": 0.0,
                 },
             },
-            "fix_iota_con": {
+            "fix_iota": {
                 "use": False,
                 "kwargs": {},
             },
-            "fix_psi_con": {
+            "fix_psi": {
                 "use": True,
                 "kwargs": {},
             },
-            "fix_pressure_con": {
+            "fix_pressure": {
                 "use": False,
                 "kwargs": {},
             },
                 # Custom:
-            "pressure_axis_con": {
+            "pressure_axis": {
                 "use": True,
                 "kwargs": {
                     "name": "pressure_axis",
@@ -277,7 +297,7 @@ opt_toggles = [
                     "target": resolve_from_context(lambda ctx: ctx["p_scale"]),
                 },
             },
-            "pressure_edge_con": {
+            "pressure_edge": {
                 "use": True,
                 "kwargs": {
                     "name": "pressure_edge",
@@ -285,7 +305,7 @@ opt_toggles = [
                     "target": 0.0,
                 },
             },
-            "grad_pressure_axis_con": {
+            "grad_pressure_axis": {
                 "use": True,
                 "kwargs": {
                     "name": "grad_pressure_axis",
@@ -293,7 +313,7 @@ opt_toggles = [
                     "target": 0.0,
                 },
             },
-            "grad_pressure_edge_con": {
+            "grad_pressure_edge": {
                 "use": True,
                 "kwargs": {
                     "name": "grad_pressure_edge",
@@ -301,70 +321,64 @@ opt_toggles = [
                     "target": 0.0,
                 },
             },
-            "grad_iota_axis_con": {
-                "use": True,
+            "grad_iota_axis": {
+                "use": False, ###############
                 "kwargs": {
                     "name": "grad_iota_axis",
                     "fun": grad_iota_axis,
                     "target": 0.0,
                 },
             },
-            "iota_rational_edge_con": {
-                "use": True,
+            "iota_edge": {
+                "use": False, ###############
                 "kwargs": {
-                    "name": "iota_rational_edge",
-                    "fun": iota_rational_edge,
+                    "name": "iota_edge",
+                    "fun": iota_edge,
                     "target": iota_upper,
                 },
             },
-            "iota_rational_range_con": {
-                "use": True,
-                "kwargs": {
-                    "name": "iota_rational_range",
-                    "fun": iota_rational_range,
-                    "target": iota_upper - iota_lower,
-                },
-            },
             "iota_plateau": {
-                "use": True,
+                "use": True, ###############
                 "kwargs": {
                     "name": "iota_plateau",
                     "fun": iota_plateau,
-                    "target": islands_location,
+                    "target": 0.4,
                 },
             },
+            #---------------------
 
+            #------------
             # Objectives:
                 # Standard:
-            "forcebalance_obj": {
+            "forcebalance": {
                 "use": True,
                 "kwargs": {
                     "weight": 1e4,
                     "target": 0.0,
                 },
             },
-            "aspect_ratio_obj": {
+            "aspect_ratio": {
                 "use": True,
                 "kwargs": {
                     "weight": 1e0,
                     "target": target_aspect_ratio,
                 },
             },
-            "qs_obj": {
+            "qs": {
                 "use": True,
                 "kwargs": {
                     "weight": 1e0,
                     "helicity": (1, NFP),
                 },
             },
-            "ballooning_obj": {
+            "ballooning": {
                 "use": True,
                 "kwargs": {
                     "weight": 1e0,
                     "target": 0.0,
                 },
             },
-            "mercier_obj": {
+            "mercier": {
                 "use": True,
                 "kwargs": {
                     "weight": 1e0,
@@ -372,7 +386,7 @@ opt_toggles = [
                 },
             },
                 # Custom:
-            "pressure_monotonicity_obj": {
+            "pressure_monotonicity": {
                 "use": True,
                 "kwargs": {
                     "name": "pressure_monotonicity",
@@ -384,10 +398,10 @@ opt_toggles = [
                 },
             },
         },
-        #--------------------------------------
-    },
-]   #==========================================
-#================================================
+            #---------------------
+    },  #=========================
+]   #=================================
+#========================================
 
 
 #=====================
@@ -396,10 +410,11 @@ opt_config = {
     "ftol":        ftol,
     "xtol":        xtol,
     "gtol":        gtol,
+    "ctol":        ctol,
     "maxiter":     maxiter,
     "opt_toggles": opt_toggles,
 }
-#=============================================
+#==============================
 #=================================================#
 
 
