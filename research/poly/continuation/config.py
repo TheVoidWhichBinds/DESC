@@ -132,7 +132,7 @@ iota_init = PowerSeriesProfile([iota_init_axis, 0, 0.15])
 
 #------------------------
 # Equilibrium resolution:
-L = 8
+L = 12
 M = 8
 N = 3
 eq_resolution = [L, M, N]
@@ -328,7 +328,7 @@ opt_toggles = [
                 },
             },    
             "iota_edge": {
-                "use": False, ###############
+                "use": True, ###############
                 "kwargs": {
                     "name": "iota_edge",
                     "fun": iota_edge,
@@ -400,7 +400,7 @@ opt_toggles = [
                 },
             },
             "iota_edge_bounds": {
-                "use": True, ###############
+                "use": False, ###############
                 "kwargs": {
                     "name": "iota_edge_bounds",
                     "fun": iota_edge_bounds,
