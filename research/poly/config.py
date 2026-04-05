@@ -1,3 +1,4 @@
+
 #===================================================================================================================================================
 from pathlib import Path
 repo_root = Path(__file__).resolve().parents[3]
@@ -37,8 +38,8 @@ from research.poly.poly_constraints import (
 from .driver import run_from_config
 from .opt import resolve_from_context
 from research.poly.helper import(
-
-    
+    pressure_generator,
+    iota_between_rationals,
 )
 #===================================================================================================================================================
 
@@ -52,78 +53,9 @@ from research.poly.helper import(
 
 
 
-#============== HELPER FUNCTIONS ==================================================================================================================
-#==========================
-def iota_between_rationals(
-    iota_axis: float,
-):
-    """
-    Generates bounds for iota optimizer constraint
-    that are between low-order rational surfaces.
-    """
-    allowed_ranges = [
-        (0.25,   0.3333),
-        (0.3333, 0.5),
-        (0.5,    0.6667),
-        (0.6667, 0.75),
-        (0.75,   1.0),
-        (1.0,    1.3333),
-        (1.3333, 1.5),
-        (1.5,    2.0),
-        (2.0,    3.0),
-        (3.0,    4.0),
-    ]
-
-    matched_lower = None
-    matched_upper = None
-
-    for lower, upper in allowed_ranges:
-        if lower <= iota_axis <= upper:
-            matched_lower = lower
-            matched_upper = upper
-            break
-
-    if matched_lower is None:
-        raise ValueError("iota_axis is outside all allowed rational intervals.")
-
-    lower_bound = matched_lower
-    upper_bound = matched_upper
-
-    return lower_bound, upper_bound
-#==================================
-#===================================================================================================================================================
 
 
-
-
-
-
-
-
-#================ DRIVER INPUTS ==================#
-#=========================
-# Pressure maxima to test:
-p_maxima = [1e4]
-
-# Polynomial orders to test:
-n_set = [3]
-#==========
-
-
-#========================
-# Grouping driver inputs:
-driver_config = {
-    "p_maxima": p_maxima,
-    "n_set":    n_set,
-}
-#=====================
-#=================================================#
-#===================================================================================================================================================
-
-
-
-#===================================================================================================================================================
-#============== EQUILIBRIUM INPUTS ==============#
+#================EQUILIBRIUM INPUTS ================================================================================================================
 #=================================
 #---------------------------------
 # Number of toroidalfield periods:
@@ -149,15 +81,23 @@ surface_init = FourierRZToroidalSurface(
 )
 #-------------
 
+#-----------------------
+# Initializing pressure:
+p_axis = 1e4
+n = L // 2
+pressure_init = PowerSeriesProfile(
+    pressure_generator(
+        p_axis = p_axis,
+        n = n
+    )
+)
+#------------
+
 #-------------------
 # Initializing iota:
 iota_init_axis = 0.52
 iota_init = PowerSeriesProfile([iota_init_axis, 0, 0.15])
 #--------------------------------------------------------
-
-
-#--------------
-
 #========================
 
 
@@ -166,6 +106,7 @@ iota_init = PowerSeriesProfile([iota_init_axis, 0, 0.15])
 eq_config = {
     "NFP":           NFP,
     "surface_init":  surface_init,
+    "pressure_init": pressure_init,
     "iota_init":     iota_init,
     "eq_resolution": eq_resolution,
 }
@@ -181,7 +122,7 @@ eq_config = {
 
 
 
-#============== OPTIMIZATION INPUTS ==============#
+#================= OPTIMIZATION INPUTS =========================================================================================================
 #==============================
 #------------------------------
 # AspectRatio objective target:
@@ -191,6 +132,8 @@ target_aspect_ratio = 6
 #--------------
 # Iota targets:
 iota_lower, iota_upper = iota_between_rationals(iota_axis = iota_init_axis)
+#--------------------------------------------------------------------------
+
 #----------------------
 # Optimizer thresholds:
 ftol = 5e-4
@@ -418,36 +361,42 @@ opt_config = {
     "opt_toggles": opt_toggles,
 }
 #==============================
-#=================================================#
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #===================================================================================================================================================
-#==================== RUN IT =====================#
+
+
+
+
+
+
+
+
+
+
+#================ DRIVER INPUTS ===================================================================================================================
+driver_config = {
+    "p_axis": p_axis,
+    "n":    n,
+    "config_path": __file__,
+}
+#===================================================================================================================================================
+
+
+
+
+
+
+
+
+
+
+#==================== RUN IT =======================================================================================================================
 def main():
     run_from_config(
-        eq_config=eq_config,
-        opt_config=opt_config,
-        driver_config=driver_config,
+        eq_config = eq_config,
+        opt_config = opt_config,
+        driver_config = driver_config,
     )
 
 if __name__ == "__main__":
     main()
-#=================================================#
 #===================================================================================================================================================

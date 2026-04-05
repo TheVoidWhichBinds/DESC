@@ -1,5 +1,4 @@
 import inspect
-import os
 import sys
 import numpy as np
 
@@ -191,13 +190,13 @@ def _append_terms(
     """
     for key, spec in registry.items():
         _append_term(
-            term_list = term_list,
-            wrapper = spec["wrapper"],
-            key = key,
-            toggle = toggle,
-            defaults = spec["defaults"],
-            context = context,
-            kind = kind,
+            term_list=term_list,
+            wrapper=spec["wrapper"],
+            key=key,
+            toggle=toggle,
+            defaults=spec["defaults"],
+            context=context,
+            kind=kind,
         )
 #=========================
 #==============================================================================================================================================================
@@ -216,7 +215,6 @@ def _append_terms(
 # Fixed profiles:
 #-------------------------
 OBJECTIVE_REGISTRY_FXD = {
-        # Standard:
     "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
@@ -252,7 +250,6 @@ OBJECTIVE_REGISTRY_FXD = {
 
 #--------------------------
 CONSTRAINT_REGISTRY_FXD = {
-        # Standard: 
     "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
@@ -277,7 +274,7 @@ CONSTRAINT_REGISTRY_FXD = {
             "eq": _eq,
         },
     },
-} #-------------------
+}
 #=====================
 
 
@@ -285,7 +282,6 @@ CONSTRAINT_REGISTRY_FXD = {
 # Free profiles:
 #-------------------------
 OBJECTIVE_REGISTRY_CON = {
-        # Standard: 
     "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
@@ -316,12 +312,11 @@ OBJECTIVE_REGISTRY_CON = {
             "eq": _eq,
         },
     },
-} 
+}
 #---------------------
 
 #--------------------------
 CONSTRAINT_REGISTRY_CON = {
-        # Standard:
     "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
@@ -347,7 +342,6 @@ CONSTRAINT_REGISTRY_CON = {
         },
     },
 
-        # Custom:
     "pressure_axis": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -397,7 +391,6 @@ CONSTRAINT_REGISTRY_CON = {
         },
     },
 }
-#------------------------
 #========================
 #==============================================================================================================================================================
 
@@ -411,7 +404,7 @@ CONSTRAINT_REGISTRY_CON = {
 
 
 #============== OPTIMIZER FUNCTION ============================================================================================================================
-def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
+def run_optimization(eq_0, optimizer, p_scale, opt_config, FXD: bool):
     """
     Run optimization with objectives/constraints controlled by config dict.
 
@@ -439,7 +432,6 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
         "p_scale": p_scale,
         "FXD": FXD,
         "optimizer": optimizer,
-        "out_dir": out_dir,
     }
     #=========================================
 
@@ -448,73 +440,64 @@ def run_optimization(eq_0, optimizer, p_scale, out_dir, opt_config, FXD: bool):
     objectives_list = []
 
     #=========================
-    if FXD:  # (fixed profiles)
+    if FXD:
         _append_terms(
-            term_list = objectives_list,
-            toggle = toggle,
-            registry = OBJECTIVE_REGISTRY_FXD,
-            context = context,
-            kind = "objective",
+            term_list=objectives_list,
+            toggle=toggle,
+            registry=OBJECTIVE_REGISTRY_FXD,
+            context=context,
+            kind="objective",
         )
 
         _append_terms(
-            term_list = constraints_list,
-            toggle = toggle,
-            registry = CONSTRAINT_REGISTRY_FXD,
-            context = context,
-            kind = "constraint",
+            term_list=constraints_list,
+            toggle=toggle,
+            registry=CONSTRAINT_REGISTRY_FXD,
+            context=context,
+            kind="constraint",
         )
-    #====================================================================
+    #=========================
 
-
-    #=======================
-    else:  # (free profiles)
+    #=========================
+    else:
         _append_terms(
-            term_list = objectives_list,
-            toggle = toggle,
-            registry = OBJECTIVE_REGISTRY_CON,
-            context = context,
-            kind = "objective",
+            term_list=objectives_list,
+            toggle=toggle,
+            registry=OBJECTIVE_REGISTRY_CON,
+            context=context,
+            kind="objective",
         )
 
         _append_terms(
-            term_list = constraints_list,
-            toggle = toggle,
-            registry = CONSTRAINT_REGISTRY_CON,
-            context = context,
-            kind = "constraint",
+            term_list=constraints_list,
+            toggle=toggle,
+            registry=CONSTRAINT_REGISTRY_CON,
+            context=context,
+            kind="constraint",
         )
-    #====================================================================
-
+    #=========================
 
     #---------------------------------------
     # Finalizing optimization objects/setup:
     constraints = tuple(constraints_list)
     objectives = ObjectiveFunction(objectives_list)
-    #---------------------------------------
-    #=======================================
-
+    #----------------------------------------------
 
     #======================
     # Running optimization:
     eq_opt, opt_result = eq_0.optimize(
-        objective = objectives,
-        constraints = constraints,
-        optimizer = optimizer,
-        ftol = ftol,
-        xtol = xtol,
-        gtol = gtol,
-        ctol = ctol,
-        maxiter = maxiter,
-        copy = True,
-        verbose = 3,
+        objective=objectives,
+        constraints=constraints,
+        optimizer=optimizer,
+        ftol=ftol,
+        xtol=xtol,
+        gtol=gtol,
+        ctol=ctol,
+        maxiter=maxiter,
+        copy=True,
+        verbose=3,
     )
     #======================
-
-
-    save_name = "opt_FXD.h5" if FXD else "opt_CON.h5"
-    save_path = os.path.join(out_dir, save_name)
-    eq_opt.save(save_path)
 
     return eq_opt, opt_result
 #==============================================================================================================================================================

@@ -1,5 +1,5 @@
 import jax.numpy as jnp
-
+from math import comb
 
 
 
@@ -7,6 +7,25 @@ import jax.numpy as jnp
 
 
 #============== HELPER FUNCTION ====================================================================================================
+#============================
+def pressure_generator(
+        p_axis, 
+        n, 
+        min_n=2
+    ):
+    """
+    Coeffs for p(rho) = p_scale * (1 - rho^2)^n
+    Guarantees: p(0)=p_scale, p(1)=0, p'(0)=0, p'(1)=0 for n>=2
+    Also nonnegative + monotone decreasing on [0,1].
+    """
+    n_eff = max(int(n), int(min_n))
+    coeff = [0.0] * (2 * n_eff + 1)
+    for k in range(n_eff + 1):
+        coeff[2 * k] = p_axis * comb(n_eff, k) * ((-1) ** k)
+    return coeff
+#===============
+
+
 #==========================
 def iota_between_rationals(
     iota_axis: float,
