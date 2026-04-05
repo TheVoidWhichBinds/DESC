@@ -87,11 +87,6 @@ def iota_between_rationals(
 
     return lower_bound, upper_bound
 #==================================
-
-
-#=======================
-
-
 #===================================================================================================================================================
 
 
@@ -130,7 +125,7 @@ iota_init = PowerSeriesProfile([iota_init_axis, 0, 0.15])
 
 #------------------------
 # Equilibrium resolution:
-L = 12
+L = 8
 M = 8
 N = 3
 eq_resolution = [L, M, N]
@@ -173,8 +168,8 @@ iota_lower, iota_upper = iota_between_rationals(iota_axis = iota_init_axis)
 ftol = 5e-4
 xtol = 1e-4
 gtol = 1e-3
-ctol = 1e-10
-maxiter = 4
+ctol = 1e-8
+maxiter = 1
 #----------
 #==========
 
@@ -265,28 +260,28 @@ opt_toggles = [
                 },
             },
             "aspect_ratio": {
-                "use": True,
+                "use": False,
                 "kwargs": {
                     "weight": 1e0,
                     "target": target_aspect_ratio,
                 },
             },
             "qs": {
-                "use": True,
+                "use": False,
                 "kwargs": {
                     "weight": 1e0,
                     "helicity": (1, NFP),
                 },
             },
             "ballooning": {
-                "use": True,
+                "use": False,
                 "kwargs": {
                     "weight": 1e0,
                     "target": 0.0,
                 },
             },
             "mercier": {
-                "use": True,
+                "use": False,
                 "kwargs": {
                     "weight": 1e0,
                     "target": 0.0,
@@ -327,7 +322,7 @@ opt_toggles = [
                 },
             },
             "pressure_edge": {
-                "use": True,
+                "use": False,
                 "kwargs": {
                     "name": "pressure_edge",
                     "fun": pressure_edge,
@@ -335,7 +330,7 @@ opt_toggles = [
                 },
             },
             "grad_pressure_axis": {
-                "use": True,
+                "use": False,
                 "kwargs": {
                     "name": "grad_pressure_axis",
                     "fun": grad_pressure_axis,
@@ -343,7 +338,7 @@ opt_toggles = [
                 },
             },
             "grad_pressure_edge": {
-                "use": True,
+                "use": False,
                 "kwargs": {
                     "name": "grad_pressure_edge",
                     "fun": grad_pressure_edge,
@@ -359,7 +354,7 @@ opt_toggles = [
                 },
             },
             "grad_iota_axis": {
-                "use": True, 
+                "use": False, 
                 "kwargs": {
                     "name": "grad_iota_axis",
                     "fun": grad_iota_axis,
