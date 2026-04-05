@@ -29,12 +29,10 @@ from research.poly.poly_constraints import (
     pressure_edge,
     grad_pressure_axis,
     grad_pressure_edge,
-    pressure_monotonicity,
+    pressure_monotonicity_generator,
     iota_edge,
     iota_axis,
     grad_iota_axis,
-    iota_axis_bounds,
-    iota_edge_bounds
 )
 from .driver import run_from_config
 from .opt import resolve_from_context
@@ -188,29 +186,6 @@ opt_toggles = [
         "name": "proximal-lsq-exact", # optimizer
         #===============================
         "toggle_FXD": { # fixed profiles
-            #-------------
-            # Constraints:
-                # Standard:
-            "forcebalance": {
-                "use": True,
-                "kwargs": {
-                    "target": 0.0,
-                },
-            },
-            "fix_iota": {
-                "use": True,
-                "kwargs": {},
-            },
-            "fix_psi": {
-                "use": True,
-                "kwargs": {},
-            },
-            "fix_pressure": {
-                "use": True,
-                "kwargs": {},
-            },
-            #----------------
-            
             #------------
             # Objectives:
                 # Standard:
@@ -251,11 +226,75 @@ opt_toggles = [
             },
         },
             #---------------------
+
+            #-------------
+            # Constraints:
+                # Standard:
+            "forcebalance": {
+                "use": True,
+                "kwargs": {
+                    "target": 0.0,
+                },
+            },
+            "fix_iota": {
+                "use": True,
+                "kwargs": {},
+            },
+            "fix_psi": {
+                "use": True,
+                "kwargs": {},
+            },
+            "fix_pressure": {
+                "use": True,
+                "kwargs": {},
+            },
+            #----------------
         #=========================
 
 
         #==============================
         "toggle_CON": { # free profiles
+            #------------
+            # Objectives:
+                # Standard:
+            "forcebalance": {
+                "use": True,
+                "kwargs": {
+                    "weight": 1e4,
+                    "target": 0.0,
+                },
+            },
+            "aspect_ratio": {
+                "use": True,
+                "kwargs": {
+                    "weight": 1e0,
+                    "target": target_aspect_ratio,
+                },
+            },
+            "qs": {
+                "use": True,
+                "kwargs": {
+                    "weight": 1e0,
+                    "helicity": (1, NFP),
+                },
+            },
+            "ballooning": {
+                "use": True,
+                "kwargs": {
+                    "weight": 1e0,
+                    "target": 0.0,
+                },
+            },
+            "mercier": {
+                "use": True,
+                "kwargs": {
+                    "weight": 1e0,
+                    "target": 0.0,
+                },
+            },
+            #---------------------
+        },
+            
             #-------------
             # Constraints:
                 # Standard:
@@ -280,7 +319,7 @@ opt_toggles = [
 
                 # Custom:
             "pressure_axis": {
-                "use": True,
+                "use": False,
                 "kwargs": {
                     "name": "pressure_axis",
                     "fun": pressure_axis,
@@ -311,6 +350,14 @@ opt_toggles = [
                     "target": 0.0,
                 },
             },
+            "pressure_monotonicity": {
+                "use": True,
+                "kwargs": {
+                    "name": "pressure_monotonicity",
+                    "fun": pressure_monotonicity_generator(L),
+                    "target": jnp.zeros(2*L)
+                },
+            },
             "grad_iota_axis": {
                 "use": False, ###############
                 "kwargs": {
@@ -335,85 +382,9 @@ opt_toggles = [
                     "target": (iota_upper),
                 },
             },
-            #---------------------
-
-            #------------
-            # Objectives:
-                # Standard:
-            "forcebalance": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e4,
-                    "target": 0.0,
-                },
-            },
-            "aspect_ratio": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e0,
-                    "target": target_aspect_ratio,
-                },
-            },
-            "qs": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e0,
-                    "helicity": (1, NFP),
-                },
-            },
-            "ballooning": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e0,
-                    "target": 0.0,
-                },
-            },
-            "mercier": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e0,
-                    "target": 0.0,
-                },
-            },
-
-                # Custom:
-            "pressure_monotonicity": {
-                "use": True,
-                "kwargs": {
-                    "name": "pressure_monotonicity",
-                    "fun": pressure_monotonicity,
-                    "target": 0.0,
-                    "grid": LinearGrid(rho=200, M=0, N=0),
-                    "normalize": False,
-                    "weight": 1e0,
-                },
-            },
-            "iota_axis_bounds": {
-                "use": False, ###############
-                "kwargs": {
-                    "name": "iota_axis_bounds",
-                    "fun": iota_axis_bounds,
-                    "bounds": (iota_lower, iota_upper),
-                    "grid": LinearGrid(rho=200, M=0, N=0),
-                    "normalize": False,                    
-                    "weight": 1e0,
-                },
-            },
-            "iota_edge_bounds": {
-                "use": False, ###############
-                "kwargs": {
-                    "name": "iota_edge_bounds",
-                    "fun": iota_edge_bounds,
-                    "bounds": (iota_lower, iota_upper),
-                    "grid": LinearGrid(rho=200, M=0, N=0),
-                    "normalize": False,                    
-                    "weight": 1e0,
-                },
-            },
-        },
-            #---------------------
-    },  #=========================
-]   #=================================
+            #------------------------------
+    },  #==================================
+]   #======================================
 #========================================
 
 

@@ -1,7 +1,7 @@
 
 import numpy as np
 import jax.numpy as jnp
-
+import math
 
 
 
@@ -51,11 +51,6 @@ def iota_between_rationals(
 
     return lower_bound, upper_bound
 #==================================
-
-
-#===========================================================
-islands_loc = 0.4 # desired radial location of island chain
-#===========================================================
 #===================================================================================================================================
 
 
@@ -67,9 +62,8 @@ islands_loc = 0.4 # desired radial location of island chain
 
 
 
-#============== PRESSURE CONSTRAINTS/OBJECTIVES =====================================================================================
-#=============
-# Constraints:
+#============== PRESSURE CONSTRAINTS ================================================================================================
+#=========================
 def pressure_axis(params):
     """
     Pressure on axis (rho=0)
@@ -78,8 +72,10 @@ def pressure_axis(params):
     """
     c_0 = params['p_l'][0]
     return c_0 # only first coeff survives
+#=========================================
 
 
+#=========================
 def pressure_edge(params):
     """
     Pressure on edge (rho=1)
@@ -87,8 +83,10 @@ def pressure_edge(params):
     """
     p_coeff = params['p_l']
     return p_coeff.sum()
+#=======================
 
 
+#==============================
 def grad_pressure_axis(params): 
     """
     Pressure gradient on axis (rho=0)
@@ -96,8 +94,10 @@ def grad_pressure_axis(params):
     """
     c_1 = params['p_l'][1]
     return c_1
+#=============
 
 
+#==============================
 def grad_pressure_edge(params):
     """
     Pressure gradient on edge (rho=1)
@@ -109,27 +109,26 @@ def grad_pressure_edge(params):
 #====================================
 
 
-#============
-# Objectives:
-def pressure_monotonicity(grid, data):
-    """
-    Ensures monotonic decrease of pressure for polynomial profile
-    Parameters
-    -----------
-    grid: desc.grid.Grid
-        grid object - only array of rho is used
-    data: dict[str, ndarray]
-        dictionary of optimizer outputs - only pressure array is used
-    Returns
-    -------
-    jnp.max(violations): scalar
-        largest dp over all grid points
-    """
-    p = data["p"] # pressure at grid points
-    dp = p[1:] - p[:-1] # pressure differences: p[i+1] - p[i]
-    violations = jnp.maximum(0.0, dp) # array where nonzero values = positive slope 
-    return jnp.sum(violations**2) # largest dp chosen, penalized by optimizer
-#============================================================================
+#======================================
+def pressure_monotonicity_generator(L):
+    #---------------------------------
+    def pressure_monotonicity(params):
+        c = params["p_l"]
+        if len(c) < 2*L + 1:
+            raise ValueError(f"Need at least {2*L+1} pressure coefficients for L={L}")
+
+        vals = []
+        # Coeff of odd powers = 0:
+        for i in range(1, 2*L + 1, 2):
+            vals.append(c[i])
+        # Coeff of even powers follow binomial pattern:
+        for k in range(1, L + 1):
+            vals.append(c[2*k] - ((-1)**k) * math.comb(L, k) * c[0])
+
+        return jnp.array(vals)
+    #-------------------------
+    return pressure_monotonicity
+#===============================
 #===================================================================================================================================
 
 
@@ -141,10 +140,8 @@ def pressure_monotonicity(grid, data):
 
 
 
-#============== IOTA CONSTRAINTS/OBJECTIVES ========================================================================================
-#=============
-# Constraints:
-#---------------------
+#============== IOTA CONSTRAINTS ====================================================================================================
+#=====================
 def iota_axis(params):
     """
     Iota on axis (only constant term survives)
@@ -152,9 +149,10 @@ def iota_axis(params):
     """
     c = params["i_l"] 
     return c[0]
-#--------------
+#==============
 
-#---------------------
+
+#=====================
 def iota_edge(params):
     """
     Iota on edge (b = 0 using grad_iota_axis).
@@ -162,9 +160,10 @@ def iota_edge(params):
     """
     c = params["i_l"] 
     return c.sum() 
-#-----------------
+#=================
 
-#--------------------------
+
+#==========================
 def grad_iota_axis(params):
     """
     Iota gradient on axis (rho=0).
@@ -172,31 +171,7 @@ def grad_iota_axis(params):
     """
     c = params["i_l"] 
     return c[1]
-#--------------
 #==============
-
-
-
-#============
-# Objectives:
-#--------------------------
-def iota_axis_bounds(grid, data):
-    """
-    
-    """
-    iota = data['iota']
-    return iota[0]
-#---------------------
-
-#--------------------------
-def iota_edge_bounds(grid, data):
-    """
-
-    """
-    iota = data['iota']
-    return iota[-1]
-#---------------------
-#=====================
 #===================================================================================================================================
 
 
@@ -208,13 +183,8 @@ def iota_edge_bounds(grid, data):
 
 
 
-#============== PSI CONSTRAINTS/OBJECTIVES =========================================================================================
+#============== PSI CONSTRAINTS ===================================================================================================
 #=============
-# Constraints:
-#===================
 
-
-#============
-# Objectives:
 #===================
 #===================================================================================================================================

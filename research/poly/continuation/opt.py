@@ -47,8 +47,11 @@ def _eq(ctx):
 #=====================
 
 
-#==================================
-def _resolve_value(value, context):
+#==================
+def _resolve_value(
+        value, 
+        context
+    ):
     """
     Resolve a config value.
 
@@ -61,8 +64,11 @@ def _resolve_value(value, context):
 #===============
 
 
-#====================================
-def _resolve_kwargs(kwargs, context):
+#===================
+def _resolve_kwargs(
+        kwargs, 
+        context
+    ):
     """
     Resolve all values in a kwargs dict.
     """
@@ -73,8 +79,13 @@ def _resolve_kwargs(kwargs, context):
 #=======================================
 
 
-#===============================================
-def _validate_kwargs(entry, key, wrapper, kind):
+#====================
+def _validate_kwargs(
+        entry, 
+        key, 
+        wrapper, 
+        kind
+    ):
     """
     Validate user-provided kwargs against wrapper signature.
     """
@@ -91,8 +102,12 @@ def _validate_kwargs(entry, key, wrapper, kind):
 #======================================================
 
 
-#=========================
-def _parse_entry(toggle, key, kind):
+#================
+def _parse_entry(
+        toggle, 
+        key, 
+        kind
+    ):
     """
     Parse a config entry of the form:
         {
@@ -132,11 +147,19 @@ def _parse_entry(toggle, key, kind):
         )
 
     return use, dict(kwargs)
-#-------------------------
+#===========================
 
 
 #=========================
-def _append_term(term_list, wrapper, key, toggle, defaults, context, kind):
+def _append_term(
+        term_list, 
+        wrapper, 
+        key, 
+        toggle, 
+        defaults, 
+        context, 
+        kind
+    ):
     """
     Append objective or constraint from a single config entry.
 
@@ -157,7 +180,13 @@ def _append_term(term_list, wrapper, key, toggle, defaults, context, kind):
 
 
 #=========================
-def _append_terms(term_list, toggle, registry, context, kind):
+def _append_terms(
+        term_list, 
+        toggle, 
+        registry, 
+        context, 
+        kind
+    ):
     """
     Loop over a registry and append all enabled terms.
     """
@@ -184,7 +213,11 @@ def _append_terms(term_list, toggle, registry, context, kind):
 
 
 #============== REGISTRIES ============================================================================================================================
+#=========================
+# Fixed profiles:
+#-------------------------
 OBJECTIVE_REGISTRY_FXD = {
+        # Standard:
     "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
@@ -216,61 +249,11 @@ OBJECTIVE_REGISTRY_FXD = {
         },
     },
 }
+#---------------------
 
-
-OBJECTIVE_REGISTRY_CON = {
-    "forcebalance": {
-        "wrapper": ForceBalance,
-        "defaults": {
-            "eq": _eq,
-        },
-    },
-    "aspect_ratio": {
-        "wrapper": AspectRatio,
-        "defaults": {
-            "eq": _eq,
-        },
-    },
-    "qs": {
-        "wrapper": QuasisymmetryBoozer,
-        "defaults": {
-            "eq": _eq,
-        },
-    },
-    "ballooning": {
-        "wrapper": BallooningStability,
-        "defaults": {
-            "eq": _eq,
-        },
-    },
-    "mercier": {
-        "wrapper": MercierStability,
-        "defaults": {
-            "eq": _eq,
-        },
-    },
-    "pressure_monotonicity": {
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "iota_axis_bounds":{
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "iota_edge_bounds":{
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-}
-
-
+#--------------------------
 CONSTRAINT_REGISTRY_FXD = {
+        # Standard: 
     "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
@@ -295,10 +278,51 @@ CONSTRAINT_REGISTRY_FXD = {
             "eq": _eq,
         },
     },
-}
+} #-------------------
+#=====================
 
 
+#=========================
+# Free profiles:
+#-------------------------
+OBJECTIVE_REGISTRY_CON = {
+        # Standard: 
+    "forcebalance": {
+        "wrapper": ForceBalance,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+    "aspect_ratio": {
+        "wrapper": AspectRatio,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+    "qs": {
+        "wrapper": QuasisymmetryBoozer,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+    "ballooning": {
+        "wrapper": BallooningStability,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+    "mercier": {
+        "wrapper": MercierStability,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+} 
+#---------------------
+
+#--------------------------
 CONSTRAINT_REGISTRY_CON = {
+        # Standard:
     "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
@@ -323,6 +347,8 @@ CONSTRAINT_REGISTRY_CON = {
             "eq": _eq,
         },
     },
+    
+        # Custom:
     "pressure_axis": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -347,6 +373,12 @@ CONSTRAINT_REGISTRY_CON = {
             "thing": _eq,
         },
     },
+    "pressure_monotonicity": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
     "grad_iota_axis": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -366,6 +398,8 @@ CONSTRAINT_REGISTRY_CON = {
         },
     },
 }
+#------------------------
+#========================
 #==============================================================================================================================================================
 
 
