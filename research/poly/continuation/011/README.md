@@ -1,3 +1,4 @@
+```python
 
 #===================================================================================================================================================
 from pathlib import Path
@@ -24,7 +25,6 @@ print("jax devices:", jax.devices())
 
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
-from desc.grid import LinearGrid
 from research.poly.poly_constraints import (
     pressure_axis,
     pressure_edge,
@@ -264,7 +264,6 @@ opt_toggles = [
                 "use": True,
                 "kwargs": {
                     "weight": 1e6,
-                    "grid": LinearGrid(L=50, M=0, N=0, axis=True),
                     "fun": pressure_axis_range,
                     "bounds": (1e3, 1e5),
                 },
@@ -414,3 +413,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```

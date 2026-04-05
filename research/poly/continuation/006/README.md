@@ -1,3 +1,4 @@
+```python
 
 #===================================================================================================================================================
 from pathlib import Path
@@ -24,7 +25,6 @@ print("jax devices:", jax.devices())
 
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
-from desc.grid import LinearGrid
 from research.poly.poly_constraints import (
     pressure_axis,
     pressure_edge,
@@ -34,7 +34,6 @@ from research.poly.poly_constraints import (
     iota_edge,
     iota_axis,
     grad_iota_axis,
-    pressure_axis_range,
 )
 from .driver import run_from_config
 from .opt import resolve_from_context
@@ -152,6 +151,7 @@ opt_toggles = [
     #==========================
     {  # 1st stage optimization
         "name": "proximal-lsq-exact", # optimizer
+
         #===============================
         "toggle_FXD": { # fixed profiles
             #------------
@@ -214,9 +214,8 @@ opt_toggles = [
                 "use": True,
                 "kwargs": {},
             },
-        },  #----------------
+        },
         #=========================
-
 
         #==============================
         "toggle_CON": { # free profiles
@@ -258,18 +257,6 @@ opt_toggles = [
                     "target": 0.0,
                 },
             },
-            
-                # Custom:
-            "pressure_axis_range": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e6,
-                    "grid": LinearGrid(L=50, M=0, N=0, axis=True),
-                    "fun": pressure_axis_range,
-                    "bounds": (1e3, 1e5),
-                },
-            },
-            #----------------------------
 
             #-------------
             # Constraints:
@@ -358,10 +345,10 @@ opt_toggles = [
                     "target": iota_upper,
                 },
             },
-        },  #-----------------------------
-    },  #=====================================
+        },  #==================================
+    },  #======================================
 ]
-#================================================
+#========================================
 
 
 #=====================
@@ -414,3 +401,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```

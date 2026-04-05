@@ -15,6 +15,7 @@ from desc.objectives import (
     BallooningStability,
     MercierStability,
     LinearObjectiveFromUser,
+    ObjectiveFromUser,
 )
 
 
@@ -215,6 +216,7 @@ def _append_terms(
 # Fixed profiles:
 #-------------------------
 OBJECTIVE_REGISTRY_FXD = {
+        # Standard:
     "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
@@ -250,6 +252,7 @@ OBJECTIVE_REGISTRY_FXD = {
 
 #--------------------------
 CONSTRAINT_REGISTRY_FXD = {
+        # Standard:
     "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
@@ -282,6 +285,7 @@ CONSTRAINT_REGISTRY_FXD = {
 # Free profiles:
 #-------------------------
 OBJECTIVE_REGISTRY_CON = {
+        # Standard:
     "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
@@ -312,11 +316,20 @@ OBJECTIVE_REGISTRY_CON = {
             "eq": _eq,
         },
     },
+
+        # Custom:
+    "pressure_axis_range": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        }
+    }
 }
 #---------------------
 
 #--------------------------
 CONSTRAINT_REGISTRY_CON = {
+        # Standard:
     "forcebalance": {
         "wrapper": ForceBalance,
         "defaults": {
@@ -342,6 +355,7 @@ CONSTRAINT_REGISTRY_CON = {
         },
     },
 
+        # Custom:
     "pressure_axis": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {

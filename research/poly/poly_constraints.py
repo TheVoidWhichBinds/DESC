@@ -12,7 +12,8 @@ import math
 
 
 
-#============== PRESSURE CONSTRAINTS ================================================================================================
+#============== PRESSURE =============================================================================================================
+# Constraints:
 #=========================
 def pressure_axis(params):
     """
@@ -58,21 +59,23 @@ def grad_pressure_edge(params):
     return (order * grad_coeff).sum()
 #====================================
 
-
 #======================================
 def pressure_monotonicity_generator(L):
     #---------------------------------
     def pressure_monotonicity(params):
         c = params["p_l"]
-        print(f'# of coeff: {len(c)}')
+        print(f"# of stored coeff: {len(c)}")
+
         if len(c) < 2*L + 1:
             raise ValueError(f"Need at least {2*L+1} pressure coefficients for L={L}")
 
         vals = []
-        # Coeff of odd powers = 0:
+
+        # Coefficients of odd powers must vanish
         for i in range(1, 2*L + 1, 2):
             vals.append(c[i])
-        # Coeff of even powers follow binomial pattern:
+
+        # Even coefficients must follow binomial pattern
         for k in range(1, L + 1):
             vals.append(c[2*k] - ((-1)**k) * math.comb(L, k) * c[0])
 
@@ -80,6 +83,22 @@ def pressure_monotonicity_generator(L):
     #-------------------------
     return pressure_monotonicity
 #===============================
+#==================================
+
+
+
+
+#============
+# Objectives:
+#===================================
+def pressure_axis_range(grid, data):
+    """
+    Allows pressure on-axis to be within specified bounds.
+    """
+    p_axis = data['p'][0]
+    return p_axis
+#================
+#===================
 #===================================================================================================================================
 
 
