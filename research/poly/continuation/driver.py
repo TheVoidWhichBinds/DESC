@@ -120,12 +120,12 @@ def comparison(
     #========================================
     # Initializing table of objective values:
     column_map = [
-    ("forcebalance_obj", f"Force error: "),
-    ("qs_obj", f"Quasi-symmetry (1,{NFP}) Boozer error: "),
-    ("aspect_ratio_obj", "Aspect ratio: "),
-    ("ballooning_obj", "Ideal ballooning lambda: "),
-    ("mercier_obj", "Mercier Stability: "),
-]
+    ("forcebalance", f"Force error: "),
+    ("qs", f"Quasi-symmetry (1,{NFP}) Boozer error: "),
+    ("aspect_ratio", "Aspect ratio: "),
+    ("ballooning", "Ideal ballooning lambda: "),
+    ("mercier", "Mercier Stability: "),
+    ]
 
     active_columns = []
     for key, label in column_map:
@@ -183,8 +183,8 @@ def comparison(
                     eq_opt_CON,
                     optimizer,
                     p_axis,
-                    out_dir=out_dir,
-                    opt_config=stage_opt_config,
+                    out_dir = out_dir,
+                    opt_config = stage_opt_config,
                     FXD=False,
                 )
 
@@ -192,8 +192,8 @@ def comparison(
                     eq_opt_FXD,
                     optimizer,
                     p_axis,
-                    out_dir=out_dir,
-                    opt_config=stage_opt_config,
+                    out_dir = out_dir,
+                    opt_config = stage_opt_config,
                     FXD=True,
                 )
             #=========================================================

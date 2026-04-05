@@ -169,7 +169,7 @@ ftol = 5e-4
 xtol = 1e-4
 gtol = 1e-3
 ctol = 1e-8
-maxiter = 1
+maxiter = 2
 #----------
 #==========
 
@@ -179,6 +179,7 @@ opt_toggles = [
     #==========================
     {  # 1st stage optimization
         "name": "proximal-lsq-exact", # optimizer
+
         #===============================
         "toggle_FXD": { # fixed profiles
             #------------
@@ -219,8 +220,6 @@ opt_toggles = [
                     "target": 0.0,
                 },
             },
-        },
-            #---------------------
 
             #-------------
             # Constraints:
@@ -243,9 +242,8 @@ opt_toggles = [
                 "use": True,
                 "kwargs": {},
             },
-            #----------------
+        },
         #=========================
-
 
         #==============================
         "toggle_CON": { # free profiles
@@ -260,36 +258,34 @@ opt_toggles = [
                 },
             },
             "aspect_ratio": {
-                "use": False,
+                "use": True,
                 "kwargs": {
                     "weight": 1e0,
                     "target": target_aspect_ratio,
                 },
             },
             "qs": {
-                "use": False,
+                "use": True,
                 "kwargs": {
                     "weight": 1e0,
                     "helicity": (1, NFP),
                 },
             },
             "ballooning": {
-                "use": False,
+                "use": True,
                 "kwargs": {
                     "weight": 1e0,
                     "target": 0.0,
                 },
             },
             "mercier": {
-                "use": False,
+                "use": True,
                 "kwargs": {
                     "weight": 1e0,
                     "target": 0.0,
                 },
             },
-            #---------------------
-        },
-            
+
             #-------------
             # Constraints:
                 # Standard:
@@ -322,7 +318,7 @@ opt_toggles = [
                 },
             },
             "pressure_edge": {
-                "use": False,
+                "use": True,
                 "kwargs": {
                     "name": "pressure_edge",
                     "fun": pressure_edge,
@@ -330,7 +326,7 @@ opt_toggles = [
                 },
             },
             "grad_pressure_axis": {
-                "use": False,
+                "use": True,
                 "kwargs": {
                     "name": "grad_pressure_axis",
                     "fun": grad_pressure_axis,
@@ -338,7 +334,7 @@ opt_toggles = [
                 },
             },
             "grad_pressure_edge": {
-                "use": False,
+                "use": True,
                 "kwargs": {
                     "name": "grad_pressure_edge",
                     "fun": grad_pressure_edge,
@@ -354,7 +350,7 @@ opt_toggles = [
                 },
             },
             "grad_iota_axis": {
-                "use": False, 
+                "use": True,
                 "kwargs": {
                     "name": "grad_iota_axis",
                     "fun": grad_iota_axis,
@@ -362,24 +358,24 @@ opt_toggles = [
                 },
             },
             "iota_axis": {
-                "use": False, 
+                "use": True,
                 "kwargs": {
                     "name": "iota_axis",
                     "fun": iota_axis,
-                    "target": (iota_lower),
+                    "target": iota_lower,
                 },
-            },    
+            },
             "iota_edge": {
                 "use": False,
                 "kwargs": {
                     "name": "iota_edge",
                     "fun": iota_edge,
-                    "target": (iota_upper),
+                    "target": iota_upper,
                 },
             },
-            #------------------------------
-    },  #==================================
-]   #======================================
+        },  #==================================
+    },  #======================================
+]
 #========================================
 
 
