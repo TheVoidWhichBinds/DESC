@@ -16,7 +16,6 @@ from desc.objectives import (
     BallooningStability,
     MercierStability,
     LinearObjectiveFromUser,
-    ObjectiveFromUser,
 )
 
 
@@ -347,7 +346,7 @@ CONSTRAINT_REGISTRY_CON = {
             "eq": _eq,
         },
     },
-    
+
         # Custom:
     "pressure_axis": {
         "wrapper": LinearObjectiveFromUser,

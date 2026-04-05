@@ -179,15 +179,6 @@ def comparison(
                     "toggle_CON": config["toggle_CON"],
                 }
 
-                eq_opt_FXD, opt_result_FXD = run_optimization(
-                    eq_opt_FXD,
-                    optimizer,
-                    p_axis,
-                    out_dir=out_dir,
-                    opt_config=stage_opt_config,
-                    FXD=True,
-                )
-
                 eq_opt_CON, opt_result_CON = run_optimization(
                     eq_opt_CON,
                     optimizer,
@@ -195,6 +186,15 @@ def comparison(
                     out_dir=out_dir,
                     opt_config=stage_opt_config,
                     FXD=False,
+                )
+
+                eq_opt_FXD, opt_result_FXD = run_optimization(
+                    eq_opt_FXD,
+                    optimizer,
+                    p_axis,
+                    out_dir=out_dir,
+                    opt_config=stage_opt_config,
+                    FXD=True,
                 )
             #=========================================================
 

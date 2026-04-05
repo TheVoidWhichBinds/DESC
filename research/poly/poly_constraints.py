@@ -70,8 +70,8 @@ def pressure_axis(params):
     Target: P(0)=1 (normalized)
     Target: P(0)=p_axis (defined max)
     """
-    c_0 = params['p_l'][0]
-    return c_0 # only first coeff survives
+    c = params['p_l']
+    return c[0]
 #=========================================
 
 
@@ -81,8 +81,8 @@ def pressure_edge(params):
     Pressure on edge (rho=1)
     Target: P(1)=0
     """
-    p_coeff = params['p_l']
-    return p_coeff.sum()
+    c = params['p_l']
+    return c.sum()
 #=======================
 
 
@@ -92,8 +92,8 @@ def grad_pressure_axis(params):
     Pressure gradient on axis (rho=0)
     Target: GradP=0 (no discontinuity)
     """
-    c_1 = params['p_l'][1]
-    return c_1
+    c = params['p_l']
+    return c[1]
 #=============
 
 

@@ -351,7 +351,7 @@ opt_toggles = [
                 },
             },
             "pressure_monotonicity": {
-                "use": True,
+                "use": False,
                 "kwargs": {
                     "name": "pressure_monotonicity",
                     "fun": pressure_monotonicity_generator(L),
@@ -359,7 +359,7 @@ opt_toggles = [
                 },
             },
             "grad_iota_axis": {
-                "use": False, ###############
+                "use": True, 
                 "kwargs": {
                     "name": "grad_iota_axis",
                     "fun": grad_iota_axis,
@@ -367,7 +367,7 @@ opt_toggles = [
                 },
             },
             "iota_axis": {
-                "use": True, ###############
+                "use": False, 
                 "kwargs": {
                     "name": "iota_axis",
                     "fun": iota_axis,
@@ -375,7 +375,7 @@ opt_toggles = [
                 },
             },    
             "iota_edge": {
-                "use": True, ###############
+                "use": False,
                 "kwargs": {
                     "name": "iota_edge",
                     "fun": iota_edge,
