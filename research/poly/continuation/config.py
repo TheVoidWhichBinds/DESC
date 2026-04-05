@@ -36,6 +36,10 @@ from research.poly.poly_constraints import (
 )
 from .driver import run_from_config
 from .opt import resolve_from_context
+from research.poly.helper import(
+
+    
+)
 #===================================================================================================================================================
 
 
@@ -96,6 +100,26 @@ def iota_between_rationals(
 
 
 
+#================ DRIVER INPUTS ==================#
+#=========================
+# Pressure maxima to test:
+p_maxima = [1e4]
+
+# Polynomial orders to test:
+n_set = [3]
+#==========
+
+
+#========================
+# Grouping driver inputs:
+driver_config = {
+    "p_maxima": p_maxima,
+    "n_set":    n_set,
+}
+#=====================
+#=================================================#
+#===================================================================================================================================================
+
 
 
 #===================================================================================================================================================
@@ -106,8 +130,16 @@ def iota_between_rationals(
 NFP = 4
 #-------
 
-#----------------------------
-# Initializing fixed surface:
+#------------------------
+# Equilibrium resolution:
+L = 8
+M = 8
+N = 3
+eq_resolution = [L, M, N]
+#------------------------
+
+#------------------------
+# Initializing fixed????? surface:
 surface_init = FourierRZToroidalSurface(
     R_lmn =   [ 10.0,   -1.0,   -0.3,    0.3   ],
     modes_R = [(0, 0), (1, 0), (1, 1), (-1, -1)],
@@ -121,15 +153,11 @@ surface_init = FourierRZToroidalSurface(
 # Initializing iota:
 iota_init_axis = 0.52
 iota_init = PowerSeriesProfile([iota_init_axis, 0, 0.15])
-#-----------------------------------------------------
+#--------------------------------------------------------
 
-#------------------------
-# Equilibrium resolution:
-L = 8
-M = 8
-N = 3
-eq_resolution = [L, M, N]
-#------------------------
+
+#--------------
+
 #========================
 
 
@@ -342,11 +370,11 @@ opt_toggles = [
                 },
             },
             "pressure_monotonicity": {
-                "use": False,
+                "use": True,
                 "kwargs": {
                     "name": "pressure_monotonicity",
                     "fun": pressure_monotonicity_generator(L),
-                    "target": jnp.zeros(2*L)
+                    "target": 0.0
                 },
             },
             "grad_iota_axis": {
@@ -400,26 +428,6 @@ opt_config = {
 
 
 
-
-#================ DRIVER INPUTS ==================#
-#=========================
-# Pressure maxima to test:
-p_maxima = [1e4]
-
-# Polynomial orders to test:
-n_set = [3]
-#==========
-
-
-#========================
-# Grouping driver inputs:
-driver_config = {
-    "p_maxima": p_maxima,
-    "n_set":    n_set,
-}
-#=====================
-#=================================================#
-#===================================================================================================================================================
 
 
 
