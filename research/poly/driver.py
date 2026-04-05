@@ -89,7 +89,7 @@ def _safe_extract_from_result(result, label):
 #=====================================
 
 
-#======================================
+#===================================
 def _next_run_dir(continuation_dir):
     """
     Create next zero-padded run directory: 001, 002, ...
@@ -102,12 +102,16 @@ def _next_run_dir(continuation_dir):
         if os.path.isdir(path) and re.fullmatch(r"\d{3}", name):
             run_nums.append(int(name))
 
-    next_num = 1 if not run_nums else max(run_nums) + 1
-    run_dir = os.path.join(continuation_dir, f"{next_num:03d}")
-    os.makedirs(run_dir, exist_ok=False)
+    next_num = 1 if len(run_nums) == 0 else max(run_nums) + 1
+    run_dir = os.path.abspath(os.path.join(continuation_dir, f"{next_num:03d}"))
+
+    if os.path.exists(run_dir):
+        raise FileExistsError(f"Run directory already exists: {run_dir}")
+
+    os.makedirs(run_dir)
 
     return run_dir
-#======================================
+#=================
 
 
 #======================================
