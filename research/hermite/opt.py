@@ -322,8 +322,14 @@ OBJECTIVE_REGISTRY_CON = {
         "wrapper": ObjectiveFromUser,
         "defaults": {
             "thing": _eq,
-        }
-    }
+        },
+    },
+    "pressure_monotonicity": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
 }
 #---------------------
 
@@ -380,30 +386,24 @@ CONSTRAINT_REGISTRY_CON = {
             "thing": _eq,
         },
     },
-    "pressure_monotonicity": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "grad_iota_axis": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "iota_edge": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "iota_axis": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
+    # "grad_iota_axis": {
+    #     "wrapper": LinearObjectiveFromUser,
+    #     "defaults": {
+    #         "thing": _eq,
+    #     },
+    # },
+    # "iota_edge": {
+    #     "wrapper": LinearObjectiveFromUser,
+    #     "defaults": {
+    #         "thing": _eq,
+    #     },
+    # },
+    # "iota_axis": {
+    #     "wrapper": LinearObjectiveFromUser,
+    #     "defaults": {
+    #         "thing": _eq,
+    #     },
+    # },
 }
 #========================
 #==============================================================================================================================================================
