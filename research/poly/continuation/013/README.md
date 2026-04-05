@@ -1,3 +1,4 @@
+```python
 
 #===================================================================================================================================================
 from pathlib import Path
@@ -31,6 +32,7 @@ from research.poly.poly_constraints import (
     grad_pressure_axis,
     grad_pressure_edge,
     pressure_monotonicity_generator,
+    pressure_monotonicity,
     iota_edge,
     iota_axis,
     grad_iota_axis,
@@ -142,7 +144,7 @@ ftol = 5e-4
 xtol = 1e-4
 gtol = 1e-3
 ctol = 1e-8
-maxiter = 4
+maxiter = 2
 #----------
 #==========
 
@@ -269,7 +271,16 @@ opt_toggles = [
                     "bounds": (1e3, 1e5),
                 },
             },
-            #----------------------------
+            "pressure_monotonicity": {
+                "use": True,
+                "kwargs": {
+                    "weight": 1e6,
+                    "grid": LinearGrid(L=50, M=0, N=0, axis=True),
+                    "fun": pressure_monotonicity,
+                    "bounds": (-jnp.inf, 0),
+                },
+            },
+            #--------------------------------
 
             #-------------
             # Constraints:
@@ -326,14 +337,14 @@ opt_toggles = [
                     "target": 0.0,
                 },
             },
-            "pressure_monotonicity": {
-                "use": True,
-                "kwargs": {
-                    "name": "pressure_monotonicity",
-                    "fun": pressure_monotonicity_generator(L),
-                    "target": jnp.zeros(2 * L)
-                },
-            },
+            # "pressure_monotonicity": {
+            #     "use": True,
+            #     "kwargs": {
+            #         "name": "pressure_monotonicity",
+            #         "fun": pressure_monotonicity_generator(L),
+            #         "target": jnp.zeros(2 * L)
+            #     },
+            # },
             "grad_iota_axis": {
                 "use": True,
                 "kwargs": {
@@ -414,3 +425,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```

@@ -64,7 +64,6 @@ def pressure_monotonicity_generator(L):
     #---------------------------------
     def pressure_monotonicity(params):
         c = params["p_l"]
-        print(f"# of stored coeff: {len(c)}")
 
         if len(c) < 2*L + 1:
             raise ValueError(f"Need at least {2*L+1} pressure coefficients for L={L}")
@@ -98,7 +97,17 @@ def pressure_axis_range(grid, data):
     p_axis = data['p'][0]
     return p_axis
 #================
-#===================
+
+
+#================================
+def pressure_monotonicity(grid, data):
+    """
+    Monotonic pressure.
+    """
+    dp_dr = data['p_r']
+    return dp_dr
+#===============
+#==================
 #===================================================================================================================================
 
 
@@ -142,6 +151,10 @@ def grad_iota_axis(params):
     c = params["i_l"] 
     return c[1]
 #==============
+
+
+#============================
+
 #===================================================================================================================================
 
 

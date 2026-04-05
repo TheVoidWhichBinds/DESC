@@ -322,8 +322,8 @@ OBJECTIVE_REGISTRY_CON = {
         "wrapper": ObjectiveFromUser,
         "defaults": {
             "thing": _eq,
-        }
-    }
+        },
+    },
 }
 #---------------------
 

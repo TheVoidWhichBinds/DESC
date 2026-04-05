@@ -1,3 +1,4 @@
+```python
 
 #===================================================================================================================================================
 from pathlib import Path
@@ -31,6 +32,7 @@ from research.poly.poly_constraints import (
     grad_pressure_axis,
     grad_pressure_edge,
     pressure_monotonicity_generator,
+    pressure_monotonicity,
     iota_edge,
     iota_axis,
     grad_iota_axis,
@@ -269,7 +271,16 @@ opt_toggles = [
                     "bounds": (1e3, 1e5),
                 },
             },
-            #----------------------------
+            "pressure_monotonicity": {
+                "use": True,
+                "kwargs": {
+                    "weight": 1e6,
+                    "grid": LinearGrid(L=50, M=0, N=0, axis=True),
+                    "fun": pressure_monotonicity,
+                    "bounds": (-jnp.inf, 0),
+                },
+            },
+            #--------------------------------
 
             #-------------
             # Constraints:
@@ -281,7 +292,7 @@ opt_toggles = [
                 },
             },
             "fix_iota": {
-                "use": False,
+                "use": True,
                 "kwargs": {},
             },
             "fix_psi": {
@@ -326,16 +337,16 @@ opt_toggles = [
                     "target": 0.0,
                 },
             },
-            "pressure_monotonicity": {
-                "use": True,
-                "kwargs": {
-                    "name": "pressure_monotonicity",
-                    "fun": pressure_monotonicity_generator(L),
-                    "target": jnp.zeros(2 * L)
-                },
-            },
+            # "pressure_monotonicity": {
+            #     "use": True,
+            #     "kwargs": {
+            #         "name": "pressure_monotonicity",
+            #         "fun": pressure_monotonicity_generator(L),
+            #         "target": jnp.zeros(2 * L)
+            #     },
+            # },
             "grad_iota_axis": {
-                "use": True,
+                "use": False,
                 "kwargs": {
                     "name": "grad_iota_axis",
                     "fun": grad_iota_axis,
@@ -343,7 +354,7 @@ opt_toggles = [
                 },
             },
             "iota_axis": {
-                "use": True,
+                "use": False,
                 "kwargs": {
                     "name": "iota_axis",
                     "fun": iota_axis,
@@ -414,3 +425,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```
