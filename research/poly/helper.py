@@ -29,7 +29,6 @@ def pressure_generator(
 #==========================
 def iota_between_rationals(
     iota_axis: float,
-    iota_edge: float,
     ):
     """
     Generates bounds for iota optimizer constraint
@@ -59,9 +58,6 @@ def iota_between_rationals(
 
     if matched_lower is None:
         raise ValueError("iota_axis is outside all allowed rational intervals.")
-
-    if not (matched_lower <= iota_edge <= matched_upper):
-        raise ValueError("iota_axis and iota_edge are not in the same allowed interval.")
 
     lower_bound = matched_lower
     upper_bound = matched_upper 

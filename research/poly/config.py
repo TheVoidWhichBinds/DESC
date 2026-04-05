@@ -24,7 +24,6 @@ print("jax devices:", jax.devices())
 
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
-from desc.grid import LinearGrid
 from research.poly.poly_constraints import (
     pressure_axis,
     pressure_edge,
@@ -66,7 +65,7 @@ NFP = 4
 # Equilibrium resolution:
 L = 8
 M = 8
-N = 3
+N = 4
 eq_resolution = [L, M, N]
 #------------------------
 
@@ -313,7 +312,7 @@ opt_toggles = [
                 },
             },
             "pressure_monotonicity": {
-                "use": True,
+                "use": False,
                 "kwargs": {
                     "name": "pressure_monotonicity",
                     "fun": pressure_monotonicity_generator(L),

@@ -247,8 +247,8 @@ def comparison(
     #----------------
     
     #---------------------------------------------------
-    eq_opt_FXD.save(os.path.join(out_dir, "opt_FXD.h5"))
     eq_opt_CON.save(os.path.join(out_dir, "opt_CON.h5"))
+    eq_opt_FXD.save(os.path.join(out_dir, "opt_FXD.h5"))
     #---------------------------------------------------
     #===================================================
 
@@ -463,12 +463,14 @@ def comparison(
 
 
 #============== CONFIGURATION ENTRYPOINT ==========================================================================================================================
-def run_from_config(eq_config: dict, opt_config: dict, driver_config: dict):
+def run_from_config(
+        eq_config: dict, 
+        opt_config: dict, 
+        driver_config: dict
+    ):
     comparison(
-        p_maxima=driver_config["p_maxima"],
-        n_set=driver_config["n_set"],
-        eq_config=eq_config,
-        opt_config=opt_config,
-        driver_config=driver_config,
+        eq_config = eq_config,
+        opt_config = opt_config,
+        driver_config = driver_config,
     )
 #==============================================================================================================================================================
