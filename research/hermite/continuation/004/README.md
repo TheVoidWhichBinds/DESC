@@ -80,16 +80,14 @@ surface_init = FourierRZToroidalSurface(
 
 #-----------------------
 # Initializing pressure:
-p_axis = 1e4
-n = L
-rho = jnp.linspace(0, 1, L + 1)
-f = p_axis * (1 - rho**2) ** n
-df = -2 * p_axis * n * rho * (1 - rho**2) ** (n - 1)
-
+p_axis = 1e3
+knots = jnp.linspace(0, 1, 4)
+f = p_axis * jnp.array([1.0, 0.56, 0.18, 0.0])
+df = jnp.array([0.0, -2000.0, -600.0, 0.0])
 pressure_init = HermiteSplineProfile(
     f = f,
     df = df,
-    knots = rho,
+    knots = knots,
 )
 #--------------
 
@@ -388,7 +386,6 @@ opt_config = {
 #================ DRIVER INPUTS ===================================================================================================================
 driver_config = {
     "p_axis": p_axis,
-    "n": n,
     "config_path": __file__,
 }
 #===================================================================================================================================================

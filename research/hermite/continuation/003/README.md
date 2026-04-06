@@ -83,13 +83,12 @@ surface_init = FourierRZToroidalSurface(
 p_axis = 1e4
 n = L
 rho = jnp.linspace(0, 1, L + 1)
-f = p_axis * (1 - rho**2) ** n
-df = -2 * p_axis * n * rho * (1 - rho**2) ** (n - 1)
-
+f = p_axis * jnp.array([1.0, 0.97, 0.83, 0.81, 0.56, 0.52, 0.21, 0.18, 0.0])
+df = jnp.array([0.0, -2000.0, -400.0, -2500.0, -300.0, -1800.0, -200.0, -600.0, 0.0])
 pressure_init = HermiteSplineProfile(
-    f = f,
-    df = df,
-    knots = rho,
+    f=f,
+    df=df,
+    knots=rho,
 )
 #--------------
 
@@ -140,7 +139,7 @@ ftol = 5e-4
 xtol = 1e-4
 gtol = 1e-3
 ctol = 1e-8
-maxiter = 2
+maxiter = 4
 #----------
 #==========
 
@@ -224,7 +223,7 @@ opt_toggles = [
             "forcebalance": {
                 "use": True,
                 "kwargs": {
-                    "weight": 1e4,
+                    "weight": 1e0,
                     "target": 0.0,
                 },
             },

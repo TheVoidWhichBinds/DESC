@@ -163,7 +163,6 @@ def comparison(
     NFP = eq_config["NFP"]
     opt_toggles = opt_config["opt_toggles"]
     p_axis = driver_config["p_axis"]
-    n = driver_config["n"]
     config_path = driver_config["config_path"]
     #-----------------------------------------
 
@@ -200,10 +199,10 @@ def comparison(
     # Running & saving initial equilibrium solve:
     #-------------------------
     eq_init = run_equilibrium(
-        p_axis,
-        n,
-        eq_config=eq_config,
+        eq_config = eq_config,
     )
+    print("pressure type:", type(eq_init.pressure))
+    print("pressure dict keys:", eq_init.pressure.__dict__.keys())
     #-----------------------
 
     #-------------------------------------------
@@ -360,7 +359,7 @@ def comparison(
     plt.xlabel(r"$\rho$", fontsize=14)
     plt.ylabel("Pressure", fontsize=14)
     plt.title(
-        f"Pressure vs $\\rho$ (p_max={p_axis:.2g}, n={n})",
+        f"Pressure vs $\\rho$ (p_max={p_axis:.2g})",
         fontsize=14,
     )
     plt.grid(True)
@@ -418,7 +417,7 @@ def comparison(
     plt.xlabel(r"$\rho$", fontsize=14)
     plt.ylabel(r"$\langle |J| \rangle$", fontsize=14)
     plt.title(
-        f"Flux-surface avg current magnitude (p_max={p_axis:.2g}, n={n})",
+        f"Flux-surface avg current magnitude (p_max={p_axis:.2g})",
         fontsize=13,
     )
     plt.grid(True)
@@ -443,7 +442,7 @@ def comparison(
     plt.xlabel(r"$\rho$", fontsize=14)
     plt.ylabel(r"$\iota$", fontsize=14)
     plt.title(
-        f"Rotational transform vs $\\rho$ (p_max={p_axis:.2g}, n={n})",
+        f"Rotational transform vs $\\rho$ (p_max={p_axis:.2g})",
         fontsize=13,
     )
     plt.grid(True)

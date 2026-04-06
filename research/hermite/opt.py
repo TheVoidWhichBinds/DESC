@@ -386,24 +386,24 @@ CONSTRAINT_REGISTRY_CON = {
             "thing": _eq,
         },
     },
-    # "grad_iota_axis": {
-    #     "wrapper": LinearObjectiveFromUser,
-    #     "defaults": {
-    #         "thing": _eq,
-    #     },
-    # },
-    # "iota_edge": {
-    #     "wrapper": LinearObjectiveFromUser,
-    #     "defaults": {
-    #         "thing": _eq,
-    #     },
-    # },
-    # "iota_axis": {
-    #     "wrapper": LinearObjectiveFromUser,
-    #     "defaults": {
-    #         "thing": _eq,
-    #     },
-    # },
+    "grad_iota_axis": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "iota_edge": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "iota_axis": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
 }
 #========================
 #==============================================================================================================================================================

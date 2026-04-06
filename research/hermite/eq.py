@@ -14,8 +14,6 @@ from desc.equilibrium import Equilibrium
 
 #============== EQUILIBRIUM SOLVER ============================================================================================================================
 def run_equilibrium(
-        p_scale, 
-        n, 
         eq_config
     ):
     """

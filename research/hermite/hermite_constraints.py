@@ -79,3 +79,53 @@ def pressure_monotonicity(grid, data):
 #===============
 #==================
 #================================================================================================================================
+
+
+
+
+
+
+
+
+
+#============== IOTA  ====================================================================================================
+#=============
+# Constraints:
+#=====================
+def iota_axis(params):
+    """
+    Iota on axis.
+    For Hermite basis, first half of i_l stores knot values.
+    Axis is the first knot value.
+    """
+    c = params["i_l"]
+    f = c[:(len(c)//2)]
+    return f[0]
+#==============
+
+
+#=====================
+def iota_edge(params):
+    """
+    Iota on edge.
+    For Hermite basis, edge is the last knot value.
+    """
+    c = params["i_l"]
+    f = c[:(len(c)//2)]
+    return f[-1]
+#=================
+
+
+#==========================
+def grad_iota_axis(params):
+    """
+    Iota gradient on axis.
+    For Hermite basis, second half of i_l stores knot derivatives.
+    Axis gradient is the first derivative entry.
+    """
+    c = params["i_l"]
+    df = c[(len(c)//2):]
+    return df[0]
+#==============
+#=================
+#===================================================================================================================================
