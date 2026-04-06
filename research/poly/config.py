@@ -60,14 +60,14 @@ from research.poly.helper import(
 #=================================
 #---------------------------------
 # Number of toroidalfield periods:
-NFP = 4
+NFP = 5
 #-------
 
 #------------------------
 # Equilibrium resolution:
 L = 8
 M = 8
-N = 4
+N = 3
 eq_resolution = [L, M, N]
 #------------------------
 
@@ -226,7 +226,7 @@ opt_toggles = [
             "forcebalance": {
                 "use": True,
                 "kwargs": {
-                    "weight": 1e0,
+                    "weight": 1e4,
                     "target": 0.0,
                 },
             },
@@ -261,7 +261,7 @@ opt_toggles = [
             
                 # Custom:
             "pressure_axis_range": {
-                "use": True,
+                "use": False,
                 "kwargs": {
                     "weight": 1e6,
                     "grid": LinearGrid(L=50, M=0, N=0, axis=True),

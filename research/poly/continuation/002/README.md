@@ -1,7 +1,8 @@
 ```python
+
 #===================================================================================================================================================
 from pathlib import Path
-repo_root = Path(__file__).resolve().parents[2]
+repo_root = Path(__file__).resolve().parents[3]
 import os
 #================ ENVIRONMENT TOGGLE =================#
 USE_SUPERCOMPUTER = False
@@ -23,19 +24,23 @@ print("CUDA_VISIBLE_DEVICES:", repr(os.environ.get("CUDA_VISIBLE_DEVICES")))
 print("jax devices:", jax.devices())
 
 from desc.geometry import FourierRZToroidalSurface
-from desc.profiles import PowerSeriesProfile, HermiteSplineProfile
+from desc.profiles import PowerSeriesProfile
 from desc.grid import LinearGrid
-from research.hermite.hermite_constraints import (
+from research.poly.poly_constraints import (
     pressure_axis,
     pressure_edge,
     grad_pressure_axis,
     grad_pressure_edge,
+    pressure_monotonicity_generator,
+    iota_edge,
+    iota_axis,
+    grad_iota_axis,
     pressure_axis_range,
-    pressure_monotonicity,
 )
 from .driver import run_from_config
 from .opt import resolve_from_context
-from research.poly.helper import (
+from research.poly.helper import(
+    pressure_generator,
     iota_between_rationals,
 )
 #===================================================================================================================================================
@@ -56,14 +61,14 @@ from research.poly.helper import (
 #=================================
 #---------------------------------
 # Number of toroidalfield periods:
-NFP = 4
+NFP = 5
 #-------
 
 #------------------------
 # Equilibrium resolution:
 L = 8
 M = 8
-N = 4
+N = 3
 eq_resolution = [L, M, N]
 #------------------------
 
@@ -80,14 +85,14 @@ surface_init = FourierRZToroidalSurface(
 
 #-----------------------
 # Initializing pressure:
-p_axis = 1e3
-knots = jnp.linspace(0, 1, 4)
-f = p_axis * jnp.array([1.0, 0.56, 0.18, 0.0])
-df = jnp.array([0.0, -2000.0, -600.0, 0.0])
-pressure_init = HermiteSplineProfile(
-    f = f,
-    df = df,
-    knots = knots,
+p_axis = 1e4
+n = L
+pressure_init = PowerSeriesProfile(
+    pressure_generator(
+        p_axis = p_axis,
+        n = n
+    ),
+    sym = False
 )
 #--------------
 
@@ -222,7 +227,7 @@ opt_toggles = [
             "forcebalance": {
                 "use": True,
                 "kwargs": {
-                    "weight": 1e0,
+                    "weight": 1e4,
                     "target": 0.0,
                 },
             },
@@ -257,7 +262,7 @@ opt_toggles = [
             
                 # Custom:
             "pressure_axis_range": {
-                "use": True,
+                "use": False,
                 "kwargs": {
                     "weight": 1e6,
                     "grid": LinearGrid(L=50, M=0, N=0, axis=True),
@@ -265,16 +270,7 @@ opt_toggles = [
                     "bounds": (1e3, 1e5),
                 },
             },
-            "pressure_monotonicity": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e6,
-                    "grid": LinearGrid(L=50, M=0, N=0, axis=True),
-                    "fun": pressure_monotonicity,
-                    "bounds": (-jnp.inf, 0),
-                },
-            },
-            #------------------------------
+            #----------------------------
 
             #-------------
             # Constraints:
@@ -331,30 +327,38 @@ opt_toggles = [
                     "target": 0.0,
                 },
             },
-            # "grad_iota_axis": {
-            #     "use": True,
-            #     "kwargs": {
-            #         "name": "grad_iota_axis",
-            #         "fun": grad_iota_axis,
-            #         "target": 0.0,
-            #     },
-            # },
-            # "iota_axis": {
-            #     "use": True,
-            #     "kwargs": {
-            #         "name": "iota_axis",
-            #         "fun": iota_axis,
-            #         "target": iota_lower,
-            #     },
-            # },
-            # "iota_edge": {
-            #     "use": False,
-            #     "kwargs": {
-            #         "name": "iota_edge",
-            #         "fun": iota_edge,
-            #         "target": iota_upper,
-            #     },
-            # },
+            "pressure_monotonicity": {
+                "use": True,
+                "kwargs": {
+                    "name": "pressure_monotonicity",
+                    "fun": pressure_monotonicity_generator(L),
+                    "target": jnp.zeros(2 * L)
+                },
+            },
+            "grad_iota_axis": {
+                "use": True,
+                "kwargs": {
+                    "name": "grad_iota_axis",
+                    "fun": grad_iota_axis,
+                    "target": 0.0,
+                },
+            },
+            "iota_axis": {
+                "use": True,
+                "kwargs": {
+                    "name": "iota_axis",
+                    "fun": iota_axis,
+                    "target": iota_lower,
+                },
+            },
+            "iota_edge": {
+                "use": False,
+                "kwargs": {
+                    "name": "iota_edge",
+                    "fun": iota_edge,
+                    "target": iota_upper,
+                },
+            },
         },  #-----------------------------
     },  #=====================================
 ]
@@ -386,6 +390,7 @@ opt_config = {
 #================ DRIVER INPUTS ===================================================================================================================
 driver_config = {
     "p_axis": p_axis,
+    "n":    n,
     "config_path": __file__,
 }
 #===================================================================================================================================================
