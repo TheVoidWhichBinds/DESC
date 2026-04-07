@@ -1,3 +1,4 @@
+```python
 #===================================================================================================================================================
 from pathlib import Path
 repo_root = Path(__file__).resolve().parents[2]
@@ -81,10 +82,10 @@ surface_init = FourierRZToroidalSurface(
 
 #-----------------------
 # Initializing pressure:
-p_axis = 1e4
-knots = jnp.linspace(0, 1, 5)
-f = p_axis * jnp.array([1.0, 0.96, 0.88, 0.42, 0.0])
-df = jnp.array([0.0, -120.0, -350.0, -2200.0, 0.0])
+p_axis = 1e3
+knots = jnp.linspace(0, 1, 4)
+f = p_axis * jnp.array([1.0, 0.56, 0.18, 0.0])
+df = jnp.array([0.0, -2000.0, -600.0, 0.0])
 pressure_init = HermiteSplineProfile(
     f = f,
     df = df,
@@ -412,3 +413,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```

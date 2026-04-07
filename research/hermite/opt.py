@@ -507,11 +507,14 @@ def run_optimization(eq_0, optimizer, p_scale, opt_config, FXD: bool):
         xtol = xtol,
         gtol = gtol,
         maxiter = maxiter,
-        options = {"max_nfev": max_nfev},
+        options = {
+            "max_nfev": max_nfev,
+        },
+        #x_scale = "auto",
         copy = True,
         verbose = 3,
     )
-    #======================
+    #===============
 
     return eq_opt, opt_result
 #==============================================================================================================================================================

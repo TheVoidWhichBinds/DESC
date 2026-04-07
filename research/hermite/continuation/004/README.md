@@ -1,3 +1,4 @@
+```python
 #===================================================================================================================================================
 from pathlib import Path
 repo_root = Path(__file__).resolve().parents[2]
@@ -81,10 +82,10 @@ surface_init = FourierRZToroidalSurface(
 
 #-----------------------
 # Initializing pressure:
-p_axis = 1e4
-knots = jnp.linspace(0, 1, 5)
-f = p_axis * jnp.array([1.0, 0.96, 0.88, 0.42, 0.0])
-df = jnp.array([0.0, -120.0, -350.0, -2200.0, 0.0])
+p_axis = 1e3
+knots = jnp.linspace(0, 1, 4)
+f = p_axis * jnp.array([1.0, 0.56, 0.18, 0.0])
+df = jnp.array([0.0, -2000.0, -600.0, 0.0])
 pressure_init = HermiteSplineProfile(
     f = f,
     df = df,
@@ -135,11 +136,13 @@ iota_lower, iota_upper = iota_between_rationals(iota_axis = iota_init_axis)
 
 #----------------------
 # Optimizer thresholds:
-ftol = 1e-2
+ftol = 5e-4
 xtol = 1e-4
 gtol = 1e-3
+ctol = 1e-8
 maxiter = 4
-max_nfev = 10
+max_nfev = 15
+initial_trust_radius = 0.2
 #-------------------------
 #=========================
 
@@ -371,6 +374,7 @@ opt_config = {
     "gtol":                 gtol,
     "maxiter":              maxiter,
     "max_nfev":             max_nfev,
+    "initial_trust_radius": initial_trust_radius,
     "opt_toggles":          opt_toggles,
 }
 #==============================
@@ -412,3 +416,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```
