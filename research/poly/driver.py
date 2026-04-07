@@ -179,15 +179,14 @@ def comparison(
 
     active_columns = []
     for key, label in column_map:
-        if any(
-            config["toggle_FXD"].get(key, {}).get("use", False)
-            or config["toggle_CON"].get(key, {}).get("use", False)
-            for config in opt_toggles
-            if config["name"] is not None
+        if (
+            opt_toggles["toggle_BOTH"].get(key, {}).get("use", False)
+            or opt_toggles["toggle_FXD"].get(key, {}).get("use", False)
+            or opt_toggles["toggle_CON"].get(key, {}).get("use", False)
         ):
             active_columns.append((key, label))
     #------------------------------------------
-
+    
     #------------------------------------------
     # Generates meta-data README and directory:
     out_dir = _next_run_dir(continuation_dir)
@@ -212,8 +211,8 @@ def comparison(
     #===========================================
 
 
-    #======================================================================
-    # Running & saving optimizer stages in order. 2nd stage overwrites 1st:
+    #======================================
+    # Running & saving optimizer:
     #--------------------------
     eq_opt_FXD = eq_init.copy()
     eq_opt_CON = eq_init.copy()
@@ -221,32 +220,29 @@ def comparison(
     opt_result_CON = None
     #--------------------
 
-    #-------------------------
-    for config in opt_toggles:
-        optimizer = config["name"]
-        if optimizer is None:
-            continue
+    #--------------------------
+    optimizer = opt_toggles["name"]
 
+    if optimizer is not None:
         stage_opt_config = {
             **opt_config,
-            "toggle_FXD": config["toggle_FXD"],
-            "toggle_CON": config["toggle_CON"],
+            "toggle_BOTH": opt_toggles["toggle_BOTH"],
+            "toggle_FXD": opt_toggles["toggle_FXD"],
+            "toggle_CON": opt_toggles["toggle_CON"],
         }
 
         eq_opt_CON, opt_result_CON = run_optimization(
             eq_opt_CON,
             optimizer,
-            p_axis,
-            opt_config=stage_opt_config,
-            FXD=False,
+            opt_config = stage_opt_config,
+            FXD = False,
         )
 
         eq_opt_FXD, opt_result_FXD = run_optimization(
             eq_opt_FXD,
             optimizer,
-            p_axis,
-            opt_config=stage_opt_config,
-            FXD=True,
+            opt_config = stage_opt_config,
+            FXD = True,
         )
     #----------------
     
