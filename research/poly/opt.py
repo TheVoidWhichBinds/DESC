@@ -433,6 +433,7 @@ def run_optimization(eq_0, optimizer, p_scale, opt_config, FXD: bool):
     gtol = opt_config["gtol"]
     ctol = opt_config["ctol"]
     maxiter = opt_config["maxiter"]
+    max_nfev = opt_config["max_nfev"]
     toggle_FXD = opt_config["toggle_FXD"]
     toggle_CON = opt_config["toggle_CON"]
     toggle = toggle_FXD if FXD else toggle_CON
@@ -500,16 +501,16 @@ def run_optimization(eq_0, optimizer, p_scale, opt_config, FXD: bool):
     #======================
     # Running optimization:
     eq_opt, opt_result = eq_0.optimize(
-        objective=objectives,
-        constraints=constraints,
-        optimizer=optimizer,
-        ftol=ftol,
-        xtol=xtol,
-        gtol=gtol,
-        ctol=ctol,
-        maxiter=maxiter,
-        copy=True,
-        verbose=3,
+        objective = objectives,
+        constraints = constraints,
+        optimizer = optimizer,
+        ftol = ftol,
+        xtol = xtol,
+        gtol = gtol,
+        maxiter = maxiter,
+        options = {"max_nfev": max_nfev},
+        copy = True,
+        verbose = 3,
     )
     #======================
 

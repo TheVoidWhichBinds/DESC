@@ -143,8 +143,9 @@ xtol = 1e-4
 gtol = 1e-3
 ctol = 1e-8
 maxiter = 4
-#----------
-#==========
+max_nfev = 15
+#------------
+#============
 
 
 #==============
@@ -372,6 +373,7 @@ opt_config = {
     "gtol":        gtol,
     "ctol":        ctol,
     "maxiter":     maxiter,
+    "max_nfev":    max_nfev,
     "opt_toggles": opt_toggles,
 }
 #==============================

@@ -1,3 +1,4 @@
+```python
 #===================================================================================================================================================
 from pathlib import Path
 repo_root = Path(__file__).resolve().parents[2]
@@ -64,11 +65,11 @@ NFP = 4
 # Equilibrium resolution:
 L = 8
 M = 8
-N = 8
+N = 4
 eq_resolution = [L, M, N]
 #------------------------
 
-#---------------------------------
+#------------------------
 # Initializing fixed????? surface:
 surface_init = FourierRZToroidalSurface(
     R_lmn =   [ 10.0,   -1.0,   -0.3,    0.3   ],
@@ -90,7 +91,7 @@ pressure_init = HermiteSplineProfile(
     df = df,
     knots = knots,
 )
-#-----------------
+#--------------
 
 #-------------------
 # Initializing iota:
@@ -135,15 +136,12 @@ iota_lower, iota_upper = iota_between_rationals(iota_axis = iota_init_axis)
 
 #----------------------
 # Optimizer thresholds:
-ftol = 5e-4
+ftol = 5e-3
 xtol = 1e-4
 gtol = 1e-3
-ctol = 1e-8
 maxiter = 4
-max_nfev = 15
-#------------
-#============
-
+#----------
+#==========
 
 
 #==============
@@ -371,7 +369,6 @@ opt_config = {
     "xtol":        xtol,
     "gtol":        gtol,
     "maxiter":     maxiter,
-    "max_nfev":    max_nfev,
     "opt_toggles": opt_toggles,
 }
 #==============================
@@ -413,3 +410,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```

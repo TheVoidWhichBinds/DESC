@@ -13,6 +13,31 @@ import math
 
 
 #============== PRESSURE =============================================================================================================
+#============
+# Objectives:
+#===================================
+def pressure_axis_range(grid, data):
+    """
+    Allows pressure on-axis to be within specified bounds.
+    """
+    p_axis = data['p'][0]
+    return p_axis
+#================
+
+#=====================================
+def pressure_monotonicity(grid, data):
+    """
+    Monotonic pressure.
+    """
+    dp_dr = data['p_r']
+    return dp_dr
+#===============
+#==================
+
+
+
+
+#=============
 # Constraints:
 #=========================
 def pressure_axis(params):
@@ -25,7 +50,6 @@ def pressure_axis(params):
     return c[0]
 #=========================================
 
-
 #=========================
 def pressure_edge(params):
     """
@@ -36,7 +60,6 @@ def pressure_edge(params):
     return c.sum()
 #=======================
 
-
 #==============================
 def grad_pressure_axis(params): 
     """
@@ -46,7 +69,6 @@ def grad_pressure_axis(params):
     c = params['p_l']
     return c[1]
 #=============
-
 
 #==============================
 def grad_pressure_edge(params):
@@ -83,31 +105,6 @@ def pressure_monotonicity_generator(L):
     return pressure_monotonicity
 #===============================
 #==================================
-
-
-
-
-#============
-# Objectives:
-#===================================
-def pressure_axis_range(grid, data):
-    """
-    Allows pressure on-axis to be within specified bounds.
-    """
-    p_axis = data['p'][0]
-    return p_axis
-#================
-
-
-#================================
-def pressure_monotonicity(grid, data):
-    """
-    Monotonic pressure.
-    """
-    dp_dr = data['p_r']
-    return dp_dr
-#===============
-#==================
 #===================================================================================================================================
 
 

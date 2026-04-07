@@ -2,6 +2,30 @@ import jax.numpy as jnp
 
 
 #============== PRESSURE ============================================================================================================
+#============
+# Objectives:
+#===================================
+def pressure_axis_range(grid, data):
+    """
+    Allows pressure on-axis to be within specified bounds.
+    """
+    p_axis = data["p"][0]
+    return p_axis
+#================
+
+#==========================================
+def pressure_monotonicity(grid, data):
+    """
+    Ensures monotonic decrease of pressure for hermite cubic spline profile
+    """
+    dp_dr = data["p_r"] # gradient of pressure at grid points
+    return dp_dr
+#===============
+#==================
+
+
+
+
 #===========================
 # Constraints:
 #=========================
@@ -15,7 +39,6 @@ def pressure_axis(params):
     return p_axis # pressure on axis
 #===================================
 
-
 #=========================
 def pressure_edge(params):
     """
@@ -27,7 +50,6 @@ def pressure_edge(params):
     p_edge = p[n - 1]
     return p_edge # pressure on edge
 #===================================
-
 
 #==============================
 def grad_pressure_axis(params): 
@@ -41,7 +63,6 @@ def grad_pressure_axis(params):
     return gradp_axis
 #====================
 
-
 #==============================
 def grad_pressure_edge(params):
     """
@@ -53,31 +74,6 @@ def grad_pressure_edge(params):
     return gradp_edge
 #====================
 #=======================
-
-
-
-
-#============
-# Objectives:
-#===================================
-def pressure_axis_range(grid, data):
-    """
-    Allows pressure on-axis to be within specified bounds.
-    """
-    p_axis = data["p"][0]
-    return p_axis
-#================
-
-
-#==========================================
-def pressure_monotonicity(grid, data):
-    """
-    Ensures monotonic decrease of pressure for hermite cubic spline profile
-    """
-    dp_dr = data["p_r"] # gradient of pressure at grid points
-    return dp_dr
-#===============
-#==================
 #================================================================================================================================
 
 
@@ -89,6 +85,15 @@ def pressure_monotonicity(grid, data):
 
 
 #============== IOTA  ====================================================================================================
+#============
+# Objectives:
+#================
+#================
+#==================
+
+
+
+
 #=============
 # Constraints:
 #=====================
@@ -103,7 +108,6 @@ def iota_axis(params):
     return f[0]
 #==============
 
-
 #=====================
 def iota_edge(params):
     """
@@ -114,7 +118,6 @@ def iota_edge(params):
     f = c[:(len(c)//2)]
     return f[-1]
 #=================
-
 
 #==========================
 def grad_iota_axis(params):
