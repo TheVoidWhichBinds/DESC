@@ -10,6 +10,8 @@ USE_SUPERCOMPUTER = False
 from desc import set_device
 if USE_SUPERCOMPUTER:
     set_device("gpu")
+from desc.backend import print_backend_info
+print_backend_info()
 
 import jax
 import jax.numpy as jnp
@@ -32,13 +34,14 @@ from research.poly.poly_constraints import (
     grad_pressure_axis,
     grad_pressure_edge,
     pressure_monotonicity_generator,
+    pressure_monotonicity,
     iota_edge,
     iota_axis,
     grad_iota_axis,
     pressure_axis_range,
+    iota_range,
 )
 from .driver import run_from_config
-from .opt import resolve_from_context
 from research.poly.helper import(
     pressure_generator,
     iota_between_rationals,
@@ -58,17 +61,17 @@ from research.poly.helper import(
 
 
 #================EQUILIBRIUM INPUTS ================================================================================================================
-#=================================
-#---------------------------------
-# Number of toroidalfield periods:
-NFP = 5
+#==================================
+#----------------------------------
+# Number of toroidal field periods:
+NFP = 4
 #-------
 
 #------------------------
 # Equilibrium resolution:
-L = 8
-M = 8
-N = 3
+L = 6 #upgrade once GPU 
+M = 6 #upgrade once GPU
+N = 3 #upgrade once GPU
 eq_resolution = [L, M, N]
 #------------------------
 
@@ -86,21 +89,24 @@ surface_init = FourierRZToroidalSurface(
 #-----------------------
 # Initializing pressure:
 p_axis = 1e4
-n = L
+n = int(4)
 pressure_init = PowerSeriesProfile(
     pressure_generator(
         p_axis = p_axis,
         n = n
     ),
-    sym = False
+    sym = True,
 )
 #--------------
 
 #-------------------
 # Initializing iota:
-iota_init_axis = 0.52
-iota_init = PowerSeriesProfile([iota_init_axis, 0, 0.15])
-#--------------------------------------------------------
+iota_init_axis = 1
+iota_init = PowerSeriesProfile(
+    [iota_init_axis, 0, 1.5], 
+    sym=True,
+)
+#-----------------------------------------------------------------------------
 #========================
 
 
@@ -135,234 +141,218 @@ target_aspect_ratio = 6
 #--------------
 # Iota targets:
 iota_lower, iota_upper = iota_between_rationals(iota_axis = iota_init_axis)
+iota_grid = 50
+iota_grid_obj = LinearGrid(L=iota_grid, M=0, N=0, axis=True)
+n_iota = iota_grid_obj.num_nodes
+#-------------------
 #--------------------------------------------------------------------------
 
 #----------------------
 # Optimizer thresholds:
-ftol = 5e-4
-xtol = 1e-4
-gtol = 1e-3
-ctol = 1e-8
-maxiter = 4
-#----------
-#==========
+ftol = 1e-3
+xtol = 1e-6
+gtol = 1e-8
+maxiter = 2
+max_nfev = 20
+#------------
+#============
 
 
 #==============
-opt_toggles = [
-    #==========================
-    {  # 1st stage optimization
-        "name": "proximal-lsq-exact", # optimizer
-        #===============================
-        "toggle_FXD": { # fixed profiles
-            #------------
-            # Objectives:
-                # Standard:
-            "forcebalance": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e4,
-                    "target": 0.0,
-                },
+opt_toggles = {
+    "name": "proximal-lsq-exact", # optimizer
+    #========================================
+    #===============
+    "toggle_BOTH": {
+        #------------
+        # Objectives:
+        "forcebalance": {
+            "use": True,
+            "kwargs": {
+                "weight": 1e12,
+                "target": 0.0,
             },
-            "aspect_ratio": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e0,
-                    "target": target_aspect_ratio,
-                },
+        },
+        "aspect_ratio": {
+            "use": True,
+            "kwargs": {
+                "weight": 1e0,
+                "target": target_aspect_ratio,
             },
-            "qs": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e0,
-                    "helicity": (1, NFP),
-                },
+        },
+        "qs": {
+            "use": True,
+            "kwargs": {
+                "weight": 1e0,
+                "helicity": (1, NFP),
             },
-            "ballooning": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e0,
-                    "target": 0.0,
-                },
+        },
+        "ballooning": {
+            "use": True,
+            "kwargs": {
+                "weight": 1e0,
+                "target": 0.0,
             },
-            "mercier": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e0,
-                    "target": 0.0,
-                },
+        },
+        "mercier": {
+            "use": True,
+            "kwargs": {
+                "weight": 1e0,
+                "target": 0.0,
             },
-
-            #-------------
-            # Constraints:
-                # Standard:
-            "forcebalance": {
-                "use": True,
-                "kwargs": {
-                    "target": 0.0,
-                },
+        }, #------------------
+        
+        #-------------
+        # Constraints:
+        "forcebalance": {
+            "use": True,
+            "kwargs": {
+                "target": 0.0,
             },
-            "fix_iota": {
-                "use": True,
-                "kwargs": {},
-            },
-            "fix_psi": {
-                "use": True,
-                "kwargs": {},
-            },
-            "fix_pressure": {
-                "use": True,
-                "kwargs": {},
-            },
-        },  #----------------
-        #=========================
+        },
+        "fix_psi": {
+            "use": True,
+            "kwargs": {},
+        },
+    },  #----------------
+    #====================
 
 
-        #==============================
-        "toggle_CON": { # free profiles
-            #------------
-            # Objectives:
-                # Standard:
-            "forcebalance": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e4,
-                    "target": 0.0,
-                },
-            },
-            "aspect_ratio": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e0,
-                    "target": target_aspect_ratio,
-                },
-            },
-            "qs": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e0,
-                    "helicity": (1, NFP),
-                },
-            },
-            "ballooning": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e0,
-                    "target": 0.0,
-                },
-            },
-            "mercier": {
-                "use": True,
-                "kwargs": {
-                    "weight": 1e0,
-                    "target": 0.0,
-                },
-            },
-            
+
+
+    #===============================
+    "toggle_FXD": { # fixed profiles
+        #------------
+        # Objectives:
+        #------------
+
+        #-------------
+        # Constraints:
+        "fix_iota": {
+            "use": True,
+            "kwargs": {},
+        },
+        "fix_pressure": {
+            "use": True,
+            "kwargs": {},
+        },
+    },  #----------------
+    #=========================
+
+
+
+
+    #==============================
+    "toggle_CON": { # free profiles
+        #-----------
+        # Objectives:
                 # Custom:
-            "pressure_axis_range": {
-                "use": False,
-                "kwargs": {
-                    "weight": 1e6,
-                    "grid": LinearGrid(L=50, M=0, N=0, axis=True),
-                    "fun": pressure_axis_range,
-                    "bounds": (1e3, 1e5),
-                },
+        "pressure_axis_range": {
+            "use": True,
+            "kwargs": {
+                "weight": 1e1,
+                "grid": LinearGrid(L=50, M=0, N=0, axis=True),
+                "fun": pressure_axis_range,
+                "bounds": (1e3, 1e5),
+                "name": "pressure_axis_range"
             },
-            #----------------------------
+        },
+        "pressure_monotonicity": {
+            "use": False,
+            "kwargs": {
+                "weight": 1e1,
+                "fun": pressure_monotonicity,
+                "target": 0.0,
+                "name": "pressure_monotonicity"
+            },
+        },
+        "iota_range": {
+            "use": True,
+            "kwargs": {
+                "weight": 1e1,
+                "grid": iota_grid_obj,
+                "fun": iota_range,
+                "bounds": (
+                    iota_lower * jnp.ones(n_iota),
+                    iota_upper * jnp.ones(n_iota),
+                ),
+                "name": "iota_range"
+            },
+        },
+        #----------------------------
 
-            #-------------
-            # Constraints:
-                # Standard:
-            "forcebalance": {
-                "use": True,
-                "kwargs": {
-                    "target": 0.0,
-                },
-            },
-            "fix_iota": {
-                "use": False,
-                "kwargs": {},
-            },
-            "fix_psi": {
-                "use": True,
-                "kwargs": {},
-            },
-            "fix_pressure": {
-                "use": False,
-                "kwargs": {},
-            },
+        #-------------
+        # Constraints:
+            # Standard:
+        "fix_iota": {
+            "use": False,
+            "kwargs": {},
+        },
+        "fix_pressure": {
+            "use": False,
+            "kwargs": {},
+        },
 
-                # Custom:
-            "pressure_axis": {
-                "use": False,
-                "kwargs": {
-                    "name": "pressure_axis",
-                    "fun": pressure_axis,
-                    "target": p_axis,
-                },
+            # Custom:
+        "pressure_axis": {
+            "use": False,
+            "kwargs": {
+                "name": "pressure_axis",
+                "fun": pressure_axis,
+                "target": p_axis,
             },
-            "pressure_edge": {
-                "use": True,
-                "kwargs": {
-                    "name": "pressure_edge",
-                    "fun": pressure_edge,
-                    "target": 0.0,
-                },
+        },
+        "pressure_edge": {
+            "use": True,
+            "kwargs": {
+                "name": "pressure_edge",
+                "fun": pressure_edge,
+                "target": 0.0,
             },
-            "grad_pressure_axis": {
-                "use": True,
-                "kwargs": {
-                    "name": "grad_pressure_axis",
-                    "fun": grad_pressure_axis,
-                    "target": 0.0,
-                },
+        },
+        "grad_pressure_axis": {
+            "use": True,
+            "kwargs": {
+                "name": "grad_pressure_axis",
+                "fun": grad_pressure_axis,
+                "target": 0.0,
             },
-            "grad_pressure_edge": {
-                "use": True,
-                "kwargs": {
-                    "name": "grad_pressure_edge",
-                    "fun": grad_pressure_edge,
-                    "target": 0.0,
-                },
+        },
+        "grad_pressure_edge": {
+            "use": True,
+            "kwargs": {
+                "name": "grad_pressure_edge",
+                "fun": grad_pressure_edge,
+                "target": 0.0,
             },
-            "pressure_monotonicity": {
-                "use": True,
-                "kwargs": {
-                    "name": "pressure_monotonicity",
-                    "fun": pressure_monotonicity_generator(L),
-                    "target": jnp.zeros(2 * L)
-                },
+        },
+        "grad_iota_axis": {
+            "use": True,
+            "kwargs": {
+                "name": "grad_iota_axis",
+                "fun": grad_iota_axis,
+                "target": 0.0,
             },
-            "grad_iota_axis": {
-                "use": True,
-                "kwargs": {
-                    "name": "grad_iota_axis",
-                    "fun": grad_iota_axis,
-                    "target": 0.0,
-                },
+        },
+        "iota_axis": {
+            "use": True,
+            "kwargs": {
+                "name": "iota_axis",
+                "fun": iota_axis,
+                "target": iota_lower + 0.02,
             },
-            "iota_axis": {
-                "use": True,
-                "kwargs": {
-                    "name": "iota_axis",
-                    "fun": iota_axis,
-                    "target": iota_lower,
-                },
+        },
+        "iota_edge": {
+            "use": True,
+            "kwargs": {
+                "name": "iota_edge",
+                "fun": iota_edge,
+                "target": iota_upper - 0.02,
             },
-            "iota_edge": {
-                "use": False,
-                "kwargs": {
-                    "name": "iota_edge",
-                    "fun": iota_edge,
-                    "target": iota_upper,
-                },
-            },
-        },  #-----------------------------
-    },  #=====================================
-]
-#================================================
+        },
+    },  #-----------------------------------
+}
+#=====================================================
 
 
 #=====================
@@ -371,8 +361,8 @@ opt_config = {
     "ftol":        ftol,
     "xtol":        xtol,
     "gtol":        gtol,
-    "ctol":        ctol,
     "maxiter":     maxiter,
+    "max_nfev":    max_nfev,
     "opt_toggles": opt_toggles,
 }
 #==============================

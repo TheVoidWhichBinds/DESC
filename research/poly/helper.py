@@ -14,14 +14,18 @@ def pressure_generator(
         min_n=2
     ):
     """
-    Coeffs for p(rho) = p_scale * (1 - rho^2)^n
-    Guarantees: p(0)=p_scale, p(1)=0, p'(0)=0, p'(1)=0 for n>=2
+    Coeffs for p(rho) = p_axis * (1 - rho^2)^n
+    Guarantees: p(0)=p_axis, p(1)=0, p'(0)=0, p'(1)=0 for n>=2
     Also nonnegative + monotone decreasing on [0,1].
     """
-    n_eff = max(int(n), int(min_n))
-    coeff = [0.0] * (2 * n_eff + 1)
-    for k in range(n_eff + 1):
-        coeff[2 * k] = p_axis * comb(n_eff, k) * ((-1) ** k)
+    if not isinstance(n, int):
+        raise ValueError("polynomial order 2*n: n must be an integer")
+
+    n = max(n, min_n)
+    coeff = [0.0] * (2 * n + 1)
+
+    for k in range(n + 1):
+        coeff[2 * k] = p_axis * comb(n, k) * ((-1) ** k)
     return coeff
 #===============
 

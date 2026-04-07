@@ -30,9 +30,9 @@ def pressure_monotonicity(grid, data):
     Monotonic pressure.
     """
     dp_dr = data['p_r']
-    return dp_dr
-#===============
-#==================
+    return jnp.maximum(0.0, dp_dr)
+#=================================
+#=================================
 
 
 
@@ -76,9 +76,9 @@ def grad_pressure_edge(params):
     Pressure gradient on edge (rho=1)
     Target: GradP=0 (no surface current J)
     """ 
-    grad_coeff = params['p_l'][1:]
-    order = jnp.arange(1, len(grad_coeff)+1)
-    return (order * grad_coeff).sum()
+    c = params['p_l'][1:]
+    order = jnp.arange(1, len(c)+1)
+    return (order * c).sum()
 #====================================
 
 #======================================
@@ -116,7 +116,21 @@ def pressure_monotonicity_generator(L):
 
 
 
-#============== IOTA CONSTRAINTS ====================================================================================================
+#============== IOTA ===============================================================================================================
+#============
+# Objectives:
+#==========================
+def iota_range(grid, data):
+    iota = data['iota']
+    return iota
+#==============
+#==============
+
+
+
+
+#=============
+# Constraints:
 #=====================
 def iota_axis(params):
     """
@@ -148,10 +162,7 @@ def grad_iota_axis(params):
     c = params["i_l"] 
     return c[1]
 #==============
-
-
 #============================
-
 #===================================================================================================================================
 
 

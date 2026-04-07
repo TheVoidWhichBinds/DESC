@@ -48,7 +48,7 @@ OBJECTIVE_REGISTRY_BOTH = {
             "eq": _eq,
         },
     },
-    "aspect_ratio": {
+    "aspect_ratio_range": {
         "wrapper": AspectRatio,
         "defaults": {
             "eq": _eq,
@@ -128,7 +128,7 @@ CONSTRAINT_REGISTRY_FXD = {
 #=========================
 # Free profiles:
 #-------------------------
-OBJECTIVE_REGISTRY_CON = {
+OBJECTIVE_REGISTRY_FREE = {
         # Custom:
     "pressure_axis_range": {
         "wrapper": ObjectiveFromUser,
@@ -136,11 +136,23 @@ OBJECTIVE_REGISTRY_CON = {
             "thing": _eq,
         },
     },
+    "pressure_monotonicity": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "iota_range": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
 }
-#---------------------
+#------------------------
 
 #--------------------------
-CONSTRAINT_REGISTRY_CON = {
+CONSTRAINT_REGISTRY_FREE = {
         # Standard:
     "fix_iota": {
         "wrapper": FixIota,
@@ -180,12 +192,12 @@ CONSTRAINT_REGISTRY_CON = {
             "thing": _eq,
         },
     },
-    "pressure_monotonicity": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
+    # "pressure_monotonicity": {
+    #     "wrapper": LinearObjectiveFromUser,
+    #     "defaults": {
+    #         "thing": _eq,
+    #     },
+    # },
     "grad_iota_axis": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -234,12 +246,13 @@ def run_optimization(eq_0, optimizer, opt_config, FXD: bool):
     gtol = opt_config["gtol"]
     maxiter = opt_config["maxiter"]
     max_nfev = opt_config["max_nfev"]
+    x_scale = opt_config["x_scale"]
     toggle_BOTH = opt_config["toggle_BOTH"]
     toggle_FXD = opt_config["toggle_FXD"]
-    toggle_CON = opt_config["toggle_CON"]
+    toggle_FREE = opt_config["toggle_FREE"]
     toggle = _merge_toggles(
         toggle_BOTH,
-        toggle_FXD if FXD else toggle_CON,
+        toggle_FXD if FXD else toggle_FREE,
     )
     #=====================================
 
@@ -299,7 +312,7 @@ def run_optimization(eq_0, optimizer, opt_config, FXD: bool):
         _append_terms(
             term_list=objectives_list,
             toggle=toggle,
-            registry=OBJECTIVE_REGISTRY_CON,
+            registry=OBJECTIVE_REGISTRY_FREE,
             context=context,
             kind="objective",
         )
@@ -307,7 +320,7 @@ def run_optimization(eq_0, optimizer, opt_config, FXD: bool):
         _append_terms(
             term_list=constraints_list,
             toggle=toggle,
-            registry=CONSTRAINT_REGISTRY_CON,
+            registry=CONSTRAINT_REGISTRY_FREE,
             context=context,
             kind="constraint",
         )
@@ -332,7 +345,7 @@ def run_optimization(eq_0, optimizer, opt_config, FXD: bool):
         gtol = gtol,
         maxiter = maxiter,
         options = {"max_nfev": max_nfev},
-        #x_scale = "auto"
+        x_scale = x_scale,
         copy = True,
         verbose = 3,
     )

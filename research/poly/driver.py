@@ -182,7 +182,7 @@ def comparison(
         if (
             opt_toggles["toggle_BOTH"].get(key, {}).get("use", False)
             or opt_toggles["toggle_FXD"].get(key, {}).get("use", False)
-            or opt_toggles["toggle_CON"].get(key, {}).get("use", False)
+            or opt_toggles["toggle_FREE"].get(key, {}).get("use", False)
         ):
             active_columns.append((key, label))
     #------------------------------------------
@@ -215,12 +215,12 @@ def comparison(
     # Running & saving optimizer:
     #--------------------------
     eq_opt_FXD = eq_init.copy()
-    eq_opt_CON = eq_init.copy()
+    eq_opt_FREE = eq_init.copy()
     opt_result_FXD = None
-    opt_result_CON = None
+    opt_result_FREE = None
     #--------------------
 
-    #--------------------------
+    #------------------------------
     optimizer = opt_toggles["name"]
 
     if optimizer is not None:
@@ -228,11 +228,11 @@ def comparison(
             **opt_config,
             "toggle_BOTH": opt_toggles["toggle_BOTH"],
             "toggle_FXD": opt_toggles["toggle_FXD"],
-            "toggle_CON": opt_toggles["toggle_CON"],
+            "toggle_FREE": opt_toggles["toggle_FREE"],
         }
 
-        eq_opt_CON, opt_result_CON = run_optimization(
-            eq_opt_CON,
+        eq_opt_FREE, opt_result_FREE = run_optimization(
+            eq_opt_FREE,
             optimizer,
             opt_config = stage_opt_config,
             FXD = False,
@@ -244,10 +244,10 @@ def comparison(
             opt_config = stage_opt_config,
             FXD = True,
         )
-    #----------------
+    #------------------
     
     #---------------------------------------------------
-    eq_opt_CON.save(os.path.join(out_dir, "opt_CON.h5"))
+    eq_opt_FREE.save(os.path.join(out_dir, "opt_FREE.h5"))
     eq_opt_FXD.save(os.path.join(out_dir, "opt_FXD.h5"))
     #---------------------------------------------------
     #===================================================
@@ -263,7 +263,7 @@ def comparison(
     rows.append(("Difference",))
 
     row_FXD = []
-    row_CON = []
+    row_FREE = []
     row_DIFF = []
     #====================================
 
@@ -274,8 +274,8 @@ def comparison(
         fmin_FXD, fmean_FXD, fmax_FXD = _safe_extract_from_result(
             opt_result_FXD, label
         )
-        fmin_CON, fmean_CON, fmax_CON = _safe_extract_from_result(
-            opt_result_CON, label
+        fmin_FREE, fmean_FREE, fmax_FREE = _safe_extract_from_result(
+            opt_result_FREE, label
         )
 
         row_FXD.append(
@@ -283,15 +283,15 @@ def comparison(
             f"f_mean={sci_compact(fmean_FXD, sig=4)}, "
             f"f_max={sci_compact(fmax_FXD, sig=4)}"
         )
-        row_CON.append(
-            f"f_min={sci_compact(fmin_CON, sig=4)}, "
-            f"f_mean={sci_compact(fmean_CON, sig=4)}, "
-            f"f_max={sci_compact(fmax_CON, sig=4)}"
+        row_FREE.append(
+            f"f_min={sci_compact(fmin_FREE, sig=4)}, "
+            f"f_mean={sci_compact(fmean_FREE, sig=4)}, "
+            f"f_max={sci_compact(fmax_FREE, sig=4)}"
         )
 
-        dmin = fmin_CON - fmin_FXD
-        dmean = fmean_CON - fmean_FXD
-        dmax = fmax_CON - fmax_FXD
+        dmin = fmin_FREE - fmin_FXD
+        dmean = fmean_FREE - fmean_FXD
+        dmax = fmax_FREE - fmax_FXD
         row_DIFF.append(
             f"f_min diff={sci_compact(dmin, sig=4)}, "
             f"f_mean diff={sci_compact(dmean, sig=4)}, "
@@ -305,17 +305,17 @@ def comparison(
     beta_FXD = float(
         eq_opt_FXD.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
     )
-    beta_CON = float(
-        eq_opt_CON.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
+    beta_FREE = float(
+        eq_opt_FREE.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
     )
-    beta_DIFF = beta_CON - beta_FXD
+    beta_DIFF = beta_FREE - beta_FXD
 
     row_FXD.append(f"{beta_FXD:.4g}")
-    row_CON.append(f"{beta_CON:.4g}")
+    row_FREE.append(f"{beta_FREE:.4g}")
     row_DIFF.append(f"{beta_DIFF:.4g}")
 
     values.append(row_FXD)
-    values.append(row_CON)
+    values.append(row_FREE)
     values.append(row_DIFF)
     #======================
 
@@ -345,14 +345,14 @@ def comparison(
     #--------------------
     # Plotting pressures:
     rho = np.linspace(0.0, 1.0, 400)
-    grid = LinearGrid(rho=rho, M=0, N=0, NFP=eq_opt_CON.NFP, sym=eq_opt_CON.sym)
+    grid = LinearGrid(rho=rho, M=0, N=0, NFP=eq_opt_FREE.NFP, sym=eq_opt_FREE.sym)
 
     p_FXD = eq_opt_FXD.compute("p", grid=grid)["p"]
-    p_CON = eq_opt_CON.compute("p", grid=grid)["p"]
+    p_FREE = eq_opt_FREE.compute("p", grid=grid)["p"]
 
     plt.figure(figsize=(7, 5))
     plt.plot(rho, p_FXD, linewidth=2, label="Fixed Pressure", color="blue")
-    plt.plot(rho, p_CON, linewidth=2, label="Optimized Pressure", color="red")
+    plt.plot(rho, p_FREE, linewidth=2, label="Optimized Pressure", color="red")
     plt.xlabel(r"$\rho$", fontsize=14)
     plt.ylabel("Pressure", fontsize=14)
     plt.title(
@@ -372,7 +372,7 @@ def comparison(
     # Plotting gridded toroidal cross-sections of B-fields:
     plt.title("Toroidal Cross-Sections of Solved Equilibria")
     fig, ax = plot_comparison(
-        eqs=[eq_init, eq_opt_FXD, eq_opt_CON],
+        eqs=[eq_init, eq_opt_FXD, eq_opt_FREE],
         labels=[
             "Initial Equilibrium",
             "Optimized (Fixed Pressure)",
@@ -389,7 +389,7 @@ def comparison(
     #----------------------
     # |J| vs. rho plotting:
     rho_grid = np.linspace(0.0, 1.0, 100)
-    grid_J = LinearGrid(rho=rho_grid, M=24, N=24, NFP=eq_opt_CON.NFP, sym=eq_opt_CON.sym)
+    grid_J = LinearGrid(rho=rho_grid, M=24, N=24, NFP=eq_opt_FREE.NFP, sym=eq_opt_FREE.sym)
 
     def _surface_mean_J_mag(eq):
         data = eq.compute(["|J|"], grid=grid_J)
@@ -406,11 +406,11 @@ def comparison(
         return rho_unique, J_mag_fs
 
     rho_u_FXD, J_mag_FXD = _surface_mean_J_mag(eq_opt_FXD)
-    rho_u_CON, J_mag_CON = _surface_mean_J_mag(eq_opt_CON)
+    rho_u_FREE, J_mag_FREE = _surface_mean_J_mag(eq_opt_FREE)
 
     plt.figure(figsize=(7, 5))
     plt.plot(rho_u_FXD, J_mag_FXD, linewidth=2, label="Fixed Pressure", color="blue")
-    plt.plot(rho_u_CON, J_mag_CON, linewidth=2, label="Optimized Pressure", color="red")
+    plt.plot(rho_u_FREE, J_mag_FREE, linewidth=2, label="Optimized Pressure", color="red")
     plt.xlabel(r"$\rho$", fontsize=14)
     plt.ylabel(r"$\langle |J| \rangle$", fontsize=14)
     plt.title(
@@ -428,14 +428,14 @@ def comparison(
 
     #-----------------------
     # iota vs. rho plotting:
-    grid_iota = LinearGrid(rho=rho_grid, M=0, N=0, NFP=eq_opt_CON.NFP, sym=eq_opt_CON.sym)
+    grid_iota = LinearGrid(rho=rho_grid, M=0, N=0, NFP=eq_opt_FREE.NFP, sym=eq_opt_FREE.sym)
 
     iota_FXD = eq_opt_FXD.compute("iota", grid=grid_iota)["iota"]
-    iota_CON = eq_opt_CON.compute("iota", grid=grid_iota)["iota"]
+    iota_FREE = eq_opt_FREE.compute("iota", grid=grid_iota)["iota"]
 
     plt.figure(figsize=(7, 5))
     plt.plot(rho_grid, iota_FXD, linewidth=2, label="Fixed Pressure", color="blue")
-    plt.plot(rho_grid, iota_CON, linewidth=2, label="Optimized Pressure", color="red")
+    plt.plot(rho_grid, iota_FREE, linewidth=2, label="Optimized Pressure", color="red")
     plt.xlabel(r"$\rho$", fontsize=14)
     plt.ylabel(r"$\iota$", fontsize=14)
     plt.title(

@@ -64,7 +64,7 @@ NFP = 4
 # Equilibrium resolution:
 L = 8
 M = 8
-N = 8
+N = 3
 eq_resolution = [L, M, N]
 #------------------------
 

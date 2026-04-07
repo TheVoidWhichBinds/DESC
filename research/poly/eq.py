@@ -35,9 +35,9 @@ def run_equilibrium(
     L, M, N = eq_resolution
     eq = Equilibrium(
         L=L, M=M, N=N,
-        surface=surface_init,
-        pressure=pressure_init,
-        iota=iota_init,
+        surface = surface_init,
+        pressure = pressure_init,
+        iota = iota_init,
         Psi=1.0,
     )
     #----------------------
