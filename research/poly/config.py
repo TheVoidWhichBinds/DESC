@@ -32,12 +32,11 @@ from research.poly.poly_constraints import (
     pressure_edge,
     grad_pressure_axis,
     grad_pressure_edge,
-    pressure_monotonicity_generator,
-    pressure_monotonicity,
+    pressure_quartic,
+    pressure_axis_range,
     iota_edge,
     iota_axis,
     grad_iota_axis,
-    pressure_axis_range,
     iota_range,
     current_range,
 )
@@ -75,7 +74,7 @@ N = 3 #upgrade once GPU
 eq_resolution = [L, M, N]
 #------------------------
 
-#------------------------
+#--------------------------------
 # Initializing fixed????? surface:
 surface_init = FourierRZToroidalSurface(
     R_lmn =   [ 10.0,   -1.0,   -0.3,    0.3   ],
@@ -89,15 +88,14 @@ surface_init = FourierRZToroidalSurface(
 #-----------------------
 # Initializing pressure:
 p_init_axis = 1e5
-n = int(4)
 pressure_init = PowerSeriesProfile(
     pressure_generator(
         p_axis = p_init_axis,
-        n = n
+        n = 4
     ),
     sym = True,
 )
-#--------------------------------
+#--------------
 
 #-------------------
 # Initializing iota:
@@ -271,15 +269,6 @@ opt_toggles = {
                 "name": "pressure_axis_range"
             },
         },
-        "pressure_monotonicity": {
-            "use": True,
-            "kwargs": {
-                "weight": 1e12,
-                "fun": pressure_monotonicity,
-                "target": 0.0,
-                "name": "pressure_monotonicity"
-            },
-        },
         "iota_range": {
             "use": True,
             "kwargs": {
@@ -323,14 +312,6 @@ opt_toggles = {
                 "target": 0.0,
             },
         },
-        "grad_pressure_axis": {
-            "use": True,
-            "kwargs": {
-                "name": "grad_pressure_axis",
-                "fun": grad_pressure_axis,
-                "target": 0.0,
-            },
-        },
         "grad_pressure_edge": {
             "use": True,
             "kwargs": {
@@ -339,12 +320,12 @@ opt_toggles = {
                 "target": 0.0,
             },
         },
-        "pressure_axis": {
-            "use": False,
+        "pressure_quartic": {
+            "use": True,
             "kwargs": {
-                "name": "pressure_axis",
-                "fun": pressure_axis,
-                "target": p_init_axis,
+                "name": "pressure_quartic",
+                "fun": pressure_quartic,
+                "target": 0.0,
             },
         },
         "grad_iota_axis": {
@@ -401,8 +382,6 @@ opt_config = {
 
 #================ DRIVER INPUTS ===================================================================================================================
 driver_config = {
-    "p_axis": p_init_axis,
-    "n":    n,
     "config_path": __file__,
 }
 #===================================================================================================================================================

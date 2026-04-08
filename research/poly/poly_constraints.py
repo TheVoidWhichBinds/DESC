@@ -40,17 +40,6 @@ def pressure_monotonicity(grid, data):
 #=============
 # Constraints:
 #=========================
-def pressure_axis(params):
-    """
-    Pressure on axis (rho=0)
-    Target: P(0)=1 (normalized)
-    Target: P(0)=p_axis (defined max)
-    """
-    c = params['p_l']
-    return c[0]
-#=========================================
-
-#=========================
 def pressure_edge(params):
     """
     Pressure on edge (rho=1)
@@ -59,16 +48,6 @@ def pressure_edge(params):
     c = params['p_l']
     return c.sum()
 #=======================
-
-#==============================
-def grad_pressure_axis(params): 
-    """
-    Pressure gradient on axis (rho=0)
-    Target: GradP=0 (no discontinuity)
-    """
-    c = params['p_l']
-    return c[1]
-#=============
 
 #==============================
 def grad_pressure_edge(params):
@@ -82,27 +61,13 @@ def grad_pressure_edge(params):
 #====================================
 
 #======================================
-def pressure_monotonicity_generator(L):
-    #---------------------------------
-    def pressure_monotonicity(params):
-        c = params["p_l"]
-
-        if len(c) < 2*L + 1:
-            raise ValueError(f"Need at least {2*L+1} pressure coefficients for L={L}")
-
-        vals = []
-
-        # Coefficients of odd powers must vanish
-        for i in range(1, 2*L + 1, 2):
-            vals.append(c[i])
-
-        # Even coefficients must follow binomial pattern
-        for k in range(1, L + 1):
-            vals.append(c[2*k] - ((-1)**k) * math.comb(L, k) * c[0])
-
-        return jnp.array(vals)
-    #-------------------------
-    return pressure_monotonicity
+def pressure_quartic(params):
+    """
+    
+    """
+    c = params["p_l"]
+    higher_order = c[3:]
+    return jnp.array(higher_order)
 #===============================
 #==================================
 #===================================================================================================================================

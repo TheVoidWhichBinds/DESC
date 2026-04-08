@@ -175,12 +175,6 @@ CONSTRAINT_REGISTRY_FREE = {
     },
 
         # Custom:
-    "pressure_axis": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
     "pressure_edge": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -199,12 +193,12 @@ CONSTRAINT_REGISTRY_FREE = {
             "thing": _eq,
         },
     },
-    # "pressure_monotonicity": {
-    #     "wrapper": LinearObjectiveFromUser,
-    #     "defaults": {
-    #         "thing": _eq,
-    #     },
-    # },
+    "pressure_quartic": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
     "grad_iota_axis": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {

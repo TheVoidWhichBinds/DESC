@@ -162,8 +162,6 @@ def comparison(
     # Unpacking config variables needed in driver:
     NFP = eq_config["NFP"]
     opt_toggles = opt_config["opt_toggles"]
-    p_init_axis = driver_config["p_axis"]
-    n = driver_config["n"]
     config_path = driver_config["config_path"]
     #-----------------------------------------
 
@@ -197,13 +195,9 @@ def comparison(
 
     #============================================
     # Running & saving initial equilibrium solve:
-    #-------------------------
-    eq_init = run_equilibrium(
-        p_axis = p_init_axis,
-        n = n,
-        eq_config = eq_config,
-    )
-    #-----------------------
+    #---------------------------------------------
+    eq_init = run_equilibrium(eq_config=eq_config)
+    #---------------------------------------------
 
     #-------------------------------------------
     eq_init.save(os.path.join(out_dir, "eq.h5"))
