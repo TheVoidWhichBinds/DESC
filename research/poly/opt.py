@@ -148,6 +148,12 @@ OBJECTIVE_REGISTRY_FREE = {
             "thing": _eq,
         },
     },
+    "current_range": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
 }
 #------------------------
 
@@ -345,7 +351,7 @@ def run_optimization(eq_0, optimizer, opt_config, FXD: bool):
         gtol = gtol,
         maxiter = maxiter,
         options = {"max_nfev": max_nfev},
-        x_scale = x_scale,
+        #x_scale = x_scale,
         copy = True,
         verbose = 3,
     )
