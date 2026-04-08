@@ -96,28 +96,6 @@ def iota_range(grid, data):
 
 #=============
 # Constraints:
-#=====================
-def iota_axis(params):
-    """
-    Iota on axis (only constant term survives)
-    P(rho=0) = d
-    """
-    c = params["i_l"] 
-    return c[0]
-#==============
-
-
-#=====================
-def iota_edge(params):
-    """
-    Iota on edge (b = 0 using grad_iota_axis).
-    P(rho=1) = a + c = upper rational iota.
-    """
-    c = params["i_l"] 
-    return c.sum() 
-#=================
-
-
 #==========================
 def grad_iota_axis(params):
     """

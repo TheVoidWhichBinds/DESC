@@ -43,7 +43,7 @@ from .helper import (
 #-------------------------
 OBJECTIVE_REGISTRY_BOTH = {
         # Standard:
-    "forcebalance": {
+    "forcebalance_obj": {
         "wrapper": ForceBalance,
         "defaults": {
             "eq": _eq,
@@ -79,7 +79,7 @@ OBJECTIVE_REGISTRY_BOTH = {
 #---------------------------
 CONSTRAINT_REGISTRY_BOTH = {
         # Standard:
-    "forcebalance": {
+    "forcebalance_con": {
         "wrapper": ForceBalance,
         "defaults": {
             "eq": _eq,
@@ -346,7 +346,7 @@ def run_optimization(eq_0, optimizer, opt_config, FXD: bool):
         gtol = gtol,
         maxiter = maxiter,
         options = {"max_nfev": max_nfev},
-        #x_scale = x_scale,
+        x_scale = x_scale,
         copy = True,
         verbose = 3,
     )
