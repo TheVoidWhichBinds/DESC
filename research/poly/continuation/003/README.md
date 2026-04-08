@@ -1,3 +1,4 @@
+```python
 
 #===================================================================================================================================================
 from pathlib import Path
@@ -88,11 +89,11 @@ surface_init = FourierRZToroidalSurface(
 
 #-----------------------
 # Initializing pressure:
-p_init_axis = 1e5
+p_axis = 1e5
 n = int(4)
 pressure_init = PowerSeriesProfile(
     pressure_generator(
-        p_axis = p_init_axis,
+        p_axis = p_axis,
         n = n
     ),
     sym = True,
@@ -101,13 +102,13 @@ pressure_init = PowerSeriesProfile(
 
 #-------------------
 # Initializing iota:
-iota_init_axis = 0.34
+iota_init_axis = 1.02
 iota_init = PowerSeriesProfile(
-    [iota_init_axis, 0, 0.14], 
+    [iota_init_axis, 0, 0.26], 
     sym=True,
 )
-#------------
-#============
+#-----------------------------------------------------------------------------
+#========================
 
 
 #====================
@@ -153,9 +154,9 @@ iota_grid = LinearGrid(L=iota_grid_res, M=0, N=0, axis=True)
 n_iota = iota_grid.num_nodes
 #---------------------------
 
-#------------------------------------
+#----------------------------------
 current_lower, current_upper = 0, 1e4
-current_grid_res = 200
+current_grid_res = 50
 current_grid = LinearGrid(L=current_grid_res, M=0, N=0, axis=True)
 n_current = current_grid.num_nodes
 #---------------------------------
@@ -165,7 +166,7 @@ n_current = current_grid.num_nodes
 ftol = 1e-3
 xtol = 1e-6
 gtol = 1e-8
-maxiter = 5
+maxiter = 2
 max_nfev = 20
 x_scale = "auto"
 #---------------
@@ -256,7 +257,7 @@ opt_toggles = {
 
 
 
-    #===============================
+    #==============================
     "toggle_FREE": { # free profiles
         #-----------
         # Objectives:
@@ -286,7 +287,10 @@ opt_toggles = {
                 "weight": 1e12,
                 "grid": iota_grid,
                 "fun": iota_range,
-                "bounds": (iota_lower, iota_upper),
+                "bounds": (
+                    iota_lower * jnp.ones(n_iota),
+                    iota_upper * jnp.ones(n_iota),
+                ),
                 "name": "iota_range"
             },
         },
@@ -295,9 +299,7 @@ opt_toggles = {
             "kwargs": {
                 "weight": 1e12,
                 "grid": current_grid,
-                "fun": current_range,
                 "bounds": (current_lower, current_upper),
-                "name": "current_range"
             },
         },
         #--------------------------------------
@@ -344,7 +346,7 @@ opt_toggles = {
             "kwargs": {
                 "name": "pressure_axis",
                 "fun": pressure_axis,
-                "target": p_init_axis,
+                "target": p_axis,
             },
         },
         "grad_iota_axis": {
@@ -401,7 +403,7 @@ opt_config = {
 
 #================ DRIVER INPUTS ===================================================================================================================
 driver_config = {
-    "p_axis": p_init_axis,
+    "p_axis": p_axis,
     "n":    n,
     "config_path": __file__,
 }
@@ -427,3 +429,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```

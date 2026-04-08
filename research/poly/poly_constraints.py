@@ -180,9 +180,9 @@ def grad_iota_axis(params):
 #=============================
 def current_range(grid, data):
     J = data['J']
-    return J
-#===========
-#===========
+    return jnp.linalg.norm(J, axis=-1)
+#=====================================
+#=====================================
 
 
 

@@ -1,3 +1,4 @@
+```python
 
 #===================================================================================================================================================
 from pathlib import Path
@@ -153,9 +154,9 @@ iota_grid = LinearGrid(L=iota_grid_res, M=0, N=0, axis=True)
 n_iota = iota_grid.num_nodes
 #---------------------------
 
-#------------------------------------
+#----------------------------------
 current_lower, current_upper = 0, 1e4
-current_grid_res = 200
+current_grid_res = 50
 current_grid = LinearGrid(L=current_grid_res, M=0, N=0, axis=True)
 n_current = current_grid.num_nodes
 #---------------------------------
@@ -165,7 +166,7 @@ n_current = current_grid.num_nodes
 ftol = 1e-3
 xtol = 1e-6
 gtol = 1e-8
-maxiter = 5
+maxiter = 10
 max_nfev = 20
 x_scale = "auto"
 #---------------
@@ -427,3 +428,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```

@@ -14,6 +14,7 @@ from desc.objectives import (
     MercierStability,
     LinearObjectiveFromUser,
     ObjectiveFromUser,
+    CurrentDensity
 )
 from .helper import (
     resolve_from_context,
