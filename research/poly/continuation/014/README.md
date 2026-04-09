@@ -1,3 +1,4 @@
+```python
 
 #===================================================================================================================================================
 from pathlib import Path
@@ -91,9 +92,9 @@ pressure_init = PowerSeriesProfile(
 
 #-------------------
 # Initializing iota:
-iota_init_axis = 0.34
+iota_init_axis = 0.26
 iota_init = PowerSeriesProfile(
-    [iota_init_axis, 0, 0.15], 
+    [iota_init_axis, 0, 0.06], 
     sym=True,
 )
 #------------
@@ -156,7 +157,7 @@ ftol = 1e-4
 xtol = 1e-6
 gtol = 1e-8
 maxiter = 100
-max_nfev = 40
+max_nfev = 30
 x_scale = "auto"
 #---------------
 #===============
@@ -201,8 +202,8 @@ opt_toggles = {
         "mercier": {
             "use": True,
             "kwargs": {
-                "bounds":(0, jnp.inf),
                 "weight": 1e1,
+                "target": 0.0,
             },
         }, #------------------
         
@@ -374,3 +375,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```
