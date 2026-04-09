@@ -60,9 +60,9 @@ NFP = 4
 
 #------------------------
 # Equilibrium resolution:
-L = 12 #upgrade once GPU 
-M = 12 #upgrade once GPU
-N = 6 #upgrade once GPU
+L = 8 #upgrade once GPU 
+M = 8 #upgrade once GPU
+N = 3 #upgrade once GPU
 eq_resolution = [L, M, N]
 #------------------------
 
@@ -157,7 +157,7 @@ xtol = 1e-6
 gtol = 1e-8
 maxiter = 100
 max_nfev = 30
-x_scale = "ess"
+x_scale = "auto"
 #---------------
 #===============
 
