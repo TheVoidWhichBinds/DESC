@@ -157,8 +157,8 @@ n_current = current_grid.num_nodes
 ftol = 1e-4
 xtol = 1e-6
 gtol = 1e-8
-maxiter = 100
-max_nfev = 100
+maxiter = 200
+max_nfev = 200
 x_scale = "auto"
 #---------------
 #===============
