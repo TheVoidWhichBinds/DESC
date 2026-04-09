@@ -4,133 +4,20 @@ from desc.grid import LinearGrid
 from .eq import run_equilibrium
 from .opt import run_optimization
 import os
-import re
 import pandas as pd
 from tabulate import tabulate
 from desc.plotting import plot_comparison
+from .helper import (
+    sci_compact,
+    _safe_extract_from_result,
+    _next_run_dir,
+    _write_readme,
+)
 
 
 
 
 
-
-
-
-#============== HELPER FUNCTIONS ==============================================================================================================================
-#=========================
-def sci_compact(x, sig=2):
-    s = f"{x:.{sig-1}e}"
-    mant, exp = s.split("e")
-    exp = int(exp)
-    return f"{mant}e{exp}"
-#=========================
-
-
-#================
-def _to_float(x):
-    try:
-        return float(x)
-    except Exception:
-        return np.nan
-#================
-
-
-#============================
-def _extract_f_stats(objval):
-    """
-    Preps final objective values to be put into comparison table.
-    Returns numeric f_min, f_mean, f_max.
-    """
-    #---------------------------
-    if isinstance(objval, list):
-        chosen = None
-        for item in objval:
-            if isinstance(item, dict) and all(k in item for k in ("f_min", "f_mean", "f_max")):
-                chosen = item
-                break
-        if chosen is None and len(objval) > 0:
-            chosen = objval[0]
-        objval = chosen
-    #---------------------------
-
-    #-----------------------------------------------------------
-    if isinstance(objval, dict) and all(k in objval for k in ("f_min", "f_mean", "f_max")):
-        return (
-            _to_float(objval["f_min"]),
-            _to_float(objval["f_mean"]),
-            _to_float(objval["f_max"]),
-        )
-    #-----------------------------------------------------------
-
-    #---------------------------
-    if isinstance(objval, dict):
-        for v in objval.values():
-            val = _to_float(v)
-            if not np.isnan(val):
-                return val, val, val
-        return np.nan, np.nan, np.nan
-    #---------------------------
-
-    val = _to_float(objval)
-    return val, val, val
-#============================
-
-
-#=====================================
-def _safe_extract_from_result(result, label):
-    """
-    Safely gets objective stats from result dict.
-    Returns NaNs if label is absent.
-    """
-    objvals = result.get("Objective values", {})
-    if label not in objvals:
-        return np.nan, np.nan, np.nan
-    return _extract_f_stats(objvals[label])
-#=====================================
-
-
-#===================================
-def _next_run_dir(continuation_dir):
-    """
-    Create next zero-padded run directory: 001, 002, ...
-    """
-    os.makedirs(continuation_dir, exist_ok=True)
-
-    run_nums = []
-    for name in os.listdir(continuation_dir):
-        path = os.path.join(continuation_dir, name)
-        if os.path.isdir(path) and re.fullmatch(r"\d{3}", name):
-            run_nums.append(int(name))
-
-    next_num = 1 if len(run_nums) == 0 else max(run_nums) + 1
-    run_dir = os.path.abspath(os.path.join(continuation_dir, f"{next_num:03d}"))
-
-    if os.path.exists(run_dir):
-        raise FileExistsError(f"Run directory already exists: {run_dir}")
-
-    os.makedirs(run_dir)
-
-    return run_dir
-#=================
-
-
-#======================================
-def _write_readme(out_dir, config_path):
-    """
-    Write full config.py contents into README.md in a readable form.
-    """
-    with open(config_path, "r") as f:
-        config_text = f.read()
-
-    readme_path = os.path.join(out_dir, "README.md")
-    with open(readme_path, "w") as f:
-        f.write("```python\n")
-        f.write(config_text)
-        if not config_text.endswith("\n"):
-            f.write("\n")
-        f.write("```\n")
-#======================================
-#==============================================================================================================================================================
 
 
 

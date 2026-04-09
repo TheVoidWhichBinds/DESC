@@ -17,14 +17,8 @@ from desc.objectives import (
     CurrentDensity
 )
 from .helper import (
-    resolve_from_context,
     _eq,
-    _resolve_value,
-    _resolve_kwargs,
     _merge_toggles,
-    _validate_kwargs,
-    _parse_entry,
-    _append_term,
     _append_terms,
 )
 

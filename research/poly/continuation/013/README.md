@@ -1,3 +1,4 @@
+```python
 
 #===================================================================================================================================================
 from pathlib import Path
@@ -41,6 +42,9 @@ from research.poly.helper import(
     iota_between_rationals,
 )
 #===================================================================================================================================================
+
+
+
 
 
 
@@ -129,7 +133,7 @@ aspect_ratio_bounds = (6, 12)
 #----------------------------
 
 #---------------------------
-pressure_bounds = (5e3, 1e6)
+pressure_bounds = (9e3, 1e6)
 pressure_grid_res = 200
 pressure_grid = LinearGrid(L=pressure_grid_res, M=0, N=0, axis=True)
 n_pressure = pressure_grid.num_nodes
@@ -254,7 +258,7 @@ opt_toggles = {
         "pressure_axis_range": {
             "use": True,
             "kwargs": {
-                "weight": 1e10,
+                "weight": 1e0,
                 "grid": pressure_grid,
                 "fun": pressure_axis_range,
                 "bounds": pressure_bounds,
@@ -264,7 +268,7 @@ opt_toggles = {
         "iota_range": {
             "use": True,
             "kwargs": {
-                "weight": 1e10,
+                "weight": 1e0,
                 "grid": iota_grid,
                 "fun": iota_range,
                 "bounds": iota_bounds,
@@ -272,9 +276,9 @@ opt_toggles = {
             },
         },
         "current_range": {
-            "use": True,
+            "use": False,
             "kwargs": {
-                "weight": 1e10,
+                "weight": 1e0,
                 "grid": current_grid,
                 "fun": current_range,
                 "bounds": current_bounds,
@@ -374,3 +378,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```
