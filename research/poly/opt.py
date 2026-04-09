@@ -193,12 +193,6 @@ CONSTRAINT_REGISTRY_FREE = {
             "thing": _eq,
         },
     },
-    "pressure_quartic": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
     "grad_iota_axis": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
