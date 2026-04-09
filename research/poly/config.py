@@ -180,28 +180,28 @@ opt_toggles = {
         "aspect_ratio_range": {
             "use": True,
             "kwargs": {
-                "weight": 1e0,
+                "weight": 1e1,
                 "bounds": aspect_ratio_bounds,
             },
         },
         "qs": {
             "use": True,
             "kwargs": {
-                "weight": 1e0,
+                "weight": 1e1,
                 "helicity": (1, NFP),
             },
         },
         "ballooning": {
             "use": True,
             "kwargs": {
-                "weight": 1e0,
+                "weight": 1e1,
                 "target": 0.0,
             },
         },
         "mercier": {
             "use": True,
             "kwargs": {
-                "weight": 1e0,
+                "weight": 1e1,
                 "target": 0.0,
             },
         }, #------------------
@@ -254,7 +254,7 @@ opt_toggles = {
         "pressure_axis_range": {
             "use": True,
             "kwargs": {
-                "weight": 1e10,
+                "weight": 1e1,
                 "grid": pressure_grid,
                 "fun": pressure_axis_range,
                 "bounds": pressure_bounds,
@@ -264,7 +264,7 @@ opt_toggles = {
         "iota_range": {
             "use": True,
             "kwargs": {
-                "weight": 1e10,
+                "weight": 1e1,
                 "grid": iota_grid,
                 "fun": iota_range,
                 "bounds": iota_bounds,
@@ -274,7 +274,7 @@ opt_toggles = {
         "current_range": {
             "use": True,
             "kwargs": {
-                "weight": 1e10,
+                "weight": 1e1,
                 "grid": current_grid,
                 "fun": current_range,
                 "bounds": current_bounds,
