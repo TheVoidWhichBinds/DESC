@@ -34,6 +34,7 @@ from research.poly.poly_constraints import (
     grad_iota_axis,
     iota_range,
     current_range,
+    pressure_positive,
 )
 from .driver import run_from_config
 from research.poly.helper import(
@@ -79,7 +80,7 @@ surface_init = FourierRZToroidalSurface(
 
 #-----------------------
 # Initializing pressure:
-p_init_axis = 1e4
+p_init_axis = 1E4
 pressure_init = PowerSeriesProfile(
     pressure_generator(
         p_axis = p_init_axis,
@@ -91,9 +92,9 @@ pressure_init = PowerSeriesProfile(
 
 #-------------------
 # Initializing iota:
-iota_init_axis = 0.34
+iota_init_axis = 0.76
 iota_init = PowerSeriesProfile(
-    [iota_init_axis, 0, 0.15], 
+    [iota_init_axis, 0, 0.23], 
     sym=True,
 )
 #------------
@@ -128,8 +129,8 @@ eq_config = {
 aspect_ratio_bounds = (6, 12)
 #----------------------------
 
-#---------------------------
-pressure_bounds = (5e3, 1e6)
+#-----------------------------
+pressure_axis_bounds = (1e4, 5e6)
 pressure_grid_res = 200
 pressure_grid = LinearGrid(L=pressure_grid_res, M=0, N=0, axis=True)
 n_pressure = pressure_grid.num_nodes
@@ -138,13 +139,14 @@ n_pressure = pressure_grid.num_nodes
 #--------------
 # Iota targets:
 (iota_bounds) = iota_between_rationals(iota_axis = iota_init_axis)
+#iota_bounds = (0.25, 1.4)
 iota_grid_res = 200
 iota_grid = LinearGrid(L=iota_grid_res, M=0, N=0, axis=True)
 n_iota = iota_grid.num_nodes
 #---------------------------
 
 #------------------------
-current_bounds = (0, 1e4)
+current_bounds = (0, 1e6)
 current_grid_res = 200
 current_grid = LinearGrid(L=current_grid_res, M=0, N=0, axis=True)
 n_current = current_grid.num_nodes
@@ -156,7 +158,7 @@ ftol = 1e-4
 xtol = 1e-6
 gtol = 1e-8
 maxiter = 100
-max_nfev = 40
+max_nfev = 100
 x_scale = "auto"
 #---------------
 #===============
@@ -173,7 +175,7 @@ opt_toggles = {
         "forcebalance_obj": {
             "use": True,
             "kwargs": {
-                "weight": 1e2,
+                "weight": 1e4,
                 "target": 0.0,
             },
         },
@@ -181,7 +183,8 @@ opt_toggles = {
             "use": True,
             "kwargs": {
                 "weight": 1e1,
-                "bounds": aspect_ratio_bounds,
+                #"bounds": aspect_ratio_bounds,
+                "target": 6
             },
         },
         "qs": {
@@ -257,12 +260,22 @@ opt_toggles = {
                 "weight": 1e1,
                 "grid": pressure_grid,
                 "fun": pressure_axis_range,
-                "bounds": pressure_bounds,
+                "bounds": pressure_axis_bounds,
                 "name": "pressure_axis_range"
             },
         },
-        "iota_range": {
+        "pressure_positive": {
             "use": True,
+            "kwargs": {
+                "weight": 1e3,
+                "grid": pressure_grid,
+                "fun": pressure_positive,
+                "bounds": (0.0, jnp.inf),
+                "name": "pressure_positive"
+            },
+        },
+        "iota_range": {
+            "use": False,
             "kwargs": {
                 "weight": 1e1,
                 "grid": iota_grid,
@@ -287,7 +300,7 @@ opt_toggles = {
         # Constraints:
             # Standard:
         "fix_iota": {
-            "use": False,
+            "use": True,
             "kwargs": {},
         },
         "fix_pressure": {
@@ -313,7 +326,7 @@ opt_toggles = {
             },
         },
         "grad_iota_axis": {
-            "use": True,
+            "use": False,
             "kwargs": {
                 "name": "grad_iota_axis",
                 "fun": grad_iota_axis,

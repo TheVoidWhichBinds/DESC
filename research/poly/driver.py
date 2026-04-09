@@ -55,7 +55,7 @@ def comparison(
     #----------------------------------------
     # Initializing table of objective values:
     column_map = [
-        ("forcebalance", f"Force error: "),
+        ("forcebalance_obj", f"Force error: "),
         ("qs", f"Quasi-symmetry (1,{NFP}) Boozer error: "),
         ("aspect_ratio", "Aspect ratio: "),
         ("ballooning", "Ideal ballooning lambda: "),

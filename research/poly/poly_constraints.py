@@ -32,8 +32,16 @@ def pressure_monotonicity(grid, data):
     dp_dr = data['p_r']
     return jnp.maximum(0.0, dp_dr)
 #=================================
-#=================================
 
+#==================================
+def pressure_positive(grid, data):
+    """
+    P > 0
+    """
+    p = data['p']
+    return p
+#=================================
+#=================================
 
 
 

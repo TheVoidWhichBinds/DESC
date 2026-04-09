@@ -137,6 +137,12 @@ OBJECTIVE_REGISTRY_FREE = {
             "thing": _eq,
         },
     },
+    "pressure_positive": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
     "iota_range": {
         "wrapper": ObjectiveFromUser,
         "defaults": {
