@@ -23,10 +23,6 @@ from .helper import (
 
 
 
-
-
-
-
 #============== FIXED VS. FREE PROFILES COMPARISON ============================================================================================================
 def comparison(
         eq_config: dict,

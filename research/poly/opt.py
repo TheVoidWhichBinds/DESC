@@ -43,6 +43,12 @@ OBJECTIVE_REGISTRY_BOTH = {
             "eq": _eq,
         },
     },
+    "aspect_ratio": {
+        "wrapper": AspectRatio,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
     "qs": {
         "wrapper": QuasisymmetryBoozer,
         "defaults": {
@@ -90,12 +96,6 @@ CONSTRAINT_REGISTRY_BOTH = {
 # Fixed profiles:
 #--------------------------
 OBJECTIVE_REGISTRY_FXD = {
-    "aspect_ratio": {
-        "wrapper": AspectRatio,
-        "defaults": {
-            "eq": _eq,
-        },
-    },
 }
 #--------------------------
 
@@ -126,10 +126,10 @@ CONSTRAINT_REGISTRY_FXD = {
 #-------------------------
 OBJECTIVE_REGISTRY_FREE = {
         # Custom:
-    "aspect_ratio_range": {
-        "wrapper": AspectRatio,
+    "pressure_monotonicity": {
+        "wrapper": ObjectiveFromUser,
         "defaults": {
-            "eq": _eq,
+            "thing": _eq,
         },
     },
     "pressure_axis_range": {
@@ -138,26 +138,14 @@ OBJECTIVE_REGISTRY_FREE = {
             "thing": _eq,
         },
     },
-    "pressure_monotonicity": {
-        "wrapper": ObjectiveFromUser,
+    "iota_axis_range": {
+        "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "pressure_positive": {
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "iota_range": {
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "current_range": {
-        "wrapper": ObjectiveFromUser,
+    "iota_edge_range": {
+        "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },

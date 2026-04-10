@@ -28,13 +28,12 @@ from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
 from desc.grid import LinearGrid
 from research.poly.poly_constraints import (
+    pressure_monotonicity,
+    pressure_axis_range,
+    iota_axis_range,
+    iota_edge_range,
     pressure_edge,
     grad_pressure_edge,
-    grad_iota_axis,
-    # pressure_axis_range,
-    # iota_range,
-    # current_range,
-    # pressure_positive,
 )
 from .driver import run_from_config
 from research.poly.helper import(
@@ -179,6 +178,13 @@ opt_toggles = {
                 "target": 0.0,
             },
         },
+        "aspect_ratio": {
+            "use": True,
+            "kwargs": {
+                "weight": 1e0,
+                "target": 6
+            },
+        },
         "qs": {
             "use": True,
             "kwargs": {
@@ -212,13 +218,6 @@ opt_toggles = {
         "fix_psi": {
             "use": True,
             "kwargs": {},
-        },
-        "aspect_ratio": {
-            "use": True,
-            "kwargs": {
-                "weight": 1e0,
-                "target": 6
-            },
         },
     },  #----------------
     #====================
@@ -254,67 +253,46 @@ opt_toggles = {
         #-----------
         # Objectives:
                 # Custom:
-        # "aspect_ratio_range": {
-        #     "use": False,
-        #     "kwargs": {
-        #         "weight": 1e0,
-        #         "bounds": aspect_ratio_bounds,
-        #     },
-        # },
-        # "pressure_axis_range": {
-        #     "use": False,
-        #     "kwargs": {
-        #         "weight": 1e0,
-        #         "grid": pressure_grid,
-        #         "fun": pressure_axis_range,
-        #         "bounds": pressure_axis_bounds,
-        #         "name": "pressure_axis_range"
-        #     },
-        # },
-        # "pressure_positive": {
-        #     "use": False,
-        #     "kwargs": {
-        #         "weight": 1e0,
-        #         "grid": pressure_grid,
-        #         "fun": pressure_positive,
-        #         "bounds": (0.0, jnp.inf),
-        #         "name": "pressure_positive"
-        #     },
-        # },
-        # "iota_range": {
-        #     "use": False,
-        #     "kwargs": {
-        #         "weight": 1e0,
-        #         "grid": iota_grid,
-        #         "fun": iota_range,
-        #         "bounds": iota_bounds,
-        #         "name": "iota_range"
-        #     },
-        # },
-        # "current_range": {
-        #     "use": False,
-        #     "kwargs": {
-        #         "weight": 1e0,
-        #         "grid": current_grid,
-        #         "fun": current_range,
-        #         "bounds": current_bounds,
-        #         "name": "current_range"
-        #     },
-        # },
+        "pressure_monotonicity": {
+            "use": True,
+            "kwargs": {
+                "weight": 1e0,
+                "grid": pressure_grid,
+                "fun": pressure_monotonicity,
+                "name": "pressure_monotonicity"
+            },
+        },
+        "pressure_axis_range": {
+            "use": True,
+            "kwargs": {
+                "name": "pressure_axis_range",
+                "fun": pressure_axis_range,
+                "bounds": pressure_axis_bounds,
+                "weight": 1e0,
+            },
+        },
+        "iota_axis_range": {
+            "use": True,
+            "kwargs": {
+                "name": "iota_axis_range",
+                "fun": iota_axis_range,
+                "bounds": iota_bounds,
+                "weight": 1e0,
+            },
+        },
+        "iota_edge_range": {
+            "use": True,
+            "kwargs": {
+                "name": "iota_edge_range",
+                "fun": iota_edge_range,
+                "bounds": iota_bounds,
+                "weight": 1e0,
+            },
+        },
         #--------------------------------------
 
         #-------------
         # Constraints:
-            # Standard:
-        "fix_iota": {
-            "use": True,
-            "kwargs": {},
-        },
-        "fix_pressure": {
-            "use": False,
-            "kwargs": {},
-        },
-
             # Custom:
         "pressure_edge": {
             "use": True,
@@ -329,14 +307,6 @@ opt_toggles = {
             "kwargs": {
                 "name": "grad_pressure_edge",
                 "fun": grad_pressure_edge,
-                "target": 0.0,
-            },
-        },
-        "grad_iota_axis": {
-            "use": False,
-            "kwargs": {
-                "name": "grad_iota_axis",
-                "fun": grad_iota_axis,
                 "target": 0.0,
             },
         },
