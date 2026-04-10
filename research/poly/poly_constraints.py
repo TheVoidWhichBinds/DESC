@@ -14,6 +14,16 @@ import jax.numpy as jnp
 #============== PRESSURE =============================================================================================================
 #============
 # Objectives:
+#===================================
+def pressure_integral_range(params):
+    """
+    Integral of polynomial from 0 to 1.
+    """
+    c = params["p_l"]
+    k = jnp.arange(len(c))
+    return jnp.sum(c / (k + 1))
+#==============================
+
 #=====================================
 def pressure_monotonicity(params):
     """

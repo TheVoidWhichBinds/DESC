@@ -126,14 +126,20 @@ CONSTRAINT_REGISTRY_FXD = {
 #-------------------------
 OBJECTIVE_REGISTRY_FREE = {
         # Custom:
-    "pressure_monotonicity": {
-        "wrapper": ObjectiveFromUser,
+    "pressure_integral_range": {
+        "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
+    # "pressure_monotonicity": {
+    #     "wrapper": ObjectiveFromUser,
+    #     "defaults": {
+    #         "thing": _eq,
+    #     },
+    # },
     "pressure_axis_range": {
-        "wrapper": ObjectiveFromUser,
+        "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
