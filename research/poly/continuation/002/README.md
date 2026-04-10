@@ -1,3 +1,4 @@
+```python
 
 #===================================================================================================================================================
 from pathlib import Path
@@ -30,11 +31,11 @@ from desc.grid import LinearGrid
 from research.poly.poly_constraints import (
     pressure_edge,
     grad_pressure_edge,
+    pressure_axis_range,
     grad_iota_axis,
-    # pressure_axis_range,
-    # iota_range,
-    # current_range,
-    # pressure_positive,
+    iota_range,
+    current_range,
+    pressure_positive,
 )
 from .driver import run_from_config
 from research.poly.helper import(
@@ -175,21 +176,29 @@ opt_toggles = {
         "forcebalance_obj": {
             "use": True,
             "kwargs": {
-                "weight": 1e1,
+                "weight": 1e4,
                 "target": 0.0,
+            },
+        },
+        "aspect_ratio_range": {
+            "use": True,
+            "kwargs": {
+                "weight": 1e1,
+                #"bounds": aspect_ratio_bounds,
+                "target": 6
             },
         },
         "qs": {
             "use": True,
             "kwargs": {
-                "weight": 1e0,
+                "weight": 1e1,
                 "helicity": (1, NFP),
             },
         },
         "ballooning": {
             "use": True,
             "kwargs": {
-                "weight": 1e0,
+                "weight": 1e1,
                 "target": 0.0,
             },
         },
@@ -197,7 +206,7 @@ opt_toggles = {
             "use": True,
             "kwargs": {
                 "bounds":(0, jnp.inf),
-                "weight": 1e0,
+                "weight": 1e1,
             },
         }, #------------------
         
@@ -213,13 +222,6 @@ opt_toggles = {
             "use": True,
             "kwargs": {},
         },
-        "aspect_ratio": {
-            "use": True,
-            "kwargs": {
-                "weight": 1e0,
-                "target": 6
-            },
-        },
     },  #----------------
     #====================
 
@@ -230,7 +232,6 @@ opt_toggles = {
     "toggle_FXD": { # fixed profiles
         #------------
         # Objectives:
-
         #------------
 
         #-------------
@@ -254,60 +255,53 @@ opt_toggles = {
         #-----------
         # Objectives:
                 # Custom:
-        # "aspect_ratio_range": {
-        #     "use": False,
-        #     "kwargs": {
-        #         "weight": 1e0,
-        #         "bounds": aspect_ratio_bounds,
-        #     },
-        # },
-        # "pressure_axis_range": {
-        #     "use": False,
-        #     "kwargs": {
-        #         "weight": 1e0,
-        #         "grid": pressure_grid,
-        #         "fun": pressure_axis_range,
-        #         "bounds": pressure_axis_bounds,
-        #         "name": "pressure_axis_range"
-        #     },
-        # },
-        # "pressure_positive": {
-        #     "use": False,
-        #     "kwargs": {
-        #         "weight": 1e0,
-        #         "grid": pressure_grid,
-        #         "fun": pressure_positive,
-        #         "bounds": (0.0, jnp.inf),
-        #         "name": "pressure_positive"
-        #     },
-        # },
-        # "iota_range": {
-        #     "use": False,
-        #     "kwargs": {
-        #         "weight": 1e0,
-        #         "grid": iota_grid,
-        #         "fun": iota_range,
-        #         "bounds": iota_bounds,
-        #         "name": "iota_range"
-        #     },
-        # },
-        # "current_range": {
-        #     "use": False,
-        #     "kwargs": {
-        #         "weight": 1e0,
-        #         "grid": current_grid,
-        #         "fun": current_range,
-        #         "bounds": current_bounds,
-        #         "name": "current_range"
-        #     },
-        # },
+        "pressure_axis_range": {
+            "use": True,
+            "kwargs": {
+                "weight": 1e1,
+                "grid": pressure_grid,
+                "fun": pressure_axis_range,
+                "bounds": pressure_axis_bounds,
+                "name": "pressure_axis_range"
+            },
+        },
+        "pressure_positive": {
+            "use": True,
+            "kwargs": {
+                "weight": 1e3,
+                "grid": pressure_grid,
+                "fun": pressure_positive,
+                "bounds": (0.0, jnp.inf),
+                "name": "pressure_positive"
+            },
+        },
+        "iota_range": {
+            "use": False,
+            "kwargs": {
+                "weight": 1e1,
+                "grid": iota_grid,
+                "fun": iota_range,
+                "bounds": iota_bounds,
+                "name": "iota_range"
+            },
+        },
+        "current_range": {
+            "use": True,
+            "kwargs": {
+                "weight": 1e1,
+                "grid": current_grid,
+                "fun": current_range,
+                "bounds": current_bounds,
+                "name": "current_range"
+            },
+        },
         #--------------------------------------
 
         #-------------
         # Constraints:
             # Standard:
         "fix_iota": {
-            "use": True,
+            "use": False,
             "kwargs": {},
         },
         "fix_pressure": {
@@ -333,7 +327,7 @@ opt_toggles = {
             },
         },
         "grad_iota_axis": {
-            "use": False,
+            "use": True,
             "kwargs": {
                 "name": "grad_iota_axis",
                 "fun": grad_iota_axis,
@@ -394,3 +388,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```

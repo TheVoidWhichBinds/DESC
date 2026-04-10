@@ -43,12 +43,6 @@ OBJECTIVE_REGISTRY_BOTH = {
             "eq": _eq,
         },
     },
-    "aspect_ratio_range": {
-        "wrapper": AspectRatio,
-        "defaults": {
-            "eq": _eq,
-        },
-    },
     "qs": {
         "wrapper": QuasisymmetryBoozer,
         "defaults": {
@@ -95,7 +89,14 @@ CONSTRAINT_REGISTRY_BOTH = {
 #================
 # Fixed profiles:
 #--------------------------
-OBJECTIVE_REGISTRY_FXD = {}
+OBJECTIVE_REGISTRY_FXD = {
+    "aspect_ratio": {
+        "wrapper": AspectRatio,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+}
 #--------------------------
 
 #--------------------------
@@ -125,6 +126,12 @@ CONSTRAINT_REGISTRY_FXD = {
 #-------------------------
 OBJECTIVE_REGISTRY_FREE = {
         # Custom:
+    "aspect_ratio_range": {
+        "wrapper": AspectRatio,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
     "pressure_axis_range": {
         "wrapper": ObjectiveFromUser,
         "defaults": {
