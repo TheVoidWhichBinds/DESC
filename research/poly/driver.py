@@ -263,43 +263,46 @@ def comparison(
     plt.close()
     #----------
 
-    #----------------------
-    # |J| vs. rho plotting:
+    #-------------------------------------------
+    # Bootstrap current (Redl) vs. rho plotting:
     rho_grid = np.linspace(0.0, 1.0, 100)
-    grid_J = LinearGrid(rho=rho_grid, M=24, N=24, NFP=eq_opt_FREE.NFP, sym=eq_opt_FREE.sym)
+    grid_J = LinearGrid(
+        rho=rho_grid,
+        M=24,
+        N=24,
+        NFP=eq_opt_FREE.NFP,
+        sym=eq_opt_FREE.sym,
+    )
 
-    def _surface_mean_J_mag(eq):
-        data = eq.compute(["|J|"], grid=grid_J)
-        J_mag = np.asarray(data["|J|"])
+    def _redl_current_profile(eq):
+        data = eq.compute(["current Redl"], grid=grid_J)
+        current_redl = np.asarray(data["current Redl"])
 
         rho_nodes = grid_J.nodes[:, 0]
         rho_unique = np.unique(rho_nodes)
 
-        J_mag_fs = np.empty_like(rho_unique, dtype=float)
+        current_redl_fs = np.empty_like(rho_unique, dtype=float)
         for i, r in enumerate(rho_unique):
             mask = np.isclose(rho_nodes, r)
-            J_mag_fs[i] = np.mean(J_mag[mask])
+            current_redl_fs[i] = np.mean(current_redl[mask])
 
-        return rho_unique, J_mag_fs
+        return rho_unique, current_redl_fs
 
-    rho_u_FXD, J_mag_FXD = _surface_mean_J_mag(eq_opt_FXD)
-    rho_u_FREE, J_mag_FREE = _surface_mean_J_mag(eq_opt_FREE)
+    rho_u_FXD, current_redl_FXD = _redl_current_profile(eq_opt_FXD)
+    rho_u_FREE, current_redl_FREE = _redl_current_profile(eq_opt_FREE)
 
     plt.figure(figsize=(7, 5))
-    plt.plot(rho_u_FXD, J_mag_FXD, linewidth=2, label="Fixed Pressure", color="blue")
-    plt.plot(rho_u_FREE, J_mag_FREE, linewidth=2, label="Optimized Pressure", color="red")
+    plt.plot(rho_u_FXD, current_redl_FXD, linewidth=2, label="Fixed Pressure", color="blue")
+    plt.plot(rho_u_FREE, current_redl_FREE, linewidth=2, label="Optimized Pressure", color="red")
     plt.xlabel(r"$\rho$", fontsize=14)
-    plt.ylabel(r"$\langle |J| \rangle$", fontsize=14)
-    plt.title(
-        f"Flux-surface avg current magnitude",
-        fontsize=13,
-    )
+    plt.ylabel(r"$\langle J_{\mathrm{Redl}} \rangle$", fontsize=14)
+    plt.title("Redl Bootstrap Current", fontsize=13)
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
 
-    J_mag_path = os.path.join(out_dir, "J_mag.png")
-    plt.savefig(J_mag_path, dpi=200)
+    current_redl_path = os.path.join(out_dir, "bootstrap.png")
+    plt.savefig(current_redl_path, dpi=200)
     plt.close()
     #----------
 

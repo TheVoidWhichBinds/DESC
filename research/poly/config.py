@@ -28,11 +28,11 @@ from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
 from desc.grid import LinearGrid
 from research.poly.poly_constraints import (
-    pressure_integral_range,
-    pressure_monotonicity,
-    pressure_axis_range,
+    pressure_shape,
     iota_axis_range,
     iota_edge_range,
+    pressure_octic,
+    pressure_DOF,
     pressure_edge,
     grad_pressure_edge,
 )
@@ -52,7 +52,7 @@ from research.poly.helper import(
 
 
 
-#================EQUILIBRIUM INPUTS ================================================================================================================
+#================ EQUILIBRIUM INPUTS ================================================================================================================
 #==================================
 #----------------------------------
 # Number of toroidal field periods:
@@ -80,11 +80,10 @@ surface_init = FourierRZToroidalSurface(
 
 #-----------------------
 # Initializing pressure:
-p_init_axis = 1E4
 pressure_init = PowerSeriesProfile(
     pressure_generator(
-        p_axis = p_init_axis,
-        n = 4
+        p_axis_init = 0.5E5,
+        width_percentage = 0.5
     ),
     sym = True,
 )
@@ -247,34 +246,17 @@ opt_toggles = {
         #-----------
         # Objectives:
                 # Custom:
-        "pressure_integral_range":{
+        "pressure_shape": {
             "use": True,
             "kwargs": {
-                "name": "pressure_integral_range",
-                "fun": pressure_integral_range,
-                "bounds": pressure_integral_bounds,
-                "weight": 1e0,
-            },
-        },
-        "pressure_monotonicity": {
-            "use": True,
-            "kwargs": {
-                "name": "pressure_monotonicity",
-                "fun": pressure_monotonicity,
-                "weight": 1e0,
-            },
-        },
-        "pressure_axis_range": {
-            "use": True,
-            "kwargs": {
-                "name": "pressure_axis_range",
-                "fun": pressure_axis_range,
-                "bounds": pressure_axis_bounds,
+                "name": "pressure_shape",
+                "fun": pressure_shape,
+                "bounds": (-1.3, 1.8),
                 "weight": 1e0,
             },
         },
         "iota_axis_range": {
-            "use": True,
+            "use": False,
             "kwargs": {
                 "name": "iota_axis_range",
                 "fun": iota_axis_range,
@@ -283,7 +265,7 @@ opt_toggles = {
             },
         },
         "iota_edge_range": {
-            "use": True,
+            "use": False,
             "kwargs": {
                 "name": "iota_edge_range",
                 "fun": iota_edge_range,
@@ -296,6 +278,22 @@ opt_toggles = {
         #-------------
         # Constraints:
             # Custom:
+        "pressure_octic": {
+            "use": True,
+            "kwargs": {
+                "name": "pressure_octic",
+                "fun": pressure_octic,
+                "target": 0.0,
+            },
+        },
+        "pressure_DOF": {
+            "use": True,
+            "kwargs": {
+                "name": "pressure_DOF",
+                "fun": pressure_DOF,
+                "target": 0.0,
+            },
+        },
         "pressure_edge": {
             "use": True,
             "kwargs": {

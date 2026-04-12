@@ -14,40 +14,48 @@ import jax.numpy as jnp
 #============== PRESSURE =============================================================================================================
 #============
 # Objectives:
-#===================================
-def pressure_integral_range(params):
+#==========================
+def pressure_shape(params):
     """
-    Integral of polynomial from 0 to 1.
-    """
-    c = params["p_l"]
-    k = jnp.arange(len(c))
-    return jnp.sum(c / (k + 1))
-#==============================
-
-#=====================================
-def pressure_monotonicity(params):
-    """
-    Monotonic pressure.
+    Places bounds on coefficient of the 8th-order term.
+    In conjunction with the constraints, creates a good
+    profile.
     """
     c = params['p_l']
-    return 
-#=================================
-
-#===================================
-def pressure_axis_range(params):
-    """
-    Allows pressure on-axis to be within specified bounds.
-    """
-    p_axis = params['p_l'][0]
-    return p_axis
-#================
-#=================================
+    return c[5] 
+#============================
 
 
 
 
 #=============
 # Constraints:
+#==========================
+def pressure_octic(params):
+    """
+    Limits the pressure profile to an 8th-order polynomial 
+    max, in order toprevent non-monotonicity and have only 
+    one objective on the pressure profile (pressure_shape)
+    """
+    c = params['p_l']
+    higher_orders = c[5:]
+    return higher_orders
+#=======================
+
+#========================
+def pressure_DOF(params):
+    """
+    P = 1 + ... + c[4]x^6 + c[5]x^8. Constrains c[4] and 
+    c[5] to be related in such a way that at the bounds of 
+    c[5] (enforced by pressure_ ) produce smooth profiles 
+    (relation is at the threshold of generating a saddle-point
+    inside rho = (0,1) at the bounds of c[5]).
+    """
+    c = params['p_l']
+    DOF_relation = c[4] + 3.45*c[5]
+    return DOF_relation
+#======================
+
 #=========================
 def pressure_edge(params):
     """

@@ -13,8 +13,6 @@ from desc.objectives import (
     BallooningStability,
     MercierStability,
     LinearObjectiveFromUser,
-    ObjectiveFromUser,
-    CurrentDensity
 )
 from .helper import (
     _eq,
@@ -126,19 +124,7 @@ CONSTRAINT_REGISTRY_FXD = {
 #-------------------------
 OBJECTIVE_REGISTRY_FREE = {
         # Custom:
-    "pressure_integral_range": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    # "pressure_monotonicity": {
-    #     "wrapper": ObjectiveFromUser,
-    #     "defaults": {
-    #         "thing": _eq,
-    #     },
-    # },
-    "pressure_axis_range": {
+    "pressure_shape": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
@@ -159,7 +145,7 @@ OBJECTIVE_REGISTRY_FREE = {
 }
 #------------------------
 
-#--------------------------
+#---------------------------
 CONSTRAINT_REGISTRY_FREE = {
         # Standard:
     "fix_iota": {
@@ -176,13 +162,19 @@ CONSTRAINT_REGISTRY_FREE = {
     },
 
         # Custom:
-    "pressure_edge": {
+    "pressure_octic": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "grad_pressure_axis": {
+    "pressure_DOF": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "pressure_edge": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,

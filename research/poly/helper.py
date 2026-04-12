@@ -9,27 +9,25 @@ import numpy as np
 
 
 #============== CONFIG ====================================================================================================
-#============================
+#======================
 def pressure_generator(
-        p_axis, 
-        n, 
-        min_n=2
+        p_axis_init, 
+        width_percentage
     ):
     """
-    Coeffs for p(rho) = p_axis * (1 - rho^2)^n
-    Guarantees: p(0)=p_axis, p(1)=0, p'(0)=0, p'(1)=0 for n>=2
-    Also nonnegative + monotone decreasing on [0,1].
+    Generates an 8th order polynomial for pressure that obeys 
+    boundary relations, DOF constraint, and is within the 
+    allowed region for c[5] (coefficient of the 8th-order term).
+    width_percentage gives how narrow (0%) to how wide (100%) the
+    shape is.
     """
-    if not isinstance(n, int):
-        raise ValueError("polynomial order 2*n: n must be an integer")
-
-    n = max(n, min_n)
-    coeff = [0.0] * (2 * n + 1)
-
-    for k in range(n + 1):
-        coeff[2 * k] = p_axis * comb(n, k) * ((-1) ** k)
-    return coeff
-#===============
+    c_0 = p_axis_init
+    c_4 = -1.3 + width_percentage * (1.8 - 1.3)
+    c_3 = -3.45 * c_4
+    c_1 = -2 + c_3 + 2*c_4
+    c_2 = 1 - 2*c_3 - 3*c_4
+    return [c_0, c_1, c_2, c_3, c_4]
+#===================================
 
 
 #==========================
