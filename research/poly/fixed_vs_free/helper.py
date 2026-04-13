@@ -11,12 +11,12 @@ import numpy as np
 #============== CONFIG ====================================================================================================
 #======================
 def pressure_generator(
-        p_axis,
+        p_axis, 
         width_percentage
     ):
     """
-    Generates an 8th order polynomial for pressure that obeys
-    boundary relations, DOF constraint, and is within the
+    Generates an 8th order polynomial for pressure that obeys 
+    boundary relations, DOF constraint, and is within the 
     allowed region for c[5] (coefficient of the 8th-order term).
     width_percentage gives how narrow (0%) to how wide (100%) the
     shape is.
@@ -67,7 +67,7 @@ def iota_between_rationals(
         raise ValueError("iota_axis is outside all allowed rational intervals.")
 
     lower_bound = matched_lower
-    upper_bound = matched_upper
+    upper_bound = matched_upper 
 
     return lower_bound, upper_bound
 #==================================
@@ -228,7 +228,7 @@ def _eq(ctx):
 
 #==================
 def _resolve_value(
-        value,
+        value, 
         context
     ):
     """
@@ -245,7 +245,7 @@ def _resolve_value(
 
 #===================
 def _resolve_kwargs(
-        kwargs,
+        kwargs, 
         context
     ):
     """
@@ -258,11 +258,28 @@ def _resolve_kwargs(
 #=======================================
 
 
+#==================
+def _merge_toggles(
+        toggle_BOTH,
+        toggle_single
+    ):
+    """
+    Merge shared toggle entries with family-specific ones.
+
+    Family-specific entries override shared ones if keys overlap.
+    """
+    return {
+        **toggle_BOTH,
+        **toggle_single,
+    }
+#========================
+
+
 #====================
 def _validate_kwargs(
-        entry,
-        key,
-        wrapper,
+        entry, 
+        key, 
+        wrapper, 
         kind
     ):
     """
@@ -283,8 +300,8 @@ def _validate_kwargs(
 
 #================
 def _parse_entry(
-        toggle,
-        key,
+        toggle, 
+        key, 
         kind
     ):
     """
@@ -331,12 +348,12 @@ def _parse_entry(
 
 #=========================
 def _append_term(
-        term_list,
-        wrapper,
-        key,
-        toggle,
-        defaults,
-        context,
+        term_list, 
+        wrapper, 
+        key, 
+        toggle, 
+        defaults, 
+        context, 
         kind
     ):
     """
@@ -360,10 +377,10 @@ def _append_term(
 
 #=========================
 def _append_terms(
-        term_list,
-        toggle,
-        registry,
-        context,
+        term_list, 
+        toggle, 
+        registry, 
+        context, 
         kind
     ):
     """
@@ -381,3 +398,13 @@ def _append_terms(
         )
 #=========================
 #==============================================================================================================================================================
+
+
+
+
+
+
+
+
+
+

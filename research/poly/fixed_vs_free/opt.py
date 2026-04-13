@@ -1,9 +1,12 @@
-import sys
-sys.path.append("/Users/macdaddi/DESC")
 
+import sys
+import numpy as np
+sys.path.append("/Users/macdaddi/DESC")
 from desc.objectives import (
     ObjectiveFunction,
+    FixIota,
     FixPsi,
+    FixPressure,
     ForceBalance,
     AspectRatio,
     QuasisymmetryBoozer,
@@ -11,9 +14,9 @@ from desc.objectives import (
     MercierStability,
     LinearObjectiveFromUser,
 )
-
 from .helper import (
     _eq,
+    _merge_toggles,
     _append_terms,
 )
 
@@ -27,8 +30,10 @@ from .helper import (
 
 
 #============== REGISTRIES ============================================================================================================================
-#======================
-OBJECTIVE_REGISTRY = {
+#========
+# Shared:
+#-------------------------
+OBJECTIVE_REGISTRY_BOTH = {
         # Standard:
     "forcebalance_obj": {
         "wrapper": ForceBalance,
@@ -60,14 +65,71 @@ OBJECTIVE_REGISTRY = {
             "eq": _eq,
         },
     },
+}
+#---------------------
 
+#---------------------------
+CONSTRAINT_REGISTRY_BOTH = {
+        # Standard:
+    "forcebalance_con": {
+        "wrapper": ForceBalance,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+    "fix_psi": {
+        "wrapper": FixPsi,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+}
+#---------------------
+#=====================
+
+
+
+
+#================
+# Fixed profiles:
+#--------------------------
+OBJECTIVE_REGISTRY_FXD = {
+}
+#--------------------------
+
+#--------------------------
+CONSTRAINT_REGISTRY_FXD = {
+        # Standard:
+    "fix_iota": {
+        "wrapper": FixIota,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+    "fix_pressure": {
+        "wrapper": FixPressure,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+}
+#---------------------
+#=====================
+
+
+
+
+#=========================
+# Free profiles:
+#-------------------------
+OBJECTIVE_REGISTRY_FREE = {
         # Custom:
     "pressure_axis_range": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
-    },
+    }, 
     "pressure_shape": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -87,20 +149,13 @@ OBJECTIVE_REGISTRY = {
         },
     },
 }
-#----------------------
+#------------------------
 
-
-#=======================
-CONSTRAINT_REGISTRY = {
+#---------------------------
+CONSTRAINT_REGISTRY_FREE = {
         # Standard:
-    "forcebalance_con": {
-        "wrapper": ForceBalance,
-        "defaults": {
-            "eq": _eq,
-        },
-    },
-    "fix_psi": {
-        "wrapper": FixPsi,
+    "fix_iota": {
+        "wrapper": FixIota,
         "defaults": {
             "eq": _eq,
         },
@@ -150,7 +205,8 @@ CONSTRAINT_REGISTRY = {
         },
     },
 }
-#======================
+#------------------------
+#========================
 #==============================================================================================================================================================
 
 
@@ -163,9 +219,12 @@ CONSTRAINT_REGISTRY = {
 
 
 #============== OPTIMIZER FUNCTION ============================================================================================================================
-def run_optimization(eq_0, optimizer, opt_config):
+def run_optimization(eq_0, optimizer, opt_config, FXD: bool):
     """
-    Run one optimization using a single shared opt_toggles dict.
+    Run optimization with objectives/constraints controlled by config dict.
+
+    FXD = True  -> fixed-pressure family
+    FXD = False -> constrained/optimized-pressure family
     """
 
     #=============================================
@@ -176,75 +235,107 @@ def run_optimization(eq_0, optimizer, opt_config):
     maxiter = opt_config["maxiter"]
     max_nfev = opt_config["max_nfev"]
     x_scale = opt_config["x_scale"]
-    opt_toggles = opt_config["opt_toggles"]
-    #=============================================
+    toggle_BOTH = opt_config["toggle_BOTH"]
+    toggle_FXD = opt_config["toggle_FXD"]
+    toggle_FREE = opt_config["toggle_FREE"]
+    toggle = _merge_toggles(
+        toggle_BOTH,
+        toggle_FXD if FXD else toggle_FREE,
+    )
+    #=====================================
+
 
     #=========================================
     # Runtime values available to config dict:
     context = {
         "eq_0": eq_0,
+        "FXD": FXD,
         "optimizer": optimizer,
     }
     #=========================================
 
+
     constraints_list = []
     objectives_list = []
 
-    #-------------------
+    #-------------
     _append_terms(
         term_list=objectives_list,
-        toggle=opt_toggles,
-        registry=OBJECTIVE_REGISTRY,
+        toggle=toggle,
+        registry=OBJECTIVE_REGISTRY_BOTH,
         context=context,
         kind="objective",
     )
-    #-------------------
-
-    #-------------------
-    # All constraints except forcebalance_con:
-    constraint_registry = dict(CONSTRAINT_REGISTRY)
-    forcebalance_con = constraint_registry.pop("forcebalance_con", None)
 
     _append_terms(
         term_list=constraints_list,
-        toggle=opt_toggles,
-        registry=constraint_registry,
+        toggle=toggle,
+        registry=CONSTRAINT_REGISTRY_BOTH,
         context=context,
         kind="constraint",
     )
+    #---------------------
 
-    # Only include forcebalance_con for proximal:
-    if optimizer == "proximal-lsq-exact" and forcebalance_con is not None:
+    #-----------------
+    if FXD:
+        _append_terms(
+            term_list=objectives_list,
+            toggle=toggle,
+            registry=OBJECTIVE_REGISTRY_FXD,
+            context=context,
+            kind="objective",
+        )
+
         _append_terms(
             term_list=constraints_list,
-            toggle=opt_toggles,
-            registry={"forcebalance_con": forcebalance_con},
+            toggle=toggle,
+            registry=CONSTRAINT_REGISTRY_FXD,
             context=context,
             kind="constraint",
         )
-    #-------------------
+    #-------------------------
+
+    #-----------------
+    else:
+        _append_terms(
+            term_list=objectives_list,
+            toggle=toggle,
+            registry=OBJECTIVE_REGISTRY_FREE,
+            context=context,
+            kind="objective",
+        )
+
+        _append_terms(
+            term_list=constraints_list,
+            toggle=toggle,
+            registry=CONSTRAINT_REGISTRY_FREE,
+            context=context,
+            kind="constraint",
+        )
+    #-------------------------
 
     #---------------------------------------
     # Finalizing optimization objects/setup:
     constraints = tuple(constraints_list)
     objectives = ObjectiveFunction(objectives_list)
-    #---------------------------------------
-    #=======================================
+    #----------------------------------------------
+    #==============================================
+
 
     #======================
     # Running optimization:
     eq_opt, opt_result = eq_0.optimize(
-        objective=objectives,
-        constraints=constraints,
-        optimizer=optimizer,
-        ftol=ftol,
-        xtol=xtol,
-        gtol=gtol,
-        maxiter=maxiter,
-        options={"max_nfev": max_nfev},
-        x_scale=x_scale,
-        copy=True,
-        verbose=3,
+        objective = objectives,
+        constraints = constraints,
+        optimizer = optimizer,
+        ftol = ftol,
+        xtol = xtol,
+        gtol = gtol,
+        maxiter = maxiter,
+        options = {"max_nfev": max_nfev},
+        x_scale = x_scale,
+        copy = True,
+        verbose = 3,
     )
     #======================
 

@@ -34,6 +34,8 @@ from research.poly.poly_constraints import (
     pressure_DOF,
     pressure_edge,
     grad_pressure_edge,
+    iota_axis_range,
+    iota_edge_range,
 )
 from .driver import run_from_config
 from research.poly.helper import(
@@ -60,9 +62,9 @@ NFP = 4
 
 #------------------------
 # Equilibrium resolution:
-L = 8 #upgrade once GPU 
-M = 8 #upgrade once GPU
-N = 3 #upgrade once GPU
+L = 16 
+M = 16 
+N = 8 
 eq_resolution = [L, M, N]
 #------------------------
 
@@ -122,7 +124,7 @@ eq_config = {
 
 
 #================= OPTIMIZATION INPUTS =========================================================================================================
-#====================
+#=============
 #-------------
 # AspectRatio:
 aspect_ratio_bounds = (4, 12)
@@ -130,20 +132,20 @@ aspect_ratio_bounds = (4, 12)
 
 #----------
 # Pressure:
-pressure_axis_bounds = (1E5, 5E6)
+pressure_axis_bounds = (5E4, 5E6)
 #--------------------------------
 
 #------
 # Iota:
-(iota_bounds) = iota_between_rationals(iota_axis = iota_axis_init)
-#-----------------------------------------------------------------
+iota_bounds = iota_between_rationals(iota_axis=iota_axis_init)
+#-------------------------------------------------------
 
 #----------------------
 # Optimizer thresholds:
 ftol = 1e-3
 xtol = 1e-6
 gtol = 1e-6
-maxiter = 50
+maxiter = 100
 max_nfev = 200
 x_scale = "auto"
 #---------------
@@ -152,157 +154,135 @@ x_scale = "auto"
 
 #==============
 opt_toggles = {
-    "name": "proximal-lsq-exact", # optimizer
-    #========================================
-    #===============
-    "toggle_BOTH": {
-        #------------
-        # Objectives:
-        "forcebalance_obj": {
-            "use": True,
-            "kwargs": {
-                "weight": 1e2,
-                "target": 0.0,
-            },
+    #------------
+    # Objectives:
+    #------------
+        # Standard:
+    "forcebalance_obj": {
+        "use": True,
+        "kwargs": {
+            "weight": 1e2,
+            "target": 0.0,
         },
-        "aspect_ratio": {
-            "use": False,
-            "kwargs": {
-                "weight": 1e0,
-                "bounds": aspect_ratio_bounds
-            },
+    },
+    "aspect_ratio": {
+        "use": True,
+        "kwargs": {
+            "weight": 1e0,
+            "bounds": aspect_ratio_bounds,
         },
-        "qs": {
-            "use": False,
-            "kwargs": {
-                "weight": 1e0,
-                "helicity": (1, NFP),
-            },
+    },
+    "qs": {
+        "use": True,
+        "kwargs": {
+            "weight": 1e0,
+            "helicity": (1, NFP),
         },
-        "ballooning": {
-            "use": True,
-            "kwargs": {
-                "weight": 1e0,
-                "target": 0.0,
-            },
+    },
+    "ballooning": {
+        "use": True,
+        "kwargs": {
+            "weight": 1e0,
+            "target": 0.0,
         },
-        "mercier": {
-            "use": True,
-            "kwargs": {
-                "bounds":(0, jnp.inf),
-                "weight": 1e0,
-            },
-        }, #------------------
-        
-        #-------------
-        # Constraints:
-        "forcebalance_con": {
-            "use": True,
-            "kwargs": {
-                "target": 0.0,
-            },
+    },
+    "mercier": {
+        "use": True,
+        "kwargs": {
+            "bounds": (0.05, jnp.inf),
+            "weight": 1e0,
         },
-        "fix_psi": {
-            "use": True,
-            "kwargs": {},
+    },
+
+        # Custom:
+    "pressure_axis_range": {
+        "use": True,
+        "kwargs": {
+            "name": "pressure_axis_range",
+            "fun": pressure_axis_range,
+            "bounds": pressure_axis_bounds,
+            "weight": 1e0,
         },
-    },  #----------------
-    #====================
+    },
+    "pressure_shape": {
+        "use": True,
+        "kwargs": {
+            "name": "pressure_shape",
+            "fun": pressure_shape,
+            "bounds": (-1.3, 1.8),
+            "weight": 1e0,
+        },
+    },
+    "iota_axis_range": {
+        "use": True,
+        "kwargs": {
+            "name": "iota_axis_range",
+            "fun": iota_axis_range,
+            "bounds": iota_bounds,
+            "weight": 1e0,
+        },
+    },
+    "iota_edge_range": {
+        "use": True,
+        "kwargs": {
+            "name": "iota_edge_range",
+            "fun": iota_edge_range,
+            "bounds": iota_bounds,
+            "weight": 1e0,
+        },
+    },
+    #---------------------
 
 
-
-
-    #==============
-    "toggle_FXD": { 
-        #------------
-        # Objectives:
-        #------------
-
-        #-------------
-        # Constraints:
-        "fix_iota": {
-            "use": True,
-            "kwargs": {},
+    # Constraints:
+    #-------------
+        # Standard:
+    "forcebalance_con": { # only used for proximal
+        "use": True,
+        "kwargs": {
+            "target": 0.0,
         },
-        "fix_pressure": {
-            "use": True,
-            "kwargs": {},
-        },
-    },  #----------------
-    #=========================
+    },
+    "fix_psi": {
+        "use": True,
+        "kwargs": {},
+    },
 
-
-
-
-    #===============
-    "toggle_FREE": {
-        #------------
-        # Objectives:
-                # Custom:
-            "pressure_axis_range": {
-            "use": False,
-            "kwargs": {
-                "name": "pressure_axis_range",
-                "fun": pressure_axis_range,
-                "bounds": pressure_axis_bounds,
-                "weight": 1e0
-            },
+        # Custom:
+    "pressure_octic": {
+        "use": True,
+        "kwargs": {
+            "name": "pressure_octic",
+            "fun": pressure_octic,
+            "target": 0.0,
         },
-        "pressure_shape": {
-            "use": True,
-            "kwargs": {
-                "name": "pressure_shape",
-                "fun": pressure_shape,
-                "bounds": (-1.3, 1.8),
-                "weight": 1e0,
-            },
+    },
+    "pressure_DOF": {
+        "use": True,
+        "kwargs": {
+            "name": "pressure_DOF",
+            "fun": pressure_DOF,
+            "target": 0.0,
         },
-        #---------------------
-
-        #-------------
-        # Constraints:
-            # Standard:
-        "fix_iota": {
-            "use": False,
-            "kwargs": {},
+    },
+    "pressure_edge": {
+        "use": True,
+        "kwargs": {
+            "name": "pressure_edge",
+            "fun": pressure_edge,
+            "target": 0.0,
         },
-
-            # Custom:
-        "pressure_octic": {
-            "use": True,
-            "kwargs": {
-                "name": "pressure_octic",
-                "fun": pressure_octic,
-                "target": 0.0,
-            },
+    },
+    "grad_pressure_edge": {
+        "use": True,
+        "kwargs": {
+            "name": "grad_pressure_edge",
+            "fun": grad_pressure_edge,
+            "target": 0.0,
         },
-        "pressure_DOF": {
-            "use": True,
-            "kwargs": {
-                "name": "pressure_DOF",
-                "fun": pressure_DOF,
-                "target": 0.0,
-            },
-        },
-        "pressure_edge": {
-            "use": True,
-            "kwargs": {
-                "name": "pressure_edge",
-                "fun": pressure_edge,
-                "target": 0.0,
-            },
-        },
-        "grad_pressure_edge": {
-            "use": True,
-            "kwargs": {
-                "name": "grad_pressure_edge",
-                "fun": grad_pressure_edge,
-                "target": 0.0,
-            },
-        },
-    },  #---------------------
+    },
 }
-#=====================================================
+#=========================
 
 
 #=====================
