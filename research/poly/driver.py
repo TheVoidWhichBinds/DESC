@@ -222,7 +222,13 @@ def comparison(
     #--------------------
     # Plotting pressures:
     rho = np.linspace(0.0, 1.0, 400)
-    grid = LinearGrid(rho=rho, M=0, N=0, NFP=eq_opt_FREE.NFP, sym=eq_opt_FREE.sym)
+    grid = LinearGrid(
+        rho = rho, 
+        M = 0, 
+        N = 0, 
+        NFP = eq_opt_FREE.NFP, 
+        sym = eq_opt_FREE.sym
+    )
 
     p_FXD = eq_opt_FXD.compute("p", grid=grid)["p"]
     p_FREE = eq_opt_FREE.compute("p", grid=grid)["p"]
@@ -264,7 +270,7 @@ def comparison(
     #----------
 
     #-------------------------------------------
-    # Bootstrap current (Redl) vs. rho plotting:
+    # J_parallel vs. rho plotting:
     rho_grid = np.linspace(0.0, 1.0, 100)
     grid_J = LinearGrid(
         rho=rho_grid,
@@ -274,37 +280,37 @@ def comparison(
         sym=eq_opt_FREE.sym,
     )
 
-    def _redl_current_profile(eq):
-        data = eq.compute(["current Redl"], grid=grid_J)
-        current_redl = np.asarray(data["current Redl"])
+    def _j_parallel_profile(eq):
+        data = eq.compute(["J_parallel"], grid=grid_J)
+        J_parallel = np.asarray(data["J_parallel"])
 
         rho_nodes = grid_J.nodes[:, 0]
         rho_unique = np.unique(rho_nodes)
 
-        current_redl_fs = np.empty_like(rho_unique, dtype=float)
+        J_parallel_fs = np.empty_like(rho_unique, dtype=float)
         for i, r in enumerate(rho_unique):
             mask = np.isclose(rho_nodes, r)
-            current_redl_fs[i] = np.mean(current_redl[mask])
+            J_parallel_fs[i] = np.mean(J_parallel[mask])
 
-        return rho_unique, current_redl_fs
+        return rho_unique, J_parallel_fs
 
-    rho_u_FXD, current_redl_FXD = _redl_current_profile(eq_opt_FXD)
-    rho_u_FREE, current_redl_FREE = _redl_current_profile(eq_opt_FREE)
+    rho_u_FXD, J_parallel_FXD = _j_parallel_profile(eq_opt_FXD)
+    rho_u_FREE, J_parallel_FREE = _j_parallel_profile(eq_opt_FREE)
 
     plt.figure(figsize=(7, 5))
-    plt.plot(rho_u_FXD, current_redl_FXD, linewidth=2, label="Fixed Pressure", color="blue")
-    plt.plot(rho_u_FREE, current_redl_FREE, linewidth=2, label="Optimized Pressure", color="red")
+    plt.plot(rho_u_FXD, J_parallel_FXD, linewidth=2, label="Fixed Pressure", color="blue")
+    plt.plot(rho_u_FREE, J_parallel_FREE, linewidth=2, label="Optimized Pressure", color="red")
     plt.xlabel(r"$\rho$", fontsize=14)
-    plt.ylabel(r"$\langle J_{\mathrm{Redl}} \rangle$", fontsize=14)
-    plt.title("Redl Bootstrap Current", fontsize=13)
+    plt.ylabel(r"$\langle J_{\parallel} \rangle$", fontsize=14)
+    plt.title(r"$J_{\parallel}$", fontsize=13)
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
 
-    current_redl_path = os.path.join(out_dir, "bootstrap.png")
-    plt.savefig(current_redl_path, dpi=200)
+    j_parallel_path = os.path.join(out_dir, "j_parallel.png")
+    plt.savefig(j_parallel_path, dpi=200)
     plt.close()
-    #----------
+    #-------------------------------------------
 
     #-----------------------
     # iota vs. rho plotting:

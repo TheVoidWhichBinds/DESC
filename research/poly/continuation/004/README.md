@@ -27,13 +27,11 @@ print("jax devices:", jax.devices())
 
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
-from desc.grid import LinearGrid
 from research.poly.poly_constraints import (
-    pressure_integral_range,
-    pressure_monotonicity,
     pressure_axis_range,
-    iota_axis_range,
-    iota_edge_range,
+    pressure_shape,
+    pressure_octic,
+    pressure_DOF,
     pressure_edge,
     grad_pressure_edge,
 )
@@ -53,7 +51,7 @@ from research.poly.helper import(
 
 
 
-#================EQUILIBRIUM INPUTS ================================================================================================================
+#================ EQUILIBRIUM INPUTS ================================================================================================================
 #==================================
 #----------------------------------
 # Number of toroidal field periods:
@@ -68,8 +66,8 @@ N = 3 #upgrade once GPU
 eq_resolution = [L, M, N]
 #------------------------
 
-#--------------------------------
-# Initializing fixed????? surface:
+#----------------------
+# Initializing surface:
 surface_init = FourierRZToroidalSurface(
     R_lmn =   [ 10.0,   -1.0,   -0.3,    0.3   ],
     modes_R = [(0, 0), (1, 0), (1, 1), (-1, -1)],
@@ -81,11 +79,11 @@ surface_init = FourierRZToroidalSurface(
 
 #-----------------------
 # Initializing pressure:
-p_init_axis = 1E4
+p_axis = 5E4
 pressure_init = PowerSeriesProfile(
     pressure_generator(
-        p_axis = p_init_axis,
-        n = 4
+        p_axis = p_axis,
+        width_percentage = 50
     ),
     sym = True,
 )
@@ -93,9 +91,9 @@ pressure_init = PowerSeriesProfile(
 
 #-------------------
 # Initializing iota:
-iota_init_axis = 0.76
+iota_axis_init = 0.76
 iota_init = PowerSeriesProfile(
-    [iota_init_axis, 0, 0.23], 
+    [iota_axis_init, 0.23], 
     sym=True,
 )
 #------------
@@ -125,34 +123,27 @@ eq_config = {
 
 #================= OPTIMIZATION INPUTS =========================================================================================================
 #====================
-#--------------------
-# AspectRatio bounds:
-aspect_ratio_bounds = (6, 12)
+#-------------
+# AspectRatio:
+aspect_ratio_bounds = (4, 12)
 #----------------------------
 
+#----------
+# Pressure:
+pressure_axis_bounds = (1E5, 5E6)
 #--------------------------------
-pressure_axis_bounds = (1e4, 5e6)
-pressure_integral_bounds = (0.4, 0.75)
-#-------------------------------------
 
-#--------------
-# Iota targets:
-(iota_bounds) = iota_between_rationals(iota_axis = iota_init_axis)
+#------
+# Iota:
+(iota_bounds) = iota_between_rationals(iota_axis = iota_axis_init)
 #-----------------------------------------------------------------
-
-#------------------------
-current_bounds = (0, 1e6)
-current_grid_res = 200
-current_grid = LinearGrid(L=current_grid_res, M=0, N=0, axis=True)
-n_current = current_grid.num_nodes
-#---------------------------------
 
 #----------------------
 # Optimizer thresholds:
-ftol = 1e-4
+ftol = 1e-3
 xtol = 1e-6
-gtol = 1e-8
-maxiter = 200
+gtol = 1e-6
+maxiter = 2
 max_nfev = 200
 x_scale = "auto"
 #---------------
@@ -170,19 +161,19 @@ opt_toggles = {
         "forcebalance_obj": {
             "use": True,
             "kwargs": {
-                "weight": 1e1,
+                "weight": 1e2,
                 "target": 0.0,
             },
         },
         "aspect_ratio": {
-            "use": True,
+            "use": False,
             "kwargs": {
                 "weight": 1e0,
-                "target": 6
+                "bounds": aspect_ratio_bounds
             },
         },
         "qs": {
-            "use": True,
+            "use": False,
             "kwargs": {
                 "weight": 1e0,
                 "helicity": (1, NFP),
@@ -221,8 +212,8 @@ opt_toggles = {
 
 
 
-    #===============================
-    "toggle_FXD": { # fixed profiles
+    #==============
+    "toggle_FXD": { 
         #------------
         # Objectives:
         #------------
@@ -243,60 +234,56 @@ opt_toggles = {
 
 
 
-    #===============================
-    "toggle_FREE": { # free profiles
-        #-----------
+    #===============
+    "toggle_FREE": {
+        #------------
         # Objectives:
                 # Custom:
-        "pressure_integral_range":{
-            "use": True,
-            "kwargs": {
-                "name": "pressure_integral_range",
-                "fun": pressure_integral_range,
-                "bounds": pressure_integral_bounds,
-                "weight": 1e0,
-            },
-        },
-        "pressure_monotonicity": {
-            "use": True,
-            "kwargs": {
-                "name": "pressure_monotonicity",
-                "fun": pressure_monotonicity,
-                "weight": 1e0,
-            },
-        },
-        "pressure_axis_range": {
-            "use": True,
+            "pressure_axis_range": {
+            "use": False,
             "kwargs": {
                 "name": "pressure_axis_range",
                 "fun": pressure_axis_range,
                 "bounds": pressure_axis_bounds,
-                "weight": 1e0,
+                "weight": 1e0
             },
         },
-        "iota_axis_range": {
-            "use": True,
+        "pressure_shape": {
+            "use": False,
             "kwargs": {
-                "name": "iota_axis_range",
-                "fun": iota_axis_range,
-                "bounds": iota_bounds,
+                "name": "pressure_shape",
+                "fun": pressure_shape,
+                "bounds": (-1.3, 1.8),
                 "weight": 1e0,
             },
         },
-        "iota_edge_range": {
-            "use": True,
-            "kwargs": {
-                "name": "iota_edge_range",
-                "fun": iota_edge_range,
-                "bounds": iota_bounds,
-                "weight": 1e0,
-            },
-        },
-        #--------------------------------------
+        #---------------------
 
         #-------------
         # Constraints:
+            # Standard:
+        "fix_iota": {
+            "use": True,
+            "kwargs": {},
+        },
+
             # Custom:
+        "pressure_octic": {
+            "use": True,
+            "kwargs": {
+                "name": "pressure_octic",
+                "fun": pressure_octic,
+                "target": 0.0,
+            },
+        },
+        "pressure_DOF": {
+            "use": True,
+            "kwargs": {
+                "name": "pressure_DOF",
+                "fun": pressure_DOF,
+                "target": 0.0,
+            },
+        },
         "pressure_edge": {
             "use": True,
             "kwargs": {
@@ -313,7 +300,7 @@ opt_toggles = {
                 "target": 0.0,
             },
         },
-    },  #-----------------------------------
+    },  #---------------------
 }
 #=====================================================
 

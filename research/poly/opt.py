@@ -124,6 +124,12 @@ CONSTRAINT_REGISTRY_FXD = {
 #-------------------------
 OBJECTIVE_REGISTRY_FREE = {
         # Custom:
+    "pressure_axis_range": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    }, 
     "pressure_shape": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -150,12 +156,6 @@ CONSTRAINT_REGISTRY_FREE = {
         # Standard:
     "fix_iota": {
         "wrapper": FixIota,
-        "defaults": {
-            "eq": _eq,
-        },
-    },
-    "fix_pressure": {
-        "wrapper": FixPressure,
         "defaults": {
             "eq": _eq,
         },

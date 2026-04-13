@@ -44,6 +44,6 @@ def run_equilibrium(
     # Solving initial equilibrium and returning last step of opt:
     eq_init = solve_continuation_automatic(eq.copy(), verbose=3)[-1]
     #---------------------------------------------------------------
-    print(eq_init.optimizable_params)
+    
     return eq_init
 #==============================================================================================================================================================

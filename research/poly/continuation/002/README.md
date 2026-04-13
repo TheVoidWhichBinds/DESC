@@ -27,15 +27,13 @@ print("jax devices:", jax.devices())
 
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
-from desc.grid import LinearGrid
 from research.poly.poly_constraints import (
+    pressure_axis_range,
+    pressure_shape,
+    pressure_octic,
+    pressure_DOF,
     pressure_edge,
     grad_pressure_edge,
-    pressure_axis_range,
-    grad_iota_axis,
-    iota_range,
-    current_range,
-    pressure_positive,
 )
 from .driver import run_from_config
 from research.poly.helper import(
@@ -53,7 +51,7 @@ from research.poly.helper import(
 
 
 
-#================EQUILIBRIUM INPUTS ================================================================================================================
+#================ EQUILIBRIUM INPUTS ================================================================================================================
 #==================================
 #----------------------------------
 # Number of toroidal field periods:
@@ -68,8 +66,8 @@ N = 3 #upgrade once GPU
 eq_resolution = [L, M, N]
 #------------------------
 
-#--------------------------------
-# Initializing fixed????? surface:
+#----------------------
+# Initializing surface:
 surface_init = FourierRZToroidalSurface(
     R_lmn =   [ 10.0,   -1.0,   -0.3,    0.3   ],
     modes_R = [(0, 0), (1, 0), (1, 1), (-1, -1)],
@@ -81,11 +79,11 @@ surface_init = FourierRZToroidalSurface(
 
 #-----------------------
 # Initializing pressure:
-p_init_axis = 1E4
+p_axis = 5E4
 pressure_init = PowerSeriesProfile(
     pressure_generator(
-        p_axis = p_init_axis,
-        n = 4
+        p_axis = p_axis,
+        width_percentage = 50
     ),
     sym = True,
 )
@@ -93,9 +91,9 @@ pressure_init = PowerSeriesProfile(
 
 #-------------------
 # Initializing iota:
-iota_init_axis = 0.76
+iota_axis_init = 0.76
 iota_init = PowerSeriesProfile(
-    [iota_init_axis, 0, 0.23], 
+    [iota_axis_init, 0.23], 
     sym=True,
 )
 #------------
@@ -125,40 +123,27 @@ eq_config = {
 
 #================= OPTIMIZATION INPUTS =========================================================================================================
 #====================
-#--------------------
-# AspectRatio bounds:
-aspect_ratio_bounds = (6, 12)
+#-------------
+# AspectRatio:
+aspect_ratio_bounds = (4, 12)
 #----------------------------
 
-#-----------------------------
-pressure_axis_bounds = (1e4, 5e6)
-pressure_grid_res = 200
-pressure_grid = LinearGrid(L=pressure_grid_res, M=0, N=0, axis=True)
-n_pressure = pressure_grid.num_nodes
-#-----------------------------------
+#----------
+# Pressure:
+pressure_axis_bounds = (1E5, 5E6)
+#--------------------------------
 
-#--------------
-# Iota targets:
-(iota_bounds) = iota_between_rationals(iota_axis = iota_init_axis)
-#iota_bounds = (0.25, 1.4)
-iota_grid_res = 200
-iota_grid = LinearGrid(L=iota_grid_res, M=0, N=0, axis=True)
-n_iota = iota_grid.num_nodes
-#---------------------------
-
-#------------------------
-current_bounds = (0, 1e6)
-current_grid_res = 200
-current_grid = LinearGrid(L=current_grid_res, M=0, N=0, axis=True)
-n_current = current_grid.num_nodes
-#---------------------------------
+#------
+# Iota:
+(iota_bounds) = iota_between_rationals(iota_axis = iota_axis_init)
+#-----------------------------------------------------------------
 
 #----------------------
 # Optimizer thresholds:
-ftol = 1e-4
+ftol = 1e-3
 xtol = 1e-6
-gtol = 1e-8
-maxiter = 200
+gtol = 1e-6
+maxiter = 50
 max_nfev = 200
 x_scale = "auto"
 #---------------
@@ -176,29 +161,28 @@ opt_toggles = {
         "forcebalance_obj": {
             "use": True,
             "kwargs": {
-                "weight": 1e4,
+                "weight": 1e2,
                 "target": 0.0,
             },
         },
-        "aspect_ratio_range": {
-            "use": True,
+        "aspect_ratio": {
+            "use": False,
             "kwargs": {
-                "weight": 1e1,
-                #"bounds": aspect_ratio_bounds,
-                "target": 6
+                "weight": 1e0,
+                "bounds": aspect_ratio_bounds
             },
         },
         "qs": {
-            "use": True,
+            "use": False,
             "kwargs": {
-                "weight": 1e1,
+                "weight": 1e0,
                 "helicity": (1, NFP),
             },
         },
         "ballooning": {
             "use": True,
             "kwargs": {
-                "weight": 1e1,
+                "weight": 1e0,
                 "target": 0.0,
             },
         },
@@ -206,7 +190,7 @@ opt_toggles = {
             "use": True,
             "kwargs": {
                 "bounds":(0, jnp.inf),
-                "weight": 1e1,
+                "weight": 1e0,
             },
         }, #------------------
         
@@ -228,8 +212,8 @@ opt_toggles = {
 
 
 
-    #===============================
-    "toggle_FXD": { # fixed profiles
+    #==============
+    "toggle_FXD": { 
         #------------
         # Objectives:
         #------------
@@ -250,52 +234,30 @@ opt_toggles = {
 
 
 
-    #===============================
-    "toggle_FREE": { # free profiles
-        #-----------
+    #===============
+    "toggle_FREE": {
+        #------------
         # Objectives:
                 # Custom:
-        "pressure_axis_range": {
-            "use": True,
-            "kwargs": {
-                "weight": 1e1,
-                "grid": pressure_grid,
-                "fun": pressure_axis_range,
-                "bounds": pressure_axis_bounds,
-                "name": "pressure_axis_range"
-            },
-        },
-        "pressure_positive": {
-            "use": True,
-            "kwargs": {
-                "weight": 1e3,
-                "grid": pressure_grid,
-                "fun": pressure_positive,
-                "bounds": (0.0, jnp.inf),
-                "name": "pressure_positive"
-            },
-        },
-        "iota_range": {
+            "pressure_axis_range": {
             "use": False,
             "kwargs": {
-                "weight": 1e1,
-                "grid": iota_grid,
-                "fun": iota_range,
-                "bounds": iota_bounds,
-                "name": "iota_range"
+                "name": "pressure_axis_range",
+                "fun": pressure_axis_range,
+                "bounds": pressure_axis_bounds,
+                "weight": 1e0
             },
         },
-        "current_range": {
+        "pressure_shape": {
             "use": True,
             "kwargs": {
-                "weight": 1e1,
-                "grid": current_grid,
-                "fun": current_range,
-                "bounds": current_bounds,
-                "name": "current_range"
+                "name": "pressure_shape",
+                "fun": pressure_shape,
+                "bounds": (-1.3, 1.8),
+                "weight": 1e0,
             },
         },
-        #--------------------------------------
+        #---------------------
 
         #-------------
         # Constraints:
@@ -304,12 +266,24 @@ opt_toggles = {
             "use": False,
             "kwargs": {},
         },
-        "fix_pressure": {
-            "use": False,
-            "kwargs": {},
-        },
 
             # Custom:
+        "pressure_octic": {
+            "use": True,
+            "kwargs": {
+                "name": "pressure_octic",
+                "fun": pressure_octic,
+                "target": 0.0,
+            },
+        },
+        "pressure_DOF": {
+            "use": True,
+            "kwargs": {
+                "name": "pressure_DOF",
+                "fun": pressure_DOF,
+                "target": 0.0,
+            },
+        },
         "pressure_edge": {
             "use": True,
             "kwargs": {
@@ -326,15 +300,7 @@ opt_toggles = {
                 "target": 0.0,
             },
         },
-        "grad_iota_axis": {
-            "use": True,
-            "kwargs": {
-                "name": "grad_iota_axis",
-                "fun": grad_iota_axis,
-                "target": 0.0,
-            },
-        },
-    },  #-----------------------------------
+    },  #---------------------
 }
 #=====================================================
 

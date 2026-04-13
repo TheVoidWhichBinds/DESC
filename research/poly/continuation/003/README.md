@@ -1,3 +1,4 @@
+```python
 
 #===================================================================================================================================================
 from pathlib import Path
@@ -33,8 +34,6 @@ from research.poly.poly_constraints import (
     pressure_DOF,
     pressure_edge,
     grad_pressure_edge,
-    iota_axis_range,
-    iota_edge_range,
 )
 from .driver import run_from_config
 from research.poly.helper import(
@@ -131,7 +130,7 @@ aspect_ratio_bounds = (4, 12)
 
 #----------
 # Pressure:
-pressure_axis_bounds = (5E4, 5E6)
+pressure_axis_bounds = (1E5, 5E6)
 #--------------------------------
 
 #------
@@ -174,7 +173,7 @@ opt_toggles = {
             },
         },
         "qs": {
-            "use": True,
+            "use": False,
             "kwargs": {
                 "weight": 1e0,
                 "helicity": (1, NFP),
@@ -239,9 +238,9 @@ opt_toggles = {
     "toggle_FREE": {
         #------------
         # Objectives:
-            # Custom:
-        "pressure_axis_range": {
-            "use": True,
+                # Custom:
+            "pressure_axis_range": {
+            "use": False,
             "kwargs": {
                 "name": "pressure_axis_range",
                 "fun": pressure_axis_range,
@@ -250,7 +249,7 @@ opt_toggles = {
             },
         },
         "pressure_shape": {
-            "use": True,
+            "use": False,
             "kwargs": {
                 "name": "pressure_shape",
                 "fun": pressure_shape,
@@ -258,28 +257,16 @@ opt_toggles = {
                 "weight": 1e0,
             },
         },
-        "iota_axis_range": {
-            "use": True,
-            "kwargs": {
-                "name": "iota_axis_range",
-                "fun": iota_axis_range,
-                "bounds": iota_bounds,
-                "weight": 1e0
-            },
-        },
-        "iota_edge_range": {
-            "use": True,
-            "kwargs": {
-                "name": "iota_edge_range",
-                "fun": iota_edge_range,
-                "bounds": iota_bounds,
-                "weight": 1e0
-            },
-        },
         #---------------------
 
         #-------------
         # Constraints:
+            # Standard:
+        "fix_iota": {
+            "use": False,
+            "kwargs": {},
+        },
+
             # Custom:
         "pressure_octic": {
             "use": True,
@@ -367,3 +354,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```

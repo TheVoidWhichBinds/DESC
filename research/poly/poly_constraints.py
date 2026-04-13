@@ -14,6 +14,16 @@ import jax.numpy as jnp
 #============== PRESSURE =============================================================================================================
 #============
 # Objectives:
+#===============================
+def pressure_axis_range(params):
+    """
+    Fixes the axis pressure.
+    """
+    c = params['p_l']
+    p_axis = c[0] 
+    return p_axis
+#================
+
 #==========================
 def pressure_shape(params):
     """
@@ -22,7 +32,7 @@ def pressure_shape(params):
     profile.
     """
     c = params['p_l']
-    return c[5] 
+    return c[4] 
 #============================
 
 
@@ -52,7 +62,7 @@ def pressure_DOF(params):
     inside rho = (0,1) at the bounds of c[5]).
     """
     c = params['p_l']
-    DOF_relation = c[4] + 3.45*c[5]
+    DOF_relation = c[3] + 3.45*c[4]
     return DOF_relation
 #======================
 

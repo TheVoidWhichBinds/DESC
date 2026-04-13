@@ -11,7 +11,7 @@ import numpy as np
 #============== CONFIG ====================================================================================================
 #======================
 def pressure_generator(
-        p_axis_init, 
+        p_axis, 
         width_percentage
     ):
     """
@@ -21,12 +21,14 @@ def pressure_generator(
     width_percentage gives how narrow (0%) to how wide (100%) the
     shape is.
     """
-    c_0 = p_axis_init
-    c_4 = -1.3 + width_percentage * (1.8 - 1.3)
+    c_0 = 1
+    c_4 = -1.3 + width_percentage/100 * (1.8 - 1.3)
     c_3 = -3.45 * c_4
     c_1 = -2 + c_3 + 2*c_4
     c_2 = 1 - 2*c_3 - 3*c_4
-    return [c_0, c_1, c_2, c_3, c_4]
+    coeffs = jnp.array([c_0, c_1, c_2, c_3, c_4])
+
+    return list(p_axis * coeffs)
 #===================================
 
 
