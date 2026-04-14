@@ -23,18 +23,24 @@ if USE_SUPERCOMPUTER:
 
 print("CUDA_VISIBLE_DEVICES:", repr(os.environ.get("CUDA_VISIBLE_DEVICES")))
 print("jax devices:", jax.devices())
-
+from desc.grid import LinearGrid
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
 from research.poly.poly_constraints import (
+    # Objectives:
     pressure_axis_range,
     pressure_shape,
-    pressure_octic,
-    pressure_DOF,
-    pressure_edge,
-    grad_pressure_edge,
+    pressure_monotone_obj,
+    pressure_positive_obj,
+    pressure_edge_obj,
+    grad_pressure_edge_obj,
     iota_axis_range,
     iota_edge_range,
+    # Constraints:
+    pressure_octic_con,
+    pressure_DOF_con,
+    pressure_edge_con,
+    grad_pressure_edge_con,
 )
 from .driver import run_from_config
 from research.poly.helper import(
@@ -61,9 +67,9 @@ NFP = 4
 
 #------------------------
 # Equilibrium resolution:
-L = 16 
-M = 16 
-N = 8 
+L = 10 
+M = 10
+N = 5
 eq_resolution = [L, M, N]
 #------------------------
 
@@ -151,6 +157,13 @@ x_scale = "auto"
 #===============
 
 
+#=================
+custom_obj = False
+custom_con = True
+obj_grid = LinearGrid(L = 200, M = 0, N = 0)
+
+
+
 #==============
 opt_toggles = {
     #------------
@@ -230,13 +243,53 @@ opt_toggles = {
             "weight": 1e0,
         },
     },
-    #---------------------
+    "pressure_monotone_obj": {
+        "use": custom_obj,
+        "kwargs": {
+            "name": "pressure_monotone_obj",
+            "fun": pressure_monotone_obj,
+            "grid": obj_grid,
+            "target": 0.0,
+            "weight": 1e0,
+        },
+    },
+    "pressure_positive_obj": {
+        "use": custom_obj,
+        "kwargs": {
+            "name": "pressure_positive_obj",
+            "fun": pressure_positive_obj,
+            "grid": obj_grid,
+            "target": 0.0,
+            "weight": 1e0,
+        },
+    },
+    "pressure_edge_obj": {
+        "use": custom_obj,
+        "kwargs": {
+            "name": "pressure_edge_obj",
+            "fun": pressure_edge_obj,
+            "grid": obj_grid,
+            "target": 0.0,
+            "weight": 1e0,
+        },
+    },
+    "grad_pressure_edge_obj": {
+        "use": custom_obj,
+        "kwargs": {
+            "name": "grad_pressure_edge_obj",
+            "fun": grad_pressure_edge_obj,
+            "grid": obj_grid,
+            "target": 0.0,
+            "weight": 1e0,
+        },
+    },
 
 
+    #-------------
     # Constraints:
     #-------------
         # Standard:
-    "forcebalance_con": { # only used for proximal
+    "forcebalance_con": {  # only used for proximal
         "use": True,
         "kwargs": {
             "target": 0.0,
@@ -248,35 +301,35 @@ opt_toggles = {
     },
 
         # Custom:
-    "pressure_octic": {
-        "use": True,
+    "pressure_octic_con": {
+        "use": custom_con,
         "kwargs": {
-            "name": "pressure_octic",
-            "fun": pressure_octic,
+            "name": "pressure_octic_con",
+            "fun": pressure_octic_con,
             "target": 0.0,
         },
     },
-    "pressure_DOF": {
-        "use": True,
+    "pressure_DOF_con": {
+        "use": custom_con,
         "kwargs": {
-            "name": "pressure_DOF",
-            "fun": pressure_DOF,
+            "name": "pressure_DOF_con",
+            "fun": pressure_DOF_con,
             "target": 0.0,
         },
     },
-    "pressure_edge": {
-        "use": True,
+    "pressure_edge_con": {
+        "use": custom_con,
         "kwargs": {
-            "name": "pressure_edge",
-            "fun": pressure_edge,
+            "name": "pressure_edge_con",
+            "fun": pressure_edge_con,
             "target": 0.0,
         },
     },
-    "grad_pressure_edge": {
-        "use": True,
+    "grad_pressure_edge_con": {
+        "use": custom_con,
         "kwargs": {
-            "name": "grad_pressure_edge",
-            "fun": grad_pressure_edge,
+            "name": "grad_pressure_edge_con",
+            "fun": grad_pressure_edge_con,
             "target": 0.0,
         },
     },

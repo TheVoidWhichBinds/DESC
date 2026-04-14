@@ -47,9 +47,11 @@ def iota_between_rationals(
         (0.5,    0.6667),
         (0.6667, 0.75),
         (0.75,   1.0),
-        (1.0,    1.3333),
+        (1.0,    1.25),    
+        (1.25,   1.3333),
         (1.3333, 1.5),
-        (1.5,    2.0),
+        (1.5,    1.6667),  
+        (1.6667, 2.0),
         (2.0,    3.0),
         (3.0,    4.0),
     ]
@@ -98,7 +100,7 @@ def _to_float(x):
         return float(x)
     except Exception:
         return np.nan
-#================
+#====================
 
 
 #============================
@@ -117,16 +119,16 @@ def _extract_f_stats(objval):
         if chosen is None and len(objval) > 0:
             chosen = objval[0]
         objval = chosen
-    #---------------------------
+    #------------------
 
-    #-----------------------------------------------------------
+    #--------------------------------------------------------------------------------------
     if isinstance(objval, dict) and all(k in objval for k in ("f_min", "f_mean", "f_max")):
         return (
             _to_float(objval["f_min"]),
             _to_float(objval["f_mean"]),
             _to_float(objval["f_max"]),
         )
-    #-----------------------------------------------------------
+    #----------------------------------
 
     #---------------------------
     if isinstance(objval, dict):
@@ -135,14 +137,14 @@ def _extract_f_stats(objval):
             if not np.isnan(val):
                 return val, val, val
         return np.nan, np.nan, np.nan
-    #---------------------------
+    #--------------------------------
 
     val = _to_float(objval)
     return val, val, val
-#============================
+#=======================
 
 
-#=====================================
+#============================================
 def _safe_extract_from_result(result, label):
     """
     Safely gets objective stats from result dict.
@@ -152,7 +154,7 @@ def _safe_extract_from_result(result, label):
     if label not in objvals:
         return np.nan, np.nan, np.nan
     return _extract_f_stats(objvals[label])
-#=====================================
+#==========================================
 
 
 #===================================
@@ -180,7 +182,7 @@ def _next_run_dir(continuation_dir):
 #=================
 
 
-#======================================
+#=======================================
 def _write_readme(out_dir, config_path):
     """
     Write full config.py contents into README.md in a readable form.
@@ -195,7 +197,7 @@ def _write_readme(out_dir, config_path):
         if not config_text.endswith("\n"):
             f.write("\n")
         f.write("```\n")
-#======================================
+#=======================
 #==============================================================================================================================================================
 
 

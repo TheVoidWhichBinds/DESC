@@ -76,6 +76,18 @@ def comparison(
     # Running & saving initial equilibrium solve:
     eq_init = run_equilibrium(eq_config=eq_config)
     eq_init.save(os.path.join(out_dir, "eq_init.h5"))
+       
+    # Plotting toroidal cross-sections (confirmation of eq health):
+    plt.title("Toroidal Cross-Sections of Initial Equilibrium")
+    fig, ax = plot_comparison(
+        eqs=[eq_init],
+        labels=["Initial Equilibrium"],
+        color=["green"],
+    )
+    toroidal_cuts_path = os.path.join(out_dir, "initial_toroidal_cuts.png")
+    plt.savefig(toroidal_cuts_path, dpi=200)
+    plt.close()
+    #==========
     #============================================
 
 
@@ -222,10 +234,10 @@ def comparison(
     pressure_path = os.path.join(out_dir, "pressure_compare.png")
     plt.savefig(pressure_path, dpi=200)
     plt.close()
-    #====================
+    #==========
 
 
-    #==========================================
+    #==================================
     # Plotting toroidal cross-sections:
     plt.title("Toroidal Cross-Sections of Solved Equilibria")
     fig, ax = plot_comparison(
@@ -241,10 +253,10 @@ def comparison(
     toroidal_cuts_path = os.path.join(out_dir, "toroidal_cuts.png")
     plt.savefig(toroidal_cuts_path, dpi=200)
     plt.close()
-    #==========================================
+    #==========
 
 
-    #============================
+    #=============================
     # J_parallel vs. rho plotting:
     rho_grid = np.linspace(0.0, 1.0, 100)
     grid_J = LinearGrid(
@@ -277,7 +289,7 @@ def comparison(
     plt.plot(rho_u_auglag, J_parallel_auglag, linewidth=2, label="AugLag", color="red")
     plt.xlabel(r"$\rho$", fontsize=14)
     plt.ylabel(r"$\langle J_{\parallel} \rangle$", fontsize=14)
-    plt.title(r"$J_{\parallel}$", fontsize=13)
+    plt.title("Parallel Current", fontsize=13)
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
@@ -285,7 +297,7 @@ def comparison(
     j_parallel_path = os.path.join(out_dir, "j_parallel.png")
     plt.savefig(j_parallel_path, dpi=200)
     plt.close()
-    #============================
+    #==========
 
 
     #=======================
@@ -314,7 +326,7 @@ def comparison(
     iota_path = os.path.join(out_dir, "iota.png")
     plt.savefig(iota_path, dpi=200)
     plt.close()
-    #=======================
+    #==========
 #==============================================================================================================================================================
 
 

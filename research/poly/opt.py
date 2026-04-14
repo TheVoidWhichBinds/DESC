@@ -10,6 +10,7 @@ from desc.objectives import (
     BallooningStability,
     MercierStability,
     LinearObjectiveFromUser,
+    ObjectiveFromUser,
 )
 
 from .helper import (
@@ -86,6 +87,30 @@ OBJECTIVE_REGISTRY = {
             "thing": _eq,
         },
     },
+    "pressure_monotone_obj": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "pressure_positive_obj": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "pressure_edge_obj": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "grad_pressure_edge_obj": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
 }
 #----------------------
 
@@ -107,43 +132,25 @@ CONSTRAINT_REGISTRY = {
     },
 
         # Custom:
-    "pressure_octic": {
+    "pressure_octic_con": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "pressure_DOF": {
+    "pressure_DOF_con": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "pressure_edge": {
+    "pressure_edge_con": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "grad_pressure_edge": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "grad_iota_axis": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "iota_edge": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "iota_axis": {
+    "grad_pressure_edge_con": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
