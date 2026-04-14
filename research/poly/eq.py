@@ -37,6 +37,7 @@ def run_equilibrium(
         pressure = pressure_init,
         iota = iota_init,
         Psi=1.0,
+        ensure_nested = True
     )
     #----------------------
 
@@ -44,6 +45,6 @@ def run_equilibrium(
     # Solving initial equilibrium and returning last step of opt:
     eq_init = solve_continuation_automatic(eq.copy(), verbose=3)[-1]
     #---------------------------------------------------------------
-    
+
     return eq_init
 #==============================================================================================================================================================

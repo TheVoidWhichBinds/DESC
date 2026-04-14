@@ -26,7 +26,7 @@ def pressure_generator(
     c_3 = -3.45 * c_4
     c_1 = -2 + c_3 + 2*c_4
     c_2 = 1 - 2*c_3 - 3*c_4
-    coeffs = jnp.array([c_0, c_1, c_2, c_3, c_4])
+    coeffs = jnp.array([c_0, c_1, c_2])
 
     return list(p_axis * coeffs)
 #===================================

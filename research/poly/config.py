@@ -67,40 +67,41 @@ NFP = 4
 
 #------------------------
 # Equilibrium resolution:
-L = 10 
-M = 10
-N = 5
+L = 8
+M = 8
+N = 3
 eq_resolution = [L, M, N]
 #------------------------
 
 #----------------------
 # Initializing surface:
 surface_init = FourierRZToroidalSurface(
-    R_lmn =   [ 10.0,   -1.0,   -0.3,    0.3   ],
-    modes_R = [(0, 0), (1, 0), (1, 1), (-1, -1)],
-    Z_lmn =   [  1.0,    -0.3,    -0.3  ],
-    modes_Z = [(-1, 0), (-1, 1), (1, -1)],
+    R_lmn   = [10.0,   -1.0],
+    modes_R = [(0, 0), (1, 0)],
+    Z_lmn   = [  1.0],
+    modes_Z = [(-1, 0)],
     NFP = NFP,
 )
 #-------------
 
 #-----------------------
 # Initializing pressure:
-p_axis = 5E4
+p_axis = 1E4
 pressure_init = PowerSeriesProfile(
-    pressure_generator(
-        p_axis = p_axis,
-        width_percentage = 50
-    ),
+    list(p_axis*jnp.array([1,-2,1])),
+    # pressure_generator(
+    #     p_axis = p_axis,
+    #     width_percentage = 50
+    # ),
     sym = True,
 )
 #--------------
 
 #-------------------
 # Initializing iota:
-iota_axis_init = 0.76
+iota_axis_init = 0.26
 iota_init = PowerSeriesProfile(
-    [iota_axis_init, 0.23], 
+    [iota_axis_init, 0.06], 
     sym=True,
 )
 #------------
@@ -117,7 +118,7 @@ eq_config = {
     "eq_resolution": eq_resolution,
 }
 #==================================
-#=================================================#
+#===============================================================================================================================================
 
 
 
@@ -137,7 +138,7 @@ aspect_ratio_bounds = (4, 12)
 
 #----------
 # Pressure:
-pressure_axis_bounds = (5E4, 5E6)
+pressure_axis_bounds = (1E4, 5E6)
 #--------------------------------
 
 #------
@@ -217,7 +218,7 @@ opt_toggles = {
         },
     },
     "pressure_shape": {
-        "use": True,
+        "use": custom_con,
         "kwargs": {
             "name": "pressure_shape",
             "fun": pressure_shape,

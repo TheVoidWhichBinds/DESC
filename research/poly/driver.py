@@ -110,13 +110,13 @@ def comparison(
         optimizer_auglag,
         opt_config=opt_config,
     )
-    #======================================
 
     #--------------------------
     # Saving optimized outputs:
     eq_opt_prox.save(os.path.join(out_dir, "opt_prox.h5"))
     eq_opt_auglag.save(os.path.join(out_dir, "opt_auglag.h5"))
-    #--------------------------
+    #---------------------------------------------------------
+    #=========================================================
 
 
     #====================================
@@ -131,8 +131,7 @@ def comparison(
     row_prox = []
     row_auglag = []
     row_DIFF = []
-    #====================================
-
+    #============
 
     #=============================
     # Extracting objective values:
@@ -183,7 +182,7 @@ def comparison(
     values.append(row_prox)
     values.append(row_auglag)
     values.append(row_DIFF)
-    #=========================
+    #======================
 
 
     #==============================
@@ -204,7 +203,7 @@ def comparison(
     with open(output_file, "w") as f:
         f.write("Comparison of Post-Optimization Objectives\n\n")
         f.write(ascii_table)
-    #==============================
+    #=======================
 
 
     #====================
@@ -222,8 +221,8 @@ def comparison(
     p_auglag = eq_opt_auglag.compute("p", grid=grid)["p"]
 
     plt.figure(figsize=(7, 5))
-    plt.plot(rho, p_prox, linewidth=2, label="Proximal", color="blue")
-    plt.plot(rho, p_auglag, linewidth=2, label="AugLag", color="red")
+    plt.plot(rho, p_prox, linewidth=2, label="Proximal", color="purple")
+    plt.plot(rho, p_auglag, linewidth=2, label="AugLag", color="orange")
     plt.xlabel(r"$\rho$", fontsize=14)
     plt.ylabel("Pressure", fontsize=14)
     plt.title(r"Pressure vs $\rho$", fontsize=14)
@@ -241,13 +240,20 @@ def comparison(
     # Plotting toroidal cross-sections:
     plt.title("Toroidal Cross-Sections of Solved Equilibria")
     fig, ax = plot_comparison(
-        eqs=[eq_init, eq_opt_prox, eq_opt_auglag],
+        eqs=[eq_init, 
+             eq_opt_prox, 
+             eq_opt_auglag
+        ],
         labels=[
             "Initial Equilibrium",
             "Optimized (_prox)",
             "Optimized (_auglag)",
         ],
-        color=["green", "blue", "red"],
+        color=[
+            "green", 
+            "purple", 
+            "orange"
+        ],
     )
 
     toroidal_cuts_path = os.path.join(out_dir, "toroidal_cuts.png")
@@ -285,8 +291,8 @@ def comparison(
     rho_u_auglag, J_parallel_auglag = _j_parallel_profile(eq_opt_auglag)
 
     plt.figure(figsize=(7, 5))
-    plt.plot(rho_u_prox, J_parallel_prox, linewidth=2, label="Proximal", color="blue")
-    plt.plot(rho_u_auglag, J_parallel_auglag, linewidth=2, label="AugLag", color="red")
+    plt.plot(rho_u_prox, J_parallel_prox, linewidth=2, label="Proximal", color="purple")
+    plt.plot(rho_u_auglag, J_parallel_auglag, linewidth=2, label="AugLag", color="orange")
     plt.xlabel(r"$\rho$", fontsize=14)
     plt.ylabel(r"$\langle J_{\parallel} \rangle$", fontsize=14)
     plt.title("Parallel Current", fontsize=13)
@@ -314,8 +320,8 @@ def comparison(
     iota_auglag = eq_opt_auglag.compute("iota", grid=grid_iota)["iota"]
 
     plt.figure(figsize=(7, 5))
-    plt.plot(rho_grid, iota_prox, linewidth=2, label="Proximal", color="blue")
-    plt.plot(rho_grid, iota_auglag, linewidth=2, label="AugLag", color="red")
+    plt.plot(rho_grid, iota_prox, linewidth=2, label="Proximal", color="purple")
+    plt.plot(rho_grid, iota_auglag, linewidth=2, label="AugLag", color="orange")
     plt.xlabel(r"$\rho$", fontsize=14)
     plt.ylabel(r"$\iota$", fontsize=14)
     plt.title(r"Rotational transform vs $\rho$", fontsize=13)

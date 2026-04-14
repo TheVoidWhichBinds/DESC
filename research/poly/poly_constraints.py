@@ -24,6 +24,16 @@ def pressure_axis_range(params):
     return p_axis
 #================
 
+#==========================
+def pressure_shape(params):
+    """
+    Bounded coefficient of 8th order term,
+    gives narrow-wideness of pressure.
+    """
+    c = params['p_l'] 
+    return c[4]
+#==============
+
 #=========================================
 def pressure_monotone_obj(grid, data):
     """
