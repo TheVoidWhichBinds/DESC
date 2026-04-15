@@ -197,7 +197,7 @@ def run_optimization(eq_0, optimizer, opt_config):
     constraints_list = []
     objectives_list = []
 
-    #-------------------
+    #-------------
     _append_terms(
         term_list=objectives_list,
         toggle=opt_toggles,
@@ -205,55 +205,42 @@ def run_optimization(eq_0, optimizer, opt_config):
         context=context,
         kind="objective",
     )
-    #-------------------
+    #--------------------
 
-    #-------------------
-    # All constraints except forcebalance_con:
-    constraint_registry = dict(CONSTRAINT_REGISTRY)
-    forcebalance_con = constraint_registry.pop("forcebalance_con", None)
-
+    #----------------
+    # All constraints
     _append_terms(
         term_list=constraints_list,
         toggle=opt_toggles,
-        registry=constraint_registry,
+        registry=CONSTRAINT_REGISTRY,
         context=context,
         kind="constraint",
     )
-
-    # Only include forcebalance_con for proximal:
-    if optimizer == "proximal-lsq-exact" and forcebalance_con is not None:
-        _append_terms(
-            term_list=constraints_list,
-            toggle=opt_toggles,
-            registry={"forcebalance_con": forcebalance_con},
-            context=context,
-            kind="constraint",
-        )
-    #-------------------
+    #---------------------
 
     #---------------------------------------
     # Finalizing optimization objects/setup:
     constraints = tuple(constraints_list)
     objectives = ObjectiveFunction(objectives_list)
-    #---------------------------------------
-    #=======================================
+    #----------------------------------------------
+    #==============================================
 
     #======================
     # Running optimization:
     eq_opt, opt_result = eq_0.optimize(
-        objective=objectives,
-        constraints=constraints,
-        optimizer=optimizer,
-        ftol=ftol,
-        xtol=xtol,
-        gtol=gtol,
-        maxiter=maxiter,
-        options={"max_nfev": max_nfev},
-        x_scale=x_scale,
-        copy=True,
-        verbose=3,
+        objective = objectives,
+        constraints = constraints,
+        optimizer = optimizer,
+        ftol = ftol,
+        xtol = xtol,
+        gtol = gtol,
+        maxiter = maxiter,
+        options = {"max_nfev": max_nfev},
+        x_scale = x_scale,
+        copy = True,
+        verbose = 3,
     )
-    #======================
+    #===============
 
     return eq_opt, opt_result
 #==============================================================================================================================================================
