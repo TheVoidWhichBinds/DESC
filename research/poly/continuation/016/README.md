@@ -1,3 +1,5 @@
+```python
+
 #===================================================================================================================================================
 from pathlib import Path
 repo_root = Path(__file__).resolve().parents[3]
@@ -36,7 +38,6 @@ from research.poly.poly_constraints import (
     iota_axis_range,
     iota_edge_range,
     # Constraints:
-    pressure_axis_fxd,
     pressure_octic_con,
     pressure_DOF_con,
     pressure_edge_con,
@@ -127,18 +128,22 @@ eq_config = {
 
 #================= OPTIMIZATION INPUTS =========================================================================================================
 #=============
+#-------------
 # AspectRatio:
 aspect_ratio_bounds = (4, 12)
+#----------------------------
 
+#----------
 # Pressure:
 pressure_axis_bounds = (1E4, 5E6)
+#--------------------------------
 
+#------
 # Iota:
 iota_bounds = iota_between_rationals(iota_axis=iota_axis_init)
-#=============================================================
+#-------------------------------------------------------
 
-
-#======================
+#----------------------
 # Optimizer thresholds:
 ftol = 1e-3
 xtol = 1e-6
@@ -146,31 +151,28 @@ gtol = 1e-6
 maxiter = 100
 max_nfev = 200
 x_scale = "auto"
+#---------------
 #===============
 
 
-
-
-#===========================================
-obj_grid = LinearGrid(L = 200, M = 0, N = 0)
+#=================
 #-----------------
 custom_obj = False
+custom_con = True
 #----------------
-#------------------
-pressure_fxd = True
-#--------------------
 #---------------
 iota_fxd = False
+iota_free = True
 #---------------
 
+obj_grid = LinearGrid(L = 200, M = 0, N = 0)
 
-#=====================
-# Shared toggle block:
-opt_toggles_both = {
+#==============
+opt_toggles = {
+    #------------
     # Objectives:
     #------------
         # Standard:
-    #--------------------
     "forcebalance_obj": {
         "use": True,
         "kwargs": {
@@ -186,7 +188,7 @@ opt_toggles_both = {
         },
     },
     "qs": {
-        "use": True,
+        "use": False,
         "kwargs": {
             "weight": 1e0,
             "helicity": (1, NFP),
@@ -206,12 +208,10 @@ opt_toggles_both = {
             "weight": 1e0,
         },
     },
-    #---------------------
 
         # Custom:
-    #-----------------------
     "pressure_axis_range": {
-        "use": not pressure_fxd,
+        "use": True,
         "kwargs": {
             "name": "pressure_axis_range",
             "fun": pressure_axis_range,
@@ -220,7 +220,7 @@ opt_toggles_both = {
         },
     },
     "pressure_shape": {
-        "use": not pressure_fxd,
+        "use": custom_con,
         "kwargs": {
             "name": "pressure_shape",
             "fun": pressure_shape,
@@ -229,7 +229,7 @@ opt_toggles_both = {
         },
     },
     "iota_axis_range": {
-        "use": not iota_fxd,
+        "use": iota_free,
         "kwargs": {
             "name": "iota_axis_range",
             "fun": iota_axis_range,
@@ -238,7 +238,7 @@ opt_toggles_both = {
         },
     },
     "iota_edge_range": {
-        "use": not iota_fxd,
+        "use": iota_free,
         "kwargs": {
             "name": "iota_edge_range",
             "fun": iota_edge_range,
@@ -286,16 +286,17 @@ opt_toggles_both = {
             "weight": 1e0,
         },
     },
-    #---------------------
 
 
+    #-------------
     # Constraints:
     #-------------
         # Standard:
-    #--------------
-    "fix_pressure": {
-        "use": pressure_fxd,
-        "kwargs": {},
+    "forcebalance_con": {  # only used for proximal
+        "use": True,
+        "kwargs": {
+            "target": 0.0,
+        },
     },
     "fix_iota": {
         "use": iota_fxd,
@@ -313,12 +314,10 @@ opt_toggles_both = {
         "use": True,
         "kwargs": {},
     },
-    #----------------
 
         # Custom:
-    #----------------------
     "pressure_octic_con": {
-        "use": not custom_obj,
+        "use": custom_con,
         "kwargs": {
             "name": "pressure_octic_con",
             "fun": pressure_octic_con,
@@ -326,7 +325,7 @@ opt_toggles_both = {
         },
     },
     "pressure_DOF_con": {
-        "use": not custom_obj,
+        "use": custom_con,
         "kwargs": {
             "name": "pressure_DOF_con",
             "fun": pressure_DOF_con,
@@ -334,7 +333,7 @@ opt_toggles_both = {
         },
     },
     "pressure_edge_con": {
-        "use": not custom_obj,
+        "use": custom_con,
         "kwargs": {
             "name": "pressure_edge_con",
             "fun": pressure_edge_con,
@@ -342,78 +341,27 @@ opt_toggles_both = {
         },
     },
     "grad_pressure_edge_con": {
-        "use": not custom_obj,
+        "use": custom_con,
         "kwargs": {
             "name": "grad_pressure_edge_con",
             "fun": grad_pressure_edge_con,
             "target": 0.0,
         },
     },
-}   #---------------------
-#=========================
-
-
-
-
-#==================
-# Proximal toggles:
-opt_toggles_prox = {
-    # Objectives:
-    #------------
-    #------------
-
-
-    # Constraints:
-    #--------------------
-    "forcebalance_con": {
-        "use": True,
-        "kwargs": {
-            "target": 0.0,
-        },
-    },
-}   #---------------------
-#=========================
-
-
-
-
-#================
-# AugLag toggles:
-opt_toggles_auglag = {
-    # Objectives:
-    #------------
-
-
-    #------------
-    # Constraints:
-    #---------------------
-    "pressure_axis_fxd": {
-        "use": True,
-        "kwargs": {
-            "name": "pressure_axis_fxd",
-            "fun": pressure_axis_fxd,
-            "target": p_axis,
-        },
-    },
-    #------------------------
 }
-#============================
-
-
+#=========================
 
 
 #=====================
 # Grouping opt inputs:
 opt_config = {
-    "ftol":               ftol,
-    "xtol":               xtol,
-    "gtol":               gtol,
-    "maxiter":            maxiter,
-    "max_nfev":           max_nfev,
-    "x_scale":            x_scale,
-    "opt_toggles_both":   opt_toggles_both,
-    "opt_toggles_prox":   opt_toggles_prox,
-    "opt_toggles_auglag": opt_toggles_auglag,
+    "ftol":        ftol,
+    "xtol":        xtol,
+    "gtol":        gtol,
+    "maxiter":     maxiter,
+    "max_nfev":    max_nfev,
+    "opt_toggles": opt_toggles,
+    "x_scale":     x_scale,
 }
 #==============================
 #===================================================================================================================================================
@@ -453,3 +401,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```

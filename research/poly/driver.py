@@ -44,7 +44,7 @@ def comparison(
     #---------------------------------------------
     # Unpacking config variables needed in driver:
     NFP = eq_config["NFP"]
-    opt_toggles = opt_config["opt_toggles"]
+    opt_toggles_both = opt_config["opt_toggles_both"]
     config_path = driver_config["config_path"]
     #---------------------------------------------
 
@@ -60,7 +60,7 @@ def comparison(
 
     active_columns = []
     for key, label in column_map:
-        if opt_toggles.get(key, {}).get("use", False):
+        if opt_toggles_both.get(key, {}).get("use", False):
             active_columns.append((key, label))
     #----------------------------------------
 
@@ -76,7 +76,7 @@ def comparison(
     # Running & saving initial equilibrium solve:
     eq_init = run_equilibrium(eq_config=eq_config)
     eq_init.save(os.path.join(out_dir, "eq_init.h5"))
-       
+
     # Plotting toroidal cross-sections (confirmation of eq health):
     plt.title("Toroidal Cross-Sections of Initial Equilibrium")
     fig, ax = plot_comparison(
@@ -240,8 +240,8 @@ def comparison(
     # Plotting toroidal cross-sections:
     plt.title("Toroidal Cross-Sections of Solved Equilibria")
     fig, ax = plot_comparison(
-        eqs=[eq_init, 
-             eq_opt_prox, 
+        eqs=[eq_init,
+             eq_opt_prox,
              eq_opt_auglag
         ],
         labels=[
@@ -250,8 +250,8 @@ def comparison(
             "Optimized (_auglag)",
         ],
         color=[
-            "green", 
-            "purple", 
+            "green",
+            "purple",
             "orange"
         ],
     )

@@ -76,7 +76,17 @@ def grad_pressure_edge_obj(grid, data):
 
 #=============
 # Constraints:
-#==========================
+#=============================
+def pressure_axis_fxd(params):
+    """
+    Auglag constraint that keeps the max
+    pressure on-axis constant.
+    """
+    c = params['p_l'] 
+    return c[0]
+#==============
+
+#==============================
 def pressure_octic_con(params):
     """
     Limits the pressure profile to an 8th-order polynomial 

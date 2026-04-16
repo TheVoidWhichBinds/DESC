@@ -63,50 +63,46 @@ from research.poly.helper import(
 #==================================
 #----------------------------------
 # Number of toroidal field periods:
-NFP = 4
+NFP = 1
 #-------
 
 #------------------------
 # Equilibrium resolution:
-L = 8
-M = 8
-N = 3
+L = 16
+M = 16
+N = 0
 eq_resolution = [L, M, N]
 #------------------------
 
 #----------------------
 # Initializing surface:
 surface_init = FourierRZToroidalSurface(
-    R_lmn   = [10.0,   -1.0],
-    modes_R = [(0, 0), (1, 0)],
-    Z_lmn   = [  1.0],
-    modes_Z = [(-1, 0)],
+    R_lmn   = [ 3.51,   -1.0,  0.106],
+    modes_R = [(0, 0), (1, 0), (2, 0)],
+    Z_lmn   = [ 1.47,    0.16],
+    modes_Z = [(-1, 0), (-2, 0)],
     NFP = NFP,
 )
 #-------------
 
 #-----------------------
 # Initializing pressure:
-p_axis = 1E4
+p_axis = 1600
 pressure_init = PowerSeriesProfile(
-    list(p_axis*jnp.array([1,-2,1])),
-    # pressure_generator(
-    #     p_axis = p_axis,
-    #     width_percentage = 50
-    # ),
+    [1600, -3200, 1600],
     sym = True,
 )
 #--------------
 
 #-------------------
 # Initializing iota:
-iota_axis_init = 0.33
+iota_axis_init = 1.0
 iota_init = PowerSeriesProfile(
-    [iota_axis_init, -0.06], 
-    sym=True,
+    [1, -0.67],
+    sym = True,
 )
-#------------
-#============
+#--------------
+#==============
 
 
 #====================
@@ -160,11 +156,16 @@ x_scale = "auto"
 
 
 #=================
+#-----------------
 custom_obj = False
 custom_con = True
+#----------------
+#---------------
+iota_fxd = True
+iota_free = False
+#---------------
+
 obj_grid = LinearGrid(L = 200, M = 0, N = 0)
-
-
 
 #==============
 opt_toggles = {
@@ -175,7 +176,7 @@ opt_toggles = {
     "forcebalance_obj": {
         "use": True,
         "kwargs": {
-            "weight": 1e2,
+            "weight": 1e1,
             "target": 0.0,
         },
     },
@@ -187,7 +188,7 @@ opt_toggles = {
         },
     },
     "qs": {
-        "use": True,
+        "use": False,
         "kwargs": {
             "weight": 1e0,
             "helicity": (1, NFP),
@@ -215,7 +216,7 @@ opt_toggles = {
             "name": "pressure_axis_range",
             "fun": pressure_axis_range,
             "bounds": pressure_axis_bounds,
-            "weight": 1e0,
+            "weight": 1e12,
         },
     },
     "pressure_shape": {
@@ -228,7 +229,7 @@ opt_toggles = {
         },
     },
     "iota_axis_range": {
-        "use": True,
+        "use": iota_free,
         "kwargs": {
             "name": "iota_axis_range",
             "fun": iota_axis_range,
@@ -237,7 +238,7 @@ opt_toggles = {
         },
     },
     "iota_edge_range": {
-        "use": True,
+        "use": iota_free,
         "kwargs": {
             "name": "iota_edge_range",
             "fun": iota_edge_range,
@@ -297,7 +298,19 @@ opt_toggles = {
             "target": 0.0,
         },
     },
+    "fix_iota": {
+        "use": iota_fxd,
+        "kwargs": {},
+    },
     "fix_psi": {
+        "use": True,
+        "kwargs": {},
+    },
+    "fix_boundary_R": {
+        "use": True,
+        "kwargs": {},
+    },
+    "fix_boundary_Z": {
         "use": True,
         "kwargs": {},
     },

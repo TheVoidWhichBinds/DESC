@@ -4,6 +4,10 @@ sys.path.append("/Users/macdaddi/DESC")
 from desc.objectives import (
     ObjectiveFunction,
     FixPsi,
+    FixIota,
+    FixPressure,
+    FixBoundaryR,
+    FixBoundaryZ,
     ForceBalance,
     AspectRatio,
     QuasisymmetryBoozer,
@@ -16,6 +20,7 @@ from desc.objectives import (
 from .helper import (
     _eq,
     _append_terms,
+    _get_optimizer_toggles,
 )
 
 
@@ -124,14 +129,45 @@ CONSTRAINT_REGISTRY = {
             "eq": _eq,
         },
     },
+    "fix_pressure": {
+        "wrapper": FixPressure,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+    "fix_iota": {
+        "wrapper": FixIota,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
     "fix_psi": {
         "wrapper": FixPsi,
         "defaults": {
             "eq": _eq,
         },
     },
+    "fix_boundary_R": {
+        "wrapper": FixBoundaryR,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+    "fix_boundary_Z": {
+        "wrapper": FixBoundaryZ,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+
 
         # Custom:
+    "pressure_axis_fxd": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
     "pressure_octic_con": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -172,7 +208,7 @@ CONSTRAINT_REGISTRY = {
 #============== OPTIMIZER FUNCTION ============================================================================================================================
 def run_optimization(eq_0, optimizer, opt_config):
     """
-    Run one optimization using a single shared opt_toggles dict.
+    Run one optimization using shared + optimizer-specific toggle dicts.
     """
 
     #=============================================
@@ -183,7 +219,7 @@ def run_optimization(eq_0, optimizer, opt_config):
     maxiter = opt_config["maxiter"]
     max_nfev = opt_config["max_nfev"]
     x_scale = opt_config["x_scale"]
-    opt_toggles = opt_config["opt_toggles"]
+    opt_toggles = _get_optimizer_toggles(opt_config, optimizer)
     #=============================================
 
     #=========================================
@@ -199,22 +235,22 @@ def run_optimization(eq_0, optimizer, opt_config):
 
     #-------------
     _append_terms(
-        term_list=objectives_list,
-        toggle=opt_toggles,
-        registry=OBJECTIVE_REGISTRY,
-        context=context,
-        kind="objective",
+        term_list = objectives_list,
+        toggle = opt_toggles,
+        registry = OBJECTIVE_REGISTRY,
+        context = context,
+        kind = "objective",
     )
     #--------------------
 
     #----------------
     # All constraints
     _append_terms(
-        term_list=constraints_list,
-        toggle=opt_toggles,
-        registry=CONSTRAINT_REGISTRY,
-        context=context,
-        kind="constraint",
+        term_list = constraints_list,
+        toggle = opt_toggles,
+        registry = CONSTRAINT_REGISTRY,
+        context = context,
+        kind = "constraint",
     )
     #---------------------
 

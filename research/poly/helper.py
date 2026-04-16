@@ -4,6 +4,7 @@ import inspect
 import re
 import os
 import numpy as np
+from copy import deepcopy
 
 
 
@@ -47,10 +48,10 @@ def iota_between_rationals(
         (0.5,    0.6667),
         (0.6667, 0.75),
         (0.75,   1.0),
-        (1.0,    1.25),    
+        (1.0,    1.25),
         (1.25,   1.3333),
         (1.3333, 1.5),
-        (1.5,    1.6667),  
+        (1.5,    1.6667),
         (1.6667, 2.0),
         (2.0,    3.0),
         (3.0,    4.0),
@@ -198,15 +199,6 @@ def _write_readme(out_dir, config_path):
             f.write("\n")
         f.write("```\n")
 #=======================
-#==============================================================================================================================================================
-
-
-
-
-
-
-
-
 
 
 #============== OPT ============================================================================================================================
@@ -381,5 +373,44 @@ def _append_terms(
             context=context,
             kind=kind,
         )
+#=========================
+
+
+#=========================
+def _merge_toggle_dicts(*toggle_dicts):
+    """
+    Merge toggle dicts left-to-right.
+    Later dicts override earlier dicts for shared keys.
+    """
+    merged = {}
+    for toggle_dict in toggle_dicts:
+        if toggle_dict is None:
+            continue
+        for key, value in toggle_dict.items():
+            merged[key] = deepcopy(value)
+    return merged
+#=========================
+
+
+#=========================
+def _get_optimizer_toggles(
+        opt_config,
+        optimizer
+    ):
+    """
+    Build final toggle dict for a given optimizer from:
+        - opt_toggles_both
+        - optimizer-specific toggles
+    """
+    opt_toggles_both = opt_config.get("opt_toggles_both", {})
+
+    if optimizer == "proximal-lsq-exact":
+        opt_toggles_specific = opt_config.get("opt_toggles_prox", {})
+    elif optimizer == "lsq-auglag":
+        opt_toggles_specific = opt_config.get("opt_toggles_auglag", {})
+    else:
+        raise ValueError(f"Unsupported optimizer: {optimizer}")
+
+    return _merge_toggle_dicts(opt_toggles_both, opt_toggles_specific)
 #=========================
 #==============================================================================================================================================================
