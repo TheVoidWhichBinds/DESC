@@ -1,38 +1,33 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from desc.grid import LinearGrid
-from .eq import run_equilibrium
-from .opt import run_optimization
 import os
+
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
-from tabulate import tabulate
+from desc.grid import LinearGrid
 from desc.plotting import plot_comparison
+from tabulate import tabulate
+
+from .eq import run_equilibrium
 from .helper import (
-    sci_compact,
-    _safe_extract_from_result,
     _next_run_dir,
+    _safe_extract_from_result,
     _write_readme,
+    sci_compact,
 )
+from .opt import run_optimization
 
 
-
-
-
-
-
-
-
-
-#============== PROXIMAL VS. AUGLAG COMPARISON ============================================================================================================
+#============== PROX_PARAMS VS. PROX_DATA VS. AUGLAG COMPARISON ====================================================================================
 def comparison(
         eq_config: dict,
         opt_config: dict,
         driver_config: dict,
     ):
     """
-    Runs initial equilibrium solve, then optimization for
-    both proximal-lsq-exact and lsq-auglag.
-    Plots and objective table are also generated.
+    Runs initial equilibrium solve, then optimization for:
+    proximal-lsq-exact with params-based custom objectives,
+    proximal-lsq-exact with data-based custom objectives, and
+    lsq-auglag. Plots and objective table are also generated.
     """
     #====================================================
     # Initializations:
@@ -44,7 +39,7 @@ def comparison(
     #---------------------------------------------
     # Unpacking config variables needed in driver:
     NFP = eq_config["NFP"]
-    opt_toggles_both = opt_config["opt_toggles_both"]
+    opt_toggles_all = opt_config["opt_toggles_all"]
     config_path = driver_config["config_path"]
     #---------------------------------------------
 
@@ -60,7 +55,7 @@ def comparison(
 
     active_columns = []
     for key, label in column_map:
-        if opt_toggles_both.get(key, {}).get("use", False):
+        if opt_toggles_all.get(key, {}).get("use", False):
             active_columns.append((key, label))
     #----------------------------------------
 
@@ -100,67 +95,91 @@ def comparison(
 
 
     #=========================
-    # Optimization run: 
+    # Optimization run:
     #-------------------------
-    # Running both optimizers:
-    eq_opt_prox = eq_init.copy()
-    eq_opt_auglag = eq_init.copy()
+    # Running all optimizers:
+    eq_prox_params_0 = eq_init.copy()
+    eq_prox_data_0 = eq_init.copy()
+    eq_auglag_0 = eq_init.copy()
 
     optimizer_prox = "proximal-lsq-exact"
     optimizer_auglag = "lsq-auglag"
 
-    eq_opt_prox, opt_result_prox = run_optimization(
-        eq_opt_prox,
-        optimizer_prox,
+    eq_opt_prox_params, opt_result_prox_params = run_optimization(
+        eq_0=eq_prox_params_0,
+        optimizer=optimizer_prox,
+        toggle_group="opt_toggles_prox_params",
+        opt_config=opt_config,
+    )
+
+    eq_opt_prox_data, opt_result_prox_data = run_optimization(
+        eq_0=eq_prox_data_0,
+        optimizer=optimizer_prox,
+        toggle_group="opt_toggles_prox_data",
         opt_config=opt_config,
     )
 
     eq_opt_auglag, opt_result_auglag = run_optimization(
-        eq_opt_auglag,
-        optimizer_auglag,
+        eq_0=eq_auglag_0,
+        optimizer=optimizer_auglag,
+        toggle_group="opt_toggles_auglag",
         opt_config=opt_config,
     )
     #-------------------------
 
     #--------------------------
     # Saving optimized outputs:
-    eq_opt_prox.save(os.path.join(out_dir, "opt_prox.h5"))
+    eq_opt_prox_params.save(os.path.join(out_dir, "opt_prox_params.h5"))
+    eq_opt_prox_data.save(os.path.join(out_dir, "opt_prox_data.h5"))
     eq_opt_auglag.save(os.path.join(out_dir, "opt_auglag.h5"))
-    #---------------------------------------------------------
-    #=========================================================
+    #------------------------------------------------------
+    #======================================================
 
 
 
 
     #====================================
     # Generating comparison table labels:
-    #--------
-    rows = []
+    #------------------------------------
+    rows = [
+        ("Prox Params",),
+        ("Prox Data",),
+        ("AugLag",),
+        ("Diff (DATA - PARAMS)",),
+        ("Diff (AUG - PARAMS)",),
+    ]
+
     values = []
 
-    rows.append(("Proximal",))
-    rows.append(("AugLag",))
-    rows.append(("Diff (AUG - PROX)",))
-
-    row_prox = []
+    row_prox_params = []
+    row_prox_data = []
     row_auglag = []
-    row_DIFF = []
-    #------------
+    row_diff_data_params = []
+    row_diff_auglag_params = []
+    #------------------------------------
 
     #-----------------------------
     # Extracting objective values:
     for key, label in active_columns:
-        fmin_prox, fmean_prox, fmax_prox = _safe_extract_from_result(
-            opt_result_prox, label
+        fmin_prox_params, fmean_prox_params, fmax_prox_params = _safe_extract_from_result(
+            opt_result_prox_params, label
+        )
+        fmin_prox_data, fmean_prox_data, fmax_prox_data = _safe_extract_from_result(
+            opt_result_prox_data, label
         )
         fmin_auglag, fmean_auglag, fmax_auglag = _safe_extract_from_result(
             opt_result_auglag, label
         )
 
-        row_prox.append(
-            f"f_min={sci_compact(fmin_prox, sig=4)}, "
-            f"f_mean={sci_compact(fmean_prox, sig=4)}, "
-            f"f_max={sci_compact(fmax_prox, sig=4)}"
+        row_prox_params.append(
+            f"f_min={sci_compact(fmin_prox_params, sig=4)}, "
+            f"f_mean={sci_compact(fmean_prox_params, sig=4)}, "
+            f"f_max={sci_compact(fmax_prox_params, sig=4)}"
+        )
+        row_prox_data.append(
+            f"f_min={sci_compact(fmin_prox_data, sig=4)}, "
+            f"f_mean={sci_compact(fmean_prox_data, sig=4)}, "
+            f"f_max={sci_compact(fmax_prox_data, sig=4)}"
         )
         row_auglag.append(
             f"f_min={sci_compact(fmin_auglag, sig=4)}, "
@@ -168,33 +187,51 @@ def comparison(
             f"f_max={sci_compact(fmax_auglag, sig=4)}"
         )
 
-        dmin = fmin_auglag - fmin_prox
-        dmean = fmean_auglag - fmean_prox
-        dmax = fmax_auglag - fmax_prox
-        row_DIFF.append(
-            f"f_min diff={sci_compact(dmin, sig=4)}, "
-            f"f_mean diff={sci_compact(dmean, sig=4)}, "
-            f"f_max diff={sci_compact(dmax, sig=4)}"
+        dmin_data = fmin_prox_data - fmin_prox_params
+        dmean_data = fmean_prox_data - fmean_prox_params
+        dmax_data = fmax_prox_data - fmax_prox_params
+        row_diff_data_params.append(
+            f"f_min diff={sci_compact(dmin_data, sig=4)}, "
+            f"f_mean diff={sci_compact(dmean_data, sig=4)}, "
+            f"f_max diff={sci_compact(dmax_data, sig=4)}"
+        )
+
+        dmin_auglag = fmin_auglag - fmin_prox_params
+        dmean_auglag = fmean_auglag - fmean_prox_params
+        dmax_auglag = fmax_auglag - fmax_prox_params
+        row_diff_auglag_params.append(
+            f"f_min diff={sci_compact(dmin_auglag, sig=4)}, "
+            f"f_mean diff={sci_compact(dmean_auglag, sig=4)}, "
+            f"f_max diff={sci_compact(dmax_auglag, sig=4)}"
         )
     #-----------------------------------------------
 
     #-------------------------
     # Including Beta in table:
-    beta_prox = float(
-        eq_opt_prox.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
+    beta_prox_params = float(
+        eq_opt_prox_params.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
+    )
+    beta_prox_data = float(
+        eq_opt_prox_data.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
     )
     beta_auglag = float(
         eq_opt_auglag.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
     )
-    beta_DIFF = beta_auglag - beta_prox
 
-    row_prox.append(f"{beta_prox:.4g}")
+    beta_diff_data_params = beta_prox_data - beta_prox_params
+    beta_diff_auglag_params = beta_auglag - beta_prox_params
+
+    row_prox_params.append(f"{beta_prox_params:.4g}")
+    row_prox_data.append(f"{beta_prox_data:.4g}")
     row_auglag.append(f"{beta_auglag:.4g}")
-    row_DIFF.append(f"{beta_DIFF:.4g}")
+    row_diff_data_params.append(f"{beta_diff_data_params:.4g}")
+    row_diff_auglag_params.append(f"{beta_diff_auglag_params:.4g}")
 
-    values.append(row_prox)
+    values.append(row_prox_params)
+    values.append(row_prox_data)
     values.append(row_auglag)
-    values.append(row_DIFF)
+    values.append(row_diff_data_params)
+    values.append(row_diff_auglag_params)
     #----------------------
 
     #------------------------------
@@ -230,15 +267,17 @@ def comparison(
         rho=rho,
         M=0,
         N=0,
-        NFP=eq_opt_prox.NFP,
-        sym=eq_opt_prox.sym,
+        NFP=eq_opt_prox_params.NFP,
+        sym=eq_opt_prox_params.sym,
     )
 
-    p_prox = eq_opt_prox.compute("p", grid=grid)["p"]
+    p_prox_params = eq_opt_prox_params.compute("p", grid=grid)["p"]
+    p_prox_data = eq_opt_prox_data.compute("p", grid=grid)["p"]
     p_auglag = eq_opt_auglag.compute("p", grid=grid)["p"]
 
     plt.figure(figsize=(7, 5))
-    plt.plot(rho, p_prox, linewidth=2, label="Proximal", color="purple")
+    plt.plot(rho, p_prox_params, linewidth=2, label="Prox Params", color="purple")
+    plt.plot(rho, p_prox_data, linewidth=2, label="Prox Data", color="blue")
     plt.plot(rho, p_auglag, linewidth=2, label="AugLag", color="orange")
     plt.xlabel(r"$\rho$", fontsize=14)
     plt.ylabel("Pressure", fontsize=14)
@@ -256,19 +295,23 @@ def comparison(
     # Plotting toroidal cross-sections:
     plt.title("Toroidal Cross-Sections of Solved Equilibria")
     fig, ax = plot_comparison(
-        eqs=[eq_init,
-             eq_opt_prox,
-             eq_opt_auglag
+        eqs=[
+            eq_init,
+            eq_opt_prox_params,
+            eq_opt_prox_data,
+            eq_opt_auglag,
         ],
         labels=[
             "Initial Equilibrium",
-            "Optimized (_prox)",
+            "Optimized (_prox_params)",
+            "Optimized (_prox_data)",
             "Optimized (_auglag)",
         ],
         color=[
             "green",
             "purple",
-            "orange"
+            "blue",
+            "orange",
         ],
     )
 
@@ -284,8 +327,8 @@ def comparison(
         rho=rho_grid,
         M=24,
         N=24,
-        NFP=eq_opt_prox.NFP,
-        sym=eq_opt_prox.sym,
+        NFP=eq_opt_prox_params.NFP,
+        sym=eq_opt_prox_params.sym,
     )
 
     def _j_parallel_profile(eq):
@@ -302,12 +345,32 @@ def comparison(
 
         return rho_unique, J_parallel_fs
 
-    rho_u_prox, J_parallel_prox = _j_parallel_profile(eq_opt_prox)
+    rho_u_prox_params, J_parallel_prox_params = _j_parallel_profile(eq_opt_prox_params)
+    rho_u_prox_data, J_parallel_prox_data = _j_parallel_profile(eq_opt_prox_data)
     rho_u_auglag, J_parallel_auglag = _j_parallel_profile(eq_opt_auglag)
 
     plt.figure(figsize=(7, 5))
-    plt.plot(rho_u_prox, J_parallel_prox, linewidth=2, label="Proximal", color="purple")
-    plt.plot(rho_u_auglag, J_parallel_auglag, linewidth=2, label="AugLag", color="orange")
+    plt.plot(
+        rho_u_prox_params,
+        J_parallel_prox_params,
+        linewidth=2,
+        label="Prox Params",
+        color="purple",
+    )
+    plt.plot(
+        rho_u_prox_data,
+        J_parallel_prox_data,
+        linewidth=2,
+        label="Prox Data",
+        color="blue",
+    )
+    plt.plot(
+        rho_u_auglag,
+        J_parallel_auglag,
+        linewidth=2,
+        label="AugLag",
+        color="orange",
+    )
     plt.xlabel(r"$\rho$", fontsize=14)
     plt.ylabel(r"$\langle J_{\parallel} \rangle$", fontsize=14)
     plt.title("Parallel Current", fontsize=13)
@@ -326,15 +389,17 @@ def comparison(
         rho=rho_grid,
         M=0,
         N=0,
-        NFP=eq_opt_prox.NFP,
-        sym=eq_opt_prox.sym,
+        NFP=eq_opt_prox_params.NFP,
+        sym=eq_opt_prox_params.sym,
     )
 
-    iota_prox = eq_opt_prox.compute("iota", grid=grid_iota)["iota"]
+    iota_prox_params = eq_opt_prox_params.compute("iota", grid=grid_iota)["iota"]
+    iota_prox_data = eq_opt_prox_data.compute("iota", grid=grid_iota)["iota"]
     iota_auglag = eq_opt_auglag.compute("iota", grid=grid_iota)["iota"]
 
     plt.figure(figsize=(7, 5))
-    plt.plot(rho_grid, iota_prox, linewidth=2, label="Proximal", color="purple")
+    plt.plot(rho_grid, iota_prox_params, linewidth=2, label="Prox Params", color="purple")
+    plt.plot(rho_grid, iota_prox_data, linewidth=2, label="Prox Data", color="blue")
     plt.plot(rho_grid, iota_auglag, linewidth=2, label="AugLag", color="orange")
     plt.xlabel(r"$\rho$", fontsize=14)
     plt.ylabel(r"$\iota$", fontsize=14)
@@ -348,18 +413,12 @@ def comparison(
     plt.close()
     #----------
     #==========
-#==============================================================================================================================================================
+#==================================================================================================================================================
 
 
 
 
-
-
-
-
-
-
-#============== CONFIGURATION ENTRYPOINT ==========================================================================================================================
+#============== CONFIGURATION ENTRYPOINT ==========================================================================================================
 def run_from_config(
         eq_config: dict,
         opt_config: dict,
@@ -370,4 +429,4 @@ def run_from_config(
         opt_config=opt_config,
         driver_config=driver_config,
     )
-#==============================================================================================================================================================
+#==================================================================================================================================================
