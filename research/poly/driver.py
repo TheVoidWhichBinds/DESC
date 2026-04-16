@@ -72,11 +72,17 @@ def comparison(
     #==========================================
 
 
+
+
     #============================================
+    # Equilibrium run:
+    #--------------------------------------------
     # Running & saving initial equilibrium solve:
     eq_init = run_equilibrium(eq_config=eq_config)
     eq_init.save(os.path.join(out_dir, "eq_init.h5"))
+    #------------------------------------------------
 
+    #--------------------------------------------------------------
     # Plotting toroidal cross-sections (confirmation of eq health):
     plt.title("Toroidal Cross-Sections of Initial Equilibrium")
     fig, ax = plot_comparison(
@@ -87,11 +93,15 @@ def comparison(
     toroidal_cuts_path = os.path.join(out_dir, "initial_toroidal_cuts.png")
     plt.savefig(toroidal_cuts_path, dpi=200)
     plt.close()
+    #----------
     #==========
-    #============================================
 
 
-    #======================================
+
+
+    #=========================
+    # Optimization run: 
+    #-------------------------
     # Running both optimizers:
     eq_opt_prox = eq_init.copy()
     eq_opt_auglag = eq_init.copy()
@@ -110,6 +120,7 @@ def comparison(
         optimizer_auglag,
         opt_config=opt_config,
     )
+    #-------------------------
 
     #--------------------------
     # Saving optimized outputs:
@@ -119,8 +130,11 @@ def comparison(
     #=========================================================
 
 
+
+
     #====================================
     # Generating comparison table labels:
+    #--------
     rows = []
     values = []
 
@@ -131,9 +145,9 @@ def comparison(
     row_prox = []
     row_auglag = []
     row_DIFF = []
-    #============
+    #------------
 
-    #=============================
+    #-----------------------------
     # Extracting objective values:
     for key, label in active_columns:
         fmin_prox, fmean_prox, fmax_prox = _safe_extract_from_result(
@@ -162,10 +176,9 @@ def comparison(
             f"f_mean diff={sci_compact(dmean, sig=4)}, "
             f"f_max diff={sci_compact(dmax, sig=4)}"
         )
-    #=====================================
+    #-----------------------------------------------
 
-
-    #=========================
+    #-------------------------
     # Including Beta in table:
     beta_prox = float(
         eq_opt_prox.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
@@ -182,10 +195,9 @@ def comparison(
     values.append(row_prox)
     values.append(row_auglag)
     values.append(row_DIFF)
-    #======================
+    #----------------------
 
-
-    #==============================
+    #------------------------------
     # Save table inside run folder:
     index = pd.Index(
         [row[0] for row in rows],
@@ -203,10 +215,15 @@ def comparison(
     with open(output_file, "w") as f:
         f.write("Comparison of Post-Optimization Objectives\n\n")
         f.write(ascii_table)
+    #-----------------------
     #=======================
 
 
+
+
     #====================
+    # Plotting:
+    #--------------------
     # Plotting pressures:
     rho = np.linspace(0.0, 1.0, 400)
     grid = LinearGrid(
@@ -233,10 +250,9 @@ def comparison(
     pressure_path = os.path.join(out_dir, "pressure_compare.png")
     plt.savefig(pressure_path, dpi=200)
     plt.close()
-    #==========
+    #----------
 
-
-    #==================================
+    #----------------------------------
     # Plotting toroidal cross-sections:
     plt.title("Toroidal Cross-Sections of Solved Equilibria")
     fig, ax = plot_comparison(
@@ -259,10 +275,9 @@ def comparison(
     toroidal_cuts_path = os.path.join(out_dir, "toroidal_cuts.png")
     plt.savefig(toroidal_cuts_path, dpi=200)
     plt.close()
-    #==========
+    #----------
 
-
-    #=============================
+    #-----------------------------
     # J_parallel vs. rho plotting:
     rho_grid = np.linspace(0.0, 1.0, 100)
     grid_J = LinearGrid(
@@ -303,10 +318,9 @@ def comparison(
     j_parallel_path = os.path.join(out_dir, "j_parallel.png")
     plt.savefig(j_parallel_path, dpi=200)
     plt.close()
-    #==========
+    #----------
 
-
-    #=======================
+    #-----------------------
     # iota vs. rho plotting:
     grid_iota = LinearGrid(
         rho=rho_grid,
@@ -332,6 +346,7 @@ def comparison(
     iota_path = os.path.join(out_dir, "iota.png")
     plt.savefig(iota_path, dpi=200)
     plt.close()
+    #----------
     #==========
 #==============================================================================================================================================================
 

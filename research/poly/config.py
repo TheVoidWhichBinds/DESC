@@ -51,6 +51,12 @@ from research.poly.helper import(
 
 
 
+#================ NOTES ============================================================================================================================
+# DESC Part I recreation of D-shape equilibrium using proximal and Auglag
+#===================================================================================================================================================
+
+
+
 
 
 
@@ -69,7 +75,7 @@ NFP = 1
 # Equilibrium resolution:
 L = 16
 M = 16
-N = 0
+N = 16
 eq_resolution = [L, M, N]
 #------------------------
 
@@ -160,7 +166,7 @@ custom_obj = False
 pressure_fxd = True
 #--------------------
 #---------------
-iota_fxd = False
+iota_fxd = True
 #---------------
 
 
@@ -318,7 +324,7 @@ opt_toggles_both = {
         # Custom:
     #----------------------
     "pressure_octic_con": {
-        "use": not custom_obj,
+        "use": not custom_obj and not pressure_fxd,
         "kwargs": {
             "name": "pressure_octic_con",
             "fun": pressure_octic_con,
@@ -326,7 +332,7 @@ opt_toggles_both = {
         },
     },
     "pressure_DOF_con": {
-        "use": not custom_obj,
+        "use": not custom_obj and not pressure_fxd,
         "kwargs": {
             "name": "pressure_DOF_con",
             "fun": pressure_DOF_con,
@@ -334,7 +340,7 @@ opt_toggles_both = {
         },
     },
     "pressure_edge_con": {
-        "use": not custom_obj,
+        "use": not custom_obj and not pressure_fxd,
         "kwargs": {
             "name": "pressure_edge_con",
             "fun": pressure_edge_con,
@@ -342,7 +348,7 @@ opt_toggles_both = {
         },
     },
     "grad_pressure_edge_con": {
-        "use": not custom_obj,
+        "use": not custom_obj and not pressure_fxd,
         "kwargs": {
             "name": "grad_pressure_edge_con",
             "fun": grad_pressure_edge_con,
@@ -388,7 +394,7 @@ opt_toggles_auglag = {
     # Constraints:
     #---------------------
     "pressure_axis_fxd": {
-        "use": True,
+        "use": not pressure_fxd,
         "kwargs": {
             "name": "pressure_axis_fxd",
             "fun": pressure_axis_fxd,

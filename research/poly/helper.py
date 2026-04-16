@@ -186,10 +186,13 @@ def _next_run_dir(continuation_dir):
 #=======================================
 def _write_readme(out_dir, config_path):
     """
-    Write full config.py contents into README.md in a readable form.
+    Write config.py contents into README.md, 
+    omitting the first 50 lines.
     """
     with open(config_path, "r") as f:
-        config_text = f.read()
+        config_lines = f.readlines()
+
+    config_text = "".join(config_lines[50:])
 
     readme_path = os.path.join(out_dir, "README.md")
     with open(readme_path, "w") as f:
