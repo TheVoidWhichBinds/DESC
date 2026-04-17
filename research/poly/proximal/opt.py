@@ -113,12 +113,6 @@ CORE_CONSTRAINT_REGISTRY = {
 
 #==============================
 CUSTOM_OBJECTIVE_REGISTRY = {
-    "pressure_axis_range": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
     "pressure_shape": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -143,6 +137,12 @@ CUSTOM_OBJECTIVE_REGISTRY = {
 
 #===============================
 CUSTOM_CONSTRAINT_REGISTRY = {
+    "pressure_axis": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
     "pressure_octic": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -167,7 +167,7 @@ CUSTOM_CONSTRAINT_REGISTRY = {
             "thing": _eq,
         },
     },
-    "iota_quartic": {
+    "iota_quadratic": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
@@ -230,7 +230,7 @@ def _build_terms(eq_0, optimizer, opt_config):
 
     #-----------------------------------
     # Custom routing depends on optimizer:
-    if optimizer == "proximal-lsq-exact":
+    if optimizer == "proximal-lsq-auglag":
         _append_terms(
             term_list=objectives_list,
             toggle=opt_toggles_custom,
@@ -306,8 +306,16 @@ def run_optimization(eq_0, optimizer, opt_config):
 
     #---------------------------------------
     # Finalizing optimization objects/setup:
+
     constraints = tuple(constraints_list)
     objectives = ObjectiveFunction(objectives_list)
+
+    print("constraints:")
+    print(type(constraints))
+    print("n constraints =", len(constraints))
+    for i, con in enumerate(constraints):
+        print(i, type(con).__name__, getattr(con, "name", None))
+        
     #---------------------------------------
     #=======================================
 

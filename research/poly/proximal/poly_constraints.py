@@ -26,14 +26,6 @@ def pressure_shape(params):
     """
     c = params["p_l"]
     return c[4]
-
-
-def pressure_axis_range(params):
-    """
-    Allowable range of max pressures.
-    """
-    c = params["p_l"]
-    return c[0]
 #--------------
 
 
@@ -61,6 +53,14 @@ def iota_edge_range(params):
 #==========
 # Pressure:
 #--------------------------
+def pressure_axis(params):
+    """
+    Fixes pressure on-axis.
+    """
+    c = params["p_l"]
+    return c[0]
+
+
 def pressure_octic(params):
     """
     Limits the pressure profile to an 8th-order polynomial
@@ -104,12 +104,12 @@ def grad_pressure_edge(params):
 
 # Iota:
 #-----------------
-def iota_quartic(params):
+def iota_quadratic(params):
     """
-    Limits iota to 4th order polynomial.
+    Limits iota to 2nd order polynomial.
     """
-    c = params['p_l']
-    higher_orders = c[3:]
+    c = params['i_l']
+    higher_orders = c[2:]
     return higher_orders
 #-----------------------
 #=======================

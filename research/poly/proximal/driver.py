@@ -105,7 +105,7 @@ def comparison(
     eq_prox_0 = eq_init.copy()
     eq_auglag_0 = eq_init.copy()
 
-    optimizer_prox = "proximal-lsq-exact"
+    optimizer_prox = "proximal-lsq-auglag"
     optimizer_auglag = "lsq-auglag"
 
     opt_prox, opt_result_prox = run_optimization(

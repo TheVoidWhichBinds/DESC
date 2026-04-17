@@ -1,4 +1,5 @@
 ```python
+# DESC Part I recreation of D-shape equilibrium using proximal and Auglag
 #===================================================================================================================================================
 
 
@@ -97,8 +98,8 @@ iota_bounds = iota_between_rationals(iota_axis=iota_axis_init)
 ftol = 1e-4
 xtol = 1e-8
 gtol = 1e-8
-maxiter = 100
-max_nfev = 200
+maxiter = 300
+max_nfev = 300
 x_scale = "auto"
 #===============
 
@@ -107,8 +108,8 @@ x_scale = "auto"
 
 #=====================
 # Toggle booleans left:
-pressure_fxd = False
-iota_fxd = False
+pressure_fxd = True
+iota_fxd = True
 #=====================
 
 #=============================
@@ -276,6 +277,14 @@ opt_toggles_custom = {
         "kwargs": {
             "name": "grad_pressure_edge",
             "fun": grad_pressure_edge,
+            "target": 0.0,
+        },
+    },
+    "iota_quadratic": {
+        "use": not iota_fxd,
+        "kwargs": {
+            "name": "iota_quadratic",
+            "fun": iota_quadratic,
             "target": 0.0,
         },
     },
