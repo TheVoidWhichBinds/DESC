@@ -12,7 +12,6 @@ from desc.objectives import (
     ForceBalance,
     LinearObjectiveFromUser,
     MercierStability,
-    ObjectiveFromUser,
     ObjectiveFunction,
     QuasisymmetryBoozer,
 )
@@ -23,9 +22,17 @@ from .helper import (
 )
 
 
+
+
+
+
+
+
+
+
 #============== REGISTRIES ========================================================================================================================
-#======================
-OBJECTIVE_REGISTRY = {
+#===========================
+CORE_OBJECTIVE_REGISTRY = {
         # Standard:
     "forcebalance_obj": {
         "wrapper": ForceBalance,
@@ -57,70 +64,12 @@ OBJECTIVE_REGISTRY = {
             "eq": _eq,
         },
     },
-
-        # Custom params-based objectives:
-    "pressure_axis_range_params": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "pressure_shape": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "iota_axis_range_params": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "iota_edge_range_params": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-
-        # Custom data-based objectives:
-    "pressure_axis_range_data": {
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "iota_axis_range_data": {
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "iota_edge_range_data": {
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "pressure_edge_data": {
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "grad_pressure_edge_data": {
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
 }
-#----------------------
+#---------------------------
 
 
-#=======================
-CONSTRAINT_REGISTRY = {
+#============================
+CORE_CONSTRAINT_REGISTRY = {
         # Standard:
     "forcebalance_con": {
         "wrapper": ForceBalance,
@@ -158,14 +107,42 @@ CONSTRAINT_REGISTRY = {
             "eq": _eq,
         },
     },
+}
+#----------------------------
 
-        # Custom params-based constraints:
-    "pressure_axis_fxd": {
+
+#==============================
+CUSTOM_OBJECTIVE_REGISTRY = {
+    "pressure_axis_range": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
+    "pressure_shape": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "iota_axis_range": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "iota_edge_range": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+}
+#------------------------------
+
+
+#===============================
+CUSTOM_CONSTRAINT_REGISTRY = {
     "pressure_octic": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -178,57 +155,31 @@ CONSTRAINT_REGISTRY = {
             "thing": _eq,
         },
     },
-    "pressure_edge_params": {
+    "pressure_edge": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "grad_pressure_edge_params": {
+    "grad_pressure_edge": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
 }
-#======================
+#===============================
 #==================================================================================================================================================
 
 
 
 
 #============== HELPERS ===========================================================================================================================
-def _get_toggle_block(opt_config, toggle_group):
+def _build_terms(eq_0, optimizer, opt_config):
     """
-    Merge shared toggles with the toggle-group-specific additions.
+    Build objective and constraint term lists from shared core/custom toggles.
+    For auglag, all custom terms are routed into constraints.
     """
-    shared = opt_config["opt_toggles_all"]
-    specific = opt_config[toggle_group]
-    merged = dict(shared)
-    merged.update(specific)
-    return merged
-#==================================================================================================================================================
-
-
-
-
-#============== OPTIMIZER FUNCTION ================================================================================================================
-def run_optimization(eq_0, optimizer, toggle_group, opt_config):
-    """
-    Run one optimization using shared + toggle-group-specific entries.
-    """
-
-    #=============================================
-    # Unpacking optimization configuration values:
-    ftol = opt_config["ftol"]
-    xtol = opt_config["xtol"]
-    gtol = opt_config["gtol"]
-    maxiter = opt_config["maxiter"]
-    max_nfev = opt_config["max_nfev"]
-    x_scale = opt_config["x_scale"]
-    opt_toggles = _get_toggle_block(opt_config, toggle_group)
-    #=============================================
-
     #=========================================
     # Runtime values available to config dict:
     context = {
@@ -237,28 +188,109 @@ def run_optimization(eq_0, optimizer, toggle_group, opt_config):
     }
     #=========================================
 
-    constraints_list = []
+    opt_toggles_core = opt_config["opt_toggles_core"]
+    opt_toggles_custom = opt_config["opt_toggles_custom"]
+
     objectives_list = []
+    constraints_list = []
 
     #-------------------
+    # Core objectives:
     _append_terms(
         term_list=objectives_list,
-        toggle=opt_toggles,
-        registry=OBJECTIVE_REGISTRY,
+        toggle=opt_toggles_core,
+        registry=CORE_OBJECTIVE_REGISTRY,
         context=context,
         kind="objective",
     )
     #-------------------
 
     #-------------------
+    # Core constraints:
     _append_terms(
         term_list=constraints_list,
-        toggle=opt_toggles,
-        registry=CONSTRAINT_REGISTRY,
+        toggle=opt_toggles_core,
+        registry=CORE_CONSTRAINT_REGISTRY,
         context=context,
         kind="constraint",
     )
     #-------------------
+
+    #-----------------------------------
+    # Custom routing depends on optimizer:
+    if optimizer == "proximal-lsq-exact":
+        _append_terms(
+            term_list=objectives_list,
+            toggle=opt_toggles_custom,
+            registry=CUSTOM_OBJECTIVE_REGISTRY,
+            context=context,
+            kind="objective",
+        )
+
+        _append_terms(
+            term_list=constraints_list,
+            toggle=opt_toggles_custom,
+            registry=CUSTOM_CONSTRAINT_REGISTRY,
+            context=context,
+            kind="constraint",
+        )
+
+    elif optimizer == "lsq-auglag":
+        _append_terms(
+            term_list=constraints_list,
+            toggle=opt_toggles_custom,
+            registry=CUSTOM_OBJECTIVE_REGISTRY,
+            context=context,
+            kind="constraint",
+        )
+
+        _append_terms(
+            term_list=constraints_list,
+            toggle=opt_toggles_custom,
+            registry=CUSTOM_CONSTRAINT_REGISTRY,
+            context=context,
+            kind="constraint",
+        )
+
+    else:
+        raise ValueError(f"Unsupported optimizer: {optimizer}")
+    #-----------------------------------
+
+    return objectives_list, constraints_list
+#==================================================================================================================================================
+
+
+
+
+
+
+
+
+
+
+#============== OPTIMIZER FUNCTION ================================================================================================================
+def run_optimization(eq_0, optimizer, opt_config):
+    """
+    Run one optimization using shared core/custom toggle dictionaries.
+    """
+    #=============================================
+    # Unpacking optimization configuration values:
+    ftol = opt_config["ftol"]
+    xtol = opt_config["xtol"]
+    gtol = opt_config["gtol"]
+    maxiter = opt_config["maxiter"]
+    max_nfev = opt_config["max_nfev"]
+    x_scale = opt_config["x_scale"]
+    #=============================================
+
+    #------------------------
+    # Building term objects:
+    objectives_list, constraints_list = _build_terms(
+        eq_0=eq_0,
+        optimizer=optimizer,
+        opt_config=opt_config,
+    )
+    #------------------------
 
     #---------------------------------------
     # Finalizing optimization objects/setup:

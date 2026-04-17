@@ -27,27 +27,17 @@ from desc.geometry import FourierRZToroidalSurface
 from desc.grid import LinearGrid
 from desc.profiles import PowerSeriesProfile
 
-from research.poly.params_vs_data.poly_constraints import (
-    # Objectives: params
-    pressure_axis_range_params,
+from research.poly.prox_vs_auglag.poly_constraints import (
+    pressure_axis_range,
     pressure_shape,
-    iota_axis_range_params,
-    iota_edge_range_params,
-
-    # Objectives: data
-    pressure_axis_range_data,
-    iota_axis_range_data,
-    iota_edge_range_data,
-    pressure_edge_data,
-    grad_pressure_edge_data,
-
-    # Constraints
+    iota_axis_range,
+    iota_edge_range,
     pressure_octic,
     pressure_DOF,
-    pressure_edge_params,
-    grad_pressure_edge_params,
+    pressure_edge,
+    grad_pressure_edge,
 )
-from research.poly.params_vs_data.helper import (
+from research.poly.prox_vs_auglag.helper import (
     iota_between_rationals,
     pressure_generator,
 )
@@ -179,8 +169,8 @@ data_grid = LinearGrid(L=200, M=0, N=0)
 
 
 #==================
-# ALL 3 OPTIMIZERS:
-opt_toggles_all = {
+# CORE OPT TOGGLES:
+opt_toggles_core = {
     # Objectives:
     #==============
         # Standard:
@@ -221,19 +211,6 @@ opt_toggles_all = {
         },
     },
     #---------------------
-        # Custom:
-    #------------------
-    "pressure_shape": {
-        "use": not pressure_fxd,
-        "kwargs": {
-            "name": "pressure_shape",
-            "fun": pressure_shape,
-            "bounds": (-1.3, 1.8),
-            "weight": 1e0,
-        },
-    },
-    #---------------------
-    #=====================
 
 
     # Constraints:
@@ -260,15 +237,65 @@ opt_toggles_all = {
         "use": True,
         "kwargs": {},
     },
-    #----------------
-        # Custom:
-    #--------------------
     "forcebalance_con": {
         "use": True,
         "kwargs": {
             "target": 0.0,
         },
     },
+    #---------------------
+}
+#=========================
+
+
+
+
+#====================
+# CUSTOM OPT TOGGLES:
+opt_toggles_custom = {
+    # Objectives:
+    #============
+    "pressure_shape": {
+        "use": not pressure_fxd,
+        "kwargs": {
+            "name": "pressure_shape",
+            "fun": pressure_shape,
+            "bounds": (-1.3, 1.8),
+            "weight": 1e0,
+        },
+    },
+    "pressure_axis_range": {
+        "use": not pressure_fxd,
+        "kwargs": {
+            "name": "pressure_axis_range",
+            "fun": pressure_axis_range,
+            "bounds": pressure_axis_bounds,
+            "weight": 1e0,
+        },
+    },
+    "iota_axis_range": {
+        "use": not iota_fxd,
+        "kwargs": {
+            "name": "iota_axis_range",
+            "fun": iota_axis_range,
+            "bounds": iota_bounds,
+            "weight": 1e0,
+        },
+    },
+    "iota_edge_range": {
+        "use": not iota_fxd,
+        "kwargs": {
+            "name": "iota_edge_range",
+            "fun": iota_edge_range,
+            "bounds": iota_bounds,
+            "weight": 1e0,
+        },
+    },
+    #---------------------
+
+
+    # Constraints:
+    #============
     "pressure_octic": {
         "use": not pressure_fxd,
         "kwargs": {
@@ -285,142 +312,25 @@ opt_toggles_all = {
             "target": 0.0,
         },
     },
-    #---------------------
-    #=====================
-}
-#=========================
-
-
-
-
-#========================
-# PROXIMAL/AUGLAG PARAMS:
-opt_toggles_params = {
-    # Objectives:
-    #============
-        # Custom:
-    #------------------------------
-    "pressure_axis_range_params": {
-        "use": not pressure_fxd,
-        "kwargs": {
-            "name": "pressure_axis_range",
-            "fun": pressure_axis_range_params,
-            "bounds": pressure_axis_bounds,
-            "weight": 1e0,
-        },
-    },
-    "iota_axis_range_params": {
-        "use": not iota_fxd,
-        "kwargs": {
-            "name": "iota_axis_range",
-            "fun": iota_axis_range_params,
-            "bounds": iota_bounds,
-            "weight": 1e0,
-        },
-    },
-    "iota_edge_range_params": {
-        "use": not iota_fxd,
-        "kwargs": {
-            "name": "iota_edge_range",
-            "fun": iota_edge_range_params,
-            "bounds": iota_bounds,
-            "weight": 1e0,
-        },
-    },
-    #---------------------
-    #=====================
-
-
-    # Constraints:
-    #============
-        # Custom:
-    #------------------------
-    "pressure_edge_params": {
+    "pressure_edge": {
         "use": not pressure_fxd,
         "kwargs": {
             "name": "pressure_edge",
-            "fun": pressure_edge_params,
+            "fun": pressure_edge,
             "target": 0.0,
         },
     },
-    "grad_pressure_edge_params": {
+    "grad_pressure_edge": {
         "use": not pressure_fxd,
         "kwargs": {
             "name": "grad_pressure_edge",
-            "fun": grad_pressure_edge_params,
+            "fun": grad_pressure_edge,
             "target": 0.0,
         },
     },
     #---------------------
-    #=====================
 }
 #=========================
-
-
-
-
-#======================
-# PROXIMAL/AUGLAG DATA:
-opt_toggles_data = {
-    # Objectives:
-    #============
-        # Custom:
-    #----------------------------
-    "pressure_axis_range_data": {
-        "use": not pressure_fxd,
-        "kwargs": {
-            "name": "pressure_axis_range",
-            "fun": pressure_axis_range_data,
-            "grid": data_grid,
-            "bounds": pressure_axis_bounds,
-            "weight": 1e0,
-        },
-    },
-    "pressure_edge_data": {
-        "use": not pressure_fxd,
-        "kwargs": {
-            "name": "pressure_edge_data",
-            "fun": pressure_edge_data,
-            "grid": data_grid,
-            "target": 0.0,
-            "weight": 1e0,
-        },
-    },
-    "grad_pressure_edge_data": {
-        "use": not pressure_fxd,
-        "kwargs": {
-            "name": "grad_pressure_edge_data",
-            "fun": grad_pressure_edge_data,
-            "grid": data_grid,
-            "target": 0.0,
-            "weight": 1e0,
-        },
-    },
-    "iota_axis_range_data": {
-        "use": not iota_fxd,
-        "kwargs": {
-            "name": "iota_axis_range",
-            "fun": iota_axis_range_data,
-            "grid": data_grid,
-            "bounds": iota_bounds,
-            "weight": 1e0,
-        },
-    },
-    "iota_edge_range_data": {
-        "use": not iota_fxd,
-        "kwargs": {
-            "name": "iota_edge_range",
-            "fun": iota_edge_range_data,
-            "grid": data_grid,
-            "bounds": iota_bounds,
-            "weight": 1e0,
-        },
-    },
-    #---------------------
-    #=====================
-}
-#=========================
-
 
 
 
@@ -428,15 +338,14 @@ opt_toggles_data = {
 #=====================
 # Grouping opt inputs:
 opt_config = {
-    "ftol":                 ftol,
-    "xtol":                 xtol,
-    "gtol":                 gtol,
-    "maxiter":              maxiter,
-    "max_nfev":             max_nfev,
-    "x_scale":              x_scale,
-    "opt_toggles_all":      opt_toggles_all,
-    "opt_toggles_params":   opt_toggles_params,
-    "opt_toggles_data":     opt_toggles_data,
+    "ftol":               ftol,
+    "xtol":               xtol,
+    "gtol":               gtol,
+    "maxiter":            maxiter,
+    "max_nfev":           max_nfev,
+    "x_scale":            x_scale,
+    "opt_toggles_core":   opt_toggles_core,
+    "opt_toggles_custom": opt_toggles_custom,
 }
 #============================================
 #===================================================================================================================================================
