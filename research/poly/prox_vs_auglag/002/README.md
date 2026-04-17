@@ -1,53 +1,4 @@
-#===================================================================================================================================================
-from pathlib import Path
-repo_root = Path(__file__).resolve().parents[4]
-import os
-#================ ENVIRONMENT TOGGLE =================#
-USE_SUPERCOMPUTER = False
-#====================================================#
-from desc import set_device
-if USE_SUPERCOMPUTER:
-    set_device("gpu")
-from desc.backend import print_backend_info
-print_backend_info()
-
-import jax
-import jax.numpy as jnp
-if USE_SUPERCOMPUTER:
-    cache_dir = repo_root / "jax-caches"
-    cache_dir.mkdir(exist_ok=True)
-    jax.config.update("jax_compilation_cache_dir", str(cache_dir))
-    jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
-    jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
-
-print("CUDA_VISIBLE_DEVICES:", repr(os.environ.get("CUDA_VISIBLE_DEVICES")))
-print("jax devices:", jax.devices())
-
-from desc.geometry import FourierRZToroidalSurface
-from desc.grid import LinearGrid
-from desc.profiles import PowerSeriesProfile
-
-from research.poly.prox_vs_auglag.poly_constraints import (
-    pressure_axis_range,
-    pressure_shape,
-    iota_axis_range,
-    iota_edge_range,
-    pressure_octic,
-    pressure_DOF,
-    pressure_edge,
-    grad_pressure_edge,
-    iota_quartic,
-)
-from research.poly.prox_vs_auglag.helper import (
-    iota_between_rationals,
-    pressure_generator,
-)
-from .driver import run_from_config
-#===================================================================================================================================================
-
-
-
-#================ NOTES ============================================================================================================================
+```python
 # DESC Part I recreation of D-shape equilibrium using proximal and Auglag
 #===================================================================================================================================================
 
@@ -394,3 +345,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```

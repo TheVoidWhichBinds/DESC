@@ -37,8 +37,8 @@ def pressure_axis_range(params):
 #--------------
 
 
-#----------------------
-# Rotational transform:
+# Iota:
+#---------------------------
 def iota_axis_range(params):
     """
     Allowable range of axis iota.
@@ -99,6 +99,18 @@ def grad_pressure_edge(params):
     c = params["p_l"][1:]
     order = jnp.arange(1, len(c) + 1)
     return (order * c).sum()
-#----------------------
-#======================
+#---------------------------
+
+
+# Iota:
+#-----------------
+def iota_quartic(params):
+    """
+    Limits iota to 4th order polynomial.
+    """
+    c = params['p_l']
+    higher_orders = c[3:]
+    return higher_orders
+#-----------------------
+#=======================
 #==================================================================================================================================================

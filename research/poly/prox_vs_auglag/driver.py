@@ -268,19 +268,16 @@ def comparison(
     plt.title("Toroidal Cross-Sections of Solved Equilibria")
     fig, ax = plot_comparison(
         eqs=[
-            eq_init,
             opt_prox,
             opt_auglag,
             opt_proxlag,
         ],
         labels=[
-            "Initial Equilibrium",
             "Optimized (_prox)",
             "Optimized (_auglag)",
             "Optimized (_proxlag)",
         ],
         color=[
-            "green",
             "purple",
             "orange",
             "red",
