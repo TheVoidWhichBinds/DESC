@@ -98,42 +98,51 @@ def comparison(
     # Optimization run:
     #-------------------------
     # Running all optimizers:
-    eq_prox_params_0 = eq_init.copy()
-    eq_prox_data_0 = eq_init.copy()
-    eq_auglag_0 = eq_init.copy()
+    eq_proxparams_0 = eq_init.copy()
+    eq_proxdata_0 = eq_init.copy()
+    eq_auglagparams_0 = eq_init.copy()
+    eq_auglagdata_0 = eq_init.copy()
 
     optimizer_prox = "proximal-lsq-exact"
     optimizer_auglag = "lsq-auglag"
 
-    eq_opt_prox_params, opt_result_prox_params = run_optimization(
-        eq_0=eq_prox_params_0,
-        optimizer=optimizer_prox,
-        toggle_group="opt_toggles_prox_params",
-        opt_config=opt_config,
+    opt_proxparams, opt_result_proxparams = run_optimization(
+        eq_0 = eq_proxparams_0,
+        optimizer = optimizer_prox,
+        toggle_group = "opt_toggles_params",
+        opt_config = opt_config,
     )
 
-    eq_opt_prox_data, opt_result_prox_data = run_optimization(
-        eq_0=eq_prox_data_0,
-        optimizer=optimizer_prox,
-        toggle_group="opt_toggles_prox_data",
-        opt_config=opt_config,
+    opt_proxdata, opt_result_proxdata = run_optimization(
+        eq_0 = eq_proxdata_0,
+        optimizer = optimizer_prox,
+        toggle_group = "opt_toggles_data",
+        opt_config = opt_config,
     )
 
-    eq_opt_auglag, opt_result_auglag = run_optimization(
-        eq_0=eq_auglag_0,
-        optimizer=optimizer_auglag,
-        toggle_group="opt_toggles_auglag",
-        opt_config=opt_config,
+    opt_auglagparams, opt_result_auglagparams = run_optimization(
+        eq_0 = eq_auglagparams_0,
+        optimizer = optimizer_auglag,
+        toggle_group = "opt_toggles_params",
+        opt_config = opt_config,
     )
-    #-------------------------
+
+    opt_auglagdata, opt_result_auglagdata = run_optimization(
+        eq_0 = eq_auglagdata_0,
+        optimizer = optimizer_auglag,
+        toggle_group = "opt_toggles_data",
+        opt_config = opt_config,
+    )
+    #---------------------------
 
     #--------------------------
     # Saving optimized outputs:
-    eq_opt_prox_params.save(os.path.join(out_dir, "opt_prox_params.h5"))
-    eq_opt_prox_data.save(os.path.join(out_dir, "opt_prox_data.h5"))
-    eq_opt_auglag.save(os.path.join(out_dir, "opt_auglag.h5"))
-    #------------------------------------------------------
-    #======================================================
+    opt_proxparams.save(os.path.join(out_dir, "opt_prox_params.h5"))
+    opt_proxdata.save(os.path.join(out_dir, "opt_prox_data.h5"))
+    opt_auglagparams.save(os.path.join(out_dir, "opt_auglag.h5"))
+    opt_auglagparams.save(os.path.join(out_dir, "opt_auglag.h5"))
+    #------------------------------------------------------------
+    #============================================================
 
 
 
@@ -162,10 +171,10 @@ def comparison(
     # Extracting objective values:
     for key, label in active_columns:
         fmin_prox_params, fmean_prox_params, fmax_prox_params = _safe_extract_from_result(
-            opt_result_prox_params, label
+            opt_result_proxparams, label
         )
         fmin_prox_data, fmean_prox_data, fmax_prox_data = _safe_extract_from_result(
-            opt_result_prox_data, label
+            opt_result_proxdata, label
         )
         fmin_auglag, fmean_auglag, fmax_auglag = _safe_extract_from_result(
             opt_result_auglag, label
