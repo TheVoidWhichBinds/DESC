@@ -40,12 +40,6 @@ CORE_OBJECTIVE_REGISTRY = {
             "eq": _eq,
         },
     },
-    "aspect_ratio": {
-        "wrapper": AspectRatio,
-        "defaults": {
-            "eq": _eq,
-        },
-    },
     "qs": {
         "wrapper": QuasisymmetryBoozer,
         "defaults": {
@@ -113,6 +107,12 @@ CORE_CONSTRAINT_REGISTRY = {
 
 #==============================
 CUSTOM_OBJECTIVE_REGISTRY = {
+    "pressure_axis_range": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
     "pressure_shape": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -137,12 +137,6 @@ CUSTOM_OBJECTIVE_REGISTRY = {
 
 #===============================
 CUSTOM_CONSTRAINT_REGISTRY = {
-    "pressure_axis": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
     "pressure_octic": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -289,12 +283,6 @@ def run_optimization(eq_0, optimizer, opt_config):
     # Finalizing optimization objects/setup:
     constraints = tuple(constraints_list)
     objectives = ObjectiveFunction(objectives_list)
-
-    print("constraints:")
-    print(type(constraints))
-    print("n constraints =", len(constraints))
-    for i, con in enumerate(constraints):
-        print(i, type(con).__name__, getattr(con, "name", None))
     #---------------------------------------
     #=======================================
 

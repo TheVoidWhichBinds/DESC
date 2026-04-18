@@ -18,14 +18,20 @@ import jax.numpy as jnp
 # Objectives:
 #==========
 # Pressure:
-#--------------------------
+#-------------------------------
+def pressure_axis_range(params):
+    """
+    Range of acceptable pressure on-axis.
+    """
+    return params["p_l"][0]
+
+
 def pressure_shape(params):
     """
     Bounded coefficient of 8th-order term.
     Gives narrow-wideness of pressure.
     """
-    c = params["p_l"]
-    return c[4]
+    return params["p_l"][4]
 #--------------
 
 
@@ -53,14 +59,6 @@ def iota_edge_range(params):
 #==========
 # Pressure:
 #--------------------------
-def pressure_axis(params):
-    """
-    Fixes pressure on-axis.
-    """
-    c = params["p_l"]
-    return c[0]
-
-
 def pressure_octic(params):
     """
     Limits the pressure profile to an 8th-order polynomial
@@ -87,8 +85,7 @@ def pressure_edge(params):
     Pressure on edge (rho=1).
     Target: P(1)=0.
     """
-    c = params["p_l"]
-    return c.sum()
+    return params["p_l"].sum()
 
 
 def grad_pressure_edge(params):
