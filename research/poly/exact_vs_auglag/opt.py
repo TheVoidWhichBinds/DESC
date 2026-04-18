@@ -190,7 +190,6 @@ CUSTOM_CONSTRAINT_REGISTRY = {
 def _build_terms(eq_0, optimizer, opt_config):
     """
     Build objective and constraint term lists from shared core/custom toggles.
-    For auglag, all custom terms are routed into constraints.
     """
     #=========================================
     # Runtime values available to config dict:
@@ -228,45 +227,27 @@ def _build_terms(eq_0, optimizer, opt_config):
     )
     #-------------------
 
-    #-----------------------------------
-    # Custom routing depends on optimizer:
-    if optimizer == "proximal-lsq-auglag":
-        _append_terms(
-            term_list=objectives_list,
-            toggle=opt_toggles_custom,
-            registry=CUSTOM_OBJECTIVE_REGISTRY,
-            context=context,
-            kind="objective",
-        )
+    #-------------------
+    # Custom objectives:
+    _append_terms(
+        term_list=objectives_list,
+        toggle=opt_toggles_custom,
+        registry=CUSTOM_OBJECTIVE_REGISTRY,
+        context=context,
+        kind="objective",
+    )
+    #-------------------
 
-        _append_terms(
-            term_list=constraints_list,
-            toggle=opt_toggles_custom,
-            registry=CUSTOM_CONSTRAINT_REGISTRY,
-            context=context,
-            kind="constraint",
-        )
-
-    elif optimizer == "lsq-auglag":
-        _append_terms(
-            term_list=constraints_list,
-            toggle=opt_toggles_custom,
-            registry=CUSTOM_OBJECTIVE_REGISTRY,
-            context=context,
-            kind="constraint",
-        )
-
-        _append_terms(
-            term_list=constraints_list,
-            toggle=opt_toggles_custom,
-            registry=CUSTOM_CONSTRAINT_REGISTRY,
-            context=context,
-            kind="constraint",
-        )
-
-    else:
-        raise ValueError(f"Unsupported optimizer: {optimizer}")
-    #-----------------------------------
+    #--------------------
+    # Custom constraints:
+    _append_terms(
+        term_list=constraints_list,
+        toggle=opt_toggles_custom,
+        registry=CUSTOM_CONSTRAINT_REGISTRY,
+        context=context,
+        kind="constraint",
+    )
+    #--------------------
 
     return objectives_list, constraints_list
 #==================================================================================================================================================
@@ -306,7 +287,6 @@ def run_optimization(eq_0, optimizer, opt_config):
 
     #---------------------------------------
     # Finalizing optimization objects/setup:
-
     constraints = tuple(constraints_list)
     objectives = ObjectiveFunction(objectives_list)
 
@@ -315,7 +295,6 @@ def run_optimization(eq_0, optimizer, opt_config):
     print("n constraints =", len(constraints))
     for i, con in enumerate(constraints):
         print(i, type(con).__name__, getattr(con, "name", None))
-        
     #---------------------------------------
     #=======================================
 
