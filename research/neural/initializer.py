@@ -7,7 +7,7 @@ from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
 from desc.objectives import ForceBalance, GoodCoordinates
 from .helper import cond_generator
-
+from desc.continuation import solve_continuation_automatic
 
 
 
@@ -88,7 +88,8 @@ def score(cond):
             Psi=Psi,
             ensure_nested=False,
         )
-        #=======================
+        #eq = solve_continuation_automatic(eq = eq, verbose=0)[-1]
+        #========================================================
 
 
 
@@ -104,27 +105,27 @@ def score(cond):
         #---------------------------
 
         #-----------------------
-        # GoodCoordinates check:
         try:
             gc_obj = GoodCoordinates(eq=eq)
+            gc_obj.build()
             gc_val = gc_obj.compute_unscaled(eq.params_dict)
             gc_arr = np.asarray(gc_val, dtype=float)
             row["goodcoords_mean"] = float(np.mean(np.abs(gc_arr)))
-        except Exception:
+        except Exception as e:
             row["goodcoords_mean"] = np.nan
-        #----------------------------------
+            print("GoodCoordinates error:", repr(e))
 
-        #--------------------
-        # ForceBalance check:
         try:
             fb_obj = ForceBalance(eq=eq)
+            fb_obj.build()
             fb_val = fb_obj.compute_unscaled(eq.params_dict)
             fb_arr = np.asarray(fb_val, dtype=float)
             row["forcebalance_mean"] = float(np.mean(np.abs(fb_arr)))
-        except Exception:
+        except Exception as e:
             row["forcebalance_mean"] = np.nan
-        #------------------------------------
-        #====================================
+            print("ForceBalance error:", repr(e))
+        #--------------------------------------
+        #========================================
 
 
 
@@ -261,3 +262,60 @@ def run_parallel(
     return rows
 #==============================================================================================================
 
+
+
+
+
+
+
+
+
+
+#============== PARAMETER RANGES =================================================================================
+resolution_range = [
+    (16, 16, 0),
+]
+
+NFP_range = [
+    1,
+]
+
+R_range = [
+    (
+        [3.51, -1.0, 0.106],
+        [(0, 0), (1, 0), (2, 0)],
+    ),
+]
+
+Z_range = [
+    (
+        [-1.47, -0.16],
+        [(-1, 0), (-2, 0)],
+    ),
+]
+
+p_l_range = [
+    [1600.0, -3200.0, 1600.0],
+]
+
+i_l_range = [
+    [-1.0, 0.67],
+]
+
+Psi_range = [
+    1.0,
+]
+
+rows = run_serial(
+    resolution_range = resolution_range,
+    NFP_range = NFP_range,
+    R_range = R_range,
+    Z_range = Z_range,
+    p_l_range = p_l_range,
+    i_l_range = i_l_range,
+    Psi_range = Psi_range,
+)
+
+print(rows[0])
+print("score_total =", rows[0]["score_total"])
+#==============================================================================================================
