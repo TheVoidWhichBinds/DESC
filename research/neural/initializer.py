@@ -1,13 +1,18 @@
 
-
+#==============
+USE_GPU = True
+from desc import set_device
+if USE_GPU:
+    set_device("gpu")
+#====================
 from multiprocessing import Pool, cpu_count
 import numpy as np
 from desc.equilibrium import Equilibrium
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
-from desc.objectives import ForceBalance, GoodCoordinates
+from desc.objectives import PrincipalCurvature, MeanCurvature, GoodCoordinates
 from .helper import cond_generator
-from desc.continuation import solve_continuation_automatic
+import time
 
 
 
@@ -33,7 +38,8 @@ def score(cond):
     p_l = cond["p_l"]
     i_l = cond["i_l"]
     Psi = cond["Psi"]
-    #========================
+    w_n, w_gc, w_pc, w_c = cond["weights"]
+    #=====================================
 
     #===================
     # Default row build:
@@ -102,11 +108,20 @@ def score(cond):
             row["is_nested"] = bool(eq.is_nested())
         except Exception:
             row["is_nested"] = False
-        #---------------------------
+        
+        if not row["is_nested"]:
+            row["score_total"] = float(w_n * 100.0)
+            return row # terminates build early if flux surfaces not nested
+        #------------------------------------------------------------------
 
-        #-----------------------
+        #---------------------------------------------------
+        # Non-intersecting field lines, mean over all nodes:
         try:
-            gc_obj = GoodCoordinates(eq=eq)
+            gc_obj = GoodCoordinates(
+                eq = eq,
+                loss_function = "mean",
+                normalize = False,
+            )
             gc_obj.build()
             gc_val = gc_obj.compute_unscaled(eq.params_dict)
             gc_arr = np.asarray(gc_val, dtype=float)
@@ -114,18 +129,40 @@ def score(cond):
         except Exception as e:
             row["goodcoords_mean"] = np.nan
             print("GoodCoordinates error:", repr(e))
+        #-------------------------------------------
 
+        #---------------------------------------------------------------
+        # Max of two curvatures at each node, mean taken over all nodes:
         try:
-            fb_obj = ForceBalance(eq=eq)
-            fb_obj.build()
-            fb_val = fb_obj.compute_unscaled(eq.params_dict)
-            fb_arr = np.asarray(fb_val, dtype=float)
-            row["forcebalance_mean"] = float(np.mean(np.abs(fb_arr)))
+            pc_obj = PrincipalCurvature(
+                eq = eq, 
+                loss_function="mean", 
+                normalize=False,
+            )
+            pc_obj.build()
+            pc_val = pc_obj.compute_unscaled(eq.params_dict)
+            row["principalcurvature_mean"] = float(np.asarray(pc_val).item())
         except Exception as e:
-            row["forcebalance_mean"] = np.nan
-            print("ForceBalance error:", repr(e))
-        #--------------------------------------
-        #========================================
+            row["principalcurvature_mean"] = np.nan
+            print("PrincipalCurvature error:", repr(e))
+        #----------------------------------------------
+
+        #-------------------------------------------------------------------------------
+        # Mean of two curvatures at each node, max over all nodes - penalizes concavity:
+        try:
+            mc_obj = MeanCurvature(
+                eq = eq, 
+                loss_function = "max", 
+                normalize = False,
+            )
+            mc_obj.build()
+            mc_val = mc_obj.compute_unscaled(eq.params_dict)
+            row["meancurvature_max"] = float(np.asarray(mc_val).item())
+        except Exception as e:
+            row["meancurvature_max"] = np.nan
+            print("MeanCurvature error:", repr(e))
+        #-----------------------------------------
+        #=========================================
 
 
 
@@ -133,23 +170,32 @@ def score(cond):
         # Assigning criteria residuals to scores:
         #---------------------
         # Nested flux scoring:
-        nested_penalty = 0.0 if row["is_nested"] else 10.0
-        #-------------------------------------------------
+        n_penalty = 0.0 if row["is_nested"] else 100.0
+        #---------------------------------------------
 
         #-------------------------
         # GoodCoordinates scoring:
         gc_penalty = row["goodcoords_mean"]
         if not np.isfinite(gc_penalty):
-            gc_penalty = 50.0
+            gc_penalty = 100.0
         #--------------------
 
-        #----------------------
-        # ForceBalance scoring:
-        fb_penalty = row["forcebalance_mean"]
-        if not np.isfinite(fb_penalty):
-            fb_penalty = 50.0
+        #----------------------------
+        # PrincipalCurvature scoring:
+        pc_penalty = row["principalcurvature_mean"]
+        if not np.isfinite(pc_penalty):
+            pc_penalty = 100.0
         #--------------------
-        #====================
+
+        #-------------------
+        # Concavity scoring:
+        c_penalty = row["meancurvature_max"]
+        if not np.isfinite(c_penalty):
+            c_penalty = 100.0
+        if c_penalty < 0:
+            c_penalty = 0 # convexity penalized by pc_penalty, not here
+        #---------------------------------------------------------------
+        #===============================================================
 
 
 
@@ -157,12 +203,13 @@ def score(cond):
         # Normalizing and compiling scores into loss func:
         row["score_total"] = float(
             np.linalg.norm([
-                nested_penalty,
-                gc_penalty,
-                fb_penalty,
+                w_n * n_penalty,
+                w_gc * gc_penalty,
+                w_pc * pc_penalty,
+                w_c * c_penalty,
             ])
         )
-        #==================
+        #=======================
 
     except Exception as e:
         row["error"] = repr(e)
@@ -188,6 +235,7 @@ def run_serial(
     p_l_range: list,
     i_l_range: list,
     Psi_range: list,
+    weights: list,
 ):
     """
     Serial evaluation of all conditions.
@@ -200,6 +248,7 @@ def run_serial(
         p_l_range = p_l_range,
         i_l_range = i_l_range,
         Psi_range = Psi_range,
+        weights = weights,
     )
 
     return [score(cond) for cond in conds] # looping over all initial conditions
@@ -223,6 +272,7 @@ def run_parallel(
     p_l_range: list,
     i_l_range: list,
     Psi_range: list,
+    weights: list,
     nprocs: int | None = None,
     chunksize: int = 1,
 ):
@@ -245,6 +295,7 @@ def run_parallel(
             p_l_range = p_l_range,
             i_l_range = i_l_range,
             Psi_range = Psi_range,
+            weights = weights,
         )
     )
     #-----------------------------
@@ -271,7 +322,8 @@ def run_parallel(
 
 
 
-#============== PARAMETER RANGES =================================================================================
+#============== PARAMETER RANGES & RUNNING IT =================================================================================
+#===================
 resolution_range = [
     (16, 16, 0),
 ]
@@ -289,7 +341,7 @@ R_range = [
 
 Z_range = [
     (
-        [-1.47, -0.16],
+        [1.47, 0.16],
         [(-1, 0), (-2, 0)],
     ),
 ]
@@ -306,6 +358,13 @@ Psi_range = [
     1.0,
 ]
 
+weights = [10, 5, 1, 2] # w_n, w_gc, w_pc, w_c
+#=============================================
+
+
+#============================
+t_start = time.perf_counter()
+
 rows = run_serial(
     resolution_range = resolution_range,
     NFP_range = NFP_range,
@@ -314,8 +373,13 @@ rows = run_serial(
     p_l_range = p_l_range,
     i_l_range = i_l_range,
     Psi_range = Psi_range,
+    weights = weights,
 )
 
-print(rows[0])
+t_end = time.perf_counter()
+print("elapsed =", t_end - t_start, "s")
+#=======================================
+
+
 print("score_total =", rows[0]["score_total"])
 #==============================================================================================================

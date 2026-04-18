@@ -14,12 +14,13 @@ from itertools import product
 #==================
 def cond_generator(
     resolution_range: list,
-    NFP_range:        list,
-    R_range:          list,
-    Z_range:          list,
-    p_l_range:        list,
-    i_l_range:        list,
-    Psi_range:        list,
+    NFP_range: list,
+    R_range: list,
+    Z_range: list,
+    p_l_range: list,
+    i_l_range: list,
+    Psi_range: list,
+    weights: list,
     ):
     """
     Generates initial condition dictionaries for all feature vectors.
@@ -41,6 +42,7 @@ def cond_generator(
             "p_l": p_l,
             "i_l": i_l,
             "Psi": Psi,
+            "weights": weights,
         }
 #======================
 #===================================================================================================================
