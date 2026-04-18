@@ -1,10 +1,4 @@
 
-#==============
-USE_GPU = True
-from desc import set_device
-if USE_GPU:
-    set_device("gpu")
-#====================
 from multiprocessing import Pool, cpu_count
 import numpy as np
 from desc.equilibrium import Equilibrium
@@ -57,12 +51,14 @@ def score(cond):
         "Psi": Psi,
         "build_ok": False,
         "is_nested": False,
-        "goodcoords_mean": np.nan,
-        "forcebalance_mean": np.nan,
-        "score_total": 100.0, # if eq construction unsuccessful, loss defaults 100 (worst)
+        "goodcoordinates_mean": np.nan,
+        "principalcurvature_mean": np.nan,
+        "meancurvature_max": np.nan,
+        "loss_total": 100.0, # if eq construction unsuccessful, loss defaults 100 (worst)
         "error": None,
     }
     #=================
+
 
 
 
@@ -110,7 +106,7 @@ def score(cond):
             row["is_nested"] = False
         
         if not row["is_nested"]:
-            row["score_total"] = float(w_n * 100.0)
+            row["loss_total"] = float(w_n * 100.0)
             return row # terminates build early if flux surfaces not nested
         #------------------------------------------------------------------
 
@@ -124,10 +120,9 @@ def score(cond):
             )
             gc_obj.build()
             gc_val = gc_obj.compute_unscaled(eq.params_dict)
-            gc_arr = np.asarray(gc_val, dtype=float)
-            row["goodcoords_mean"] = float(np.mean(np.abs(gc_arr)))
+            row["goodcoordinates_mean"] = float(np.asarray(gc_val).item())
         except Exception as e:
-            row["goodcoords_mean"] = np.nan
+            row["goodcoordinates_mean"] = np.nan
             print("GoodCoordinates error:", repr(e))
         #-------------------------------------------
 
@@ -136,8 +131,8 @@ def score(cond):
         try:
             pc_obj = PrincipalCurvature(
                 eq = eq, 
-                loss_function="mean", 
-                normalize=False,
+                loss_function = "mean", 
+                normalize = False,
             )
             pc_obj.build()
             pc_val = pc_obj.compute_unscaled(eq.params_dict)
@@ -175,7 +170,7 @@ def score(cond):
 
         #-------------------------
         # GoodCoordinates scoring:
-        gc_penalty = row["goodcoords_mean"]
+        gc_penalty = row["goodcoordinates_mean"]
         if not np.isfinite(gc_penalty):
             gc_penalty = 100.0
         #--------------------
@@ -201,7 +196,7 @@ def score(cond):
 
         #=================================================
         # Normalizing and compiling scores into loss func:
-        row["score_total"] = float(
+        row["loss_total"] = float(
             np.linalg.norm([
                 w_n * n_penalty,
                 w_gc * gc_penalty,
@@ -374,24 +369,35 @@ weights = [10, 5, 1, 2] # w_n, w_gc, w_pc, w_c
 #=============================================
 
 
-#============================
-t_start = time.perf_counter()
-
-rows = run_serial(
-    resolution_range = resolution_range,
-    NFP_range = NFP_range,
-    R_range = R_range,
-    Z_range = Z_range,
-    p_l_range = p_l_range,
-    i_l_range = i_l_range,
-    Psi_range = Psi_range,
-    weights = weights,
-)
-
-t_end = time.perf_counter()
-print("elapsed =", t_end - t_start, "s")
-#=======================================
 
 
-print("score_total =", rows[0]["score_total"])
+#==========
+def main():
+    """
+    Runs Equilibria constructions from chosen
+    hyperparameter ranges.
+    """
+    t_start = time.perf_counter()
+    #-----------------
+    rows = run_serial(
+        resolution_range = resolution_range,
+        NFP_range = NFP_range,
+        R_range = R_range,
+        Z_range = Z_range,
+        p_l_range = p_l_range,
+        i_l_range = i_l_range,
+        Psi_range = Psi_range,
+        weights = weights,
+    )
+    #---------------------
+    t_end = time.perf_counter()
+    print("elapsed =", t_end - t_start, "s")
+    print("loss_total =", rows[0]["loss_total"])
+#===========================================
+
+
+
+
+if __name__ == "__main__":
+    main()
 #==============================================================================================================
