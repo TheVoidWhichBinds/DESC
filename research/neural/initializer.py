@@ -54,7 +54,7 @@ def score(cond):
         "goodcoordinates_mean": np.nan,
         "principalcurvature_mean": np.nan,
         "meancurvature_max": np.nan,
-        "loss_total": 100.0, # if eq construction unsuccessful, loss defaults 100 (worst)
+        "score_total": 100.0, # if eq construction unsuccessful, loss defaults 100 (worst)
         "error": None,
     }
     #=================
@@ -106,7 +106,7 @@ def score(cond):
             row["is_nested"] = False
         
         if not row["is_nested"]:
-            row["loss_total"] = float(w_n * 100.0)
+            row["score_total"] = float(w_n * 100.0)
             return row # terminates build early if flux surfaces not nested
         #------------------------------------------------------------------
 
@@ -196,7 +196,7 @@ def score(cond):
 
         #=================================================
         # Normalizing and compiling scores into loss func:
-        row["loss_total"] = float(
+        row["score_total"] = float(
             np.linalg.norm([
                 w_n * n_penalty,
                 w_gc * gc_penalty,
@@ -320,49 +320,36 @@ def run_parallel(
 #==================
 resolution_range = [
     (16, 16, 8),
-    (16, 16, 8),
 ]
 
 NFP_range = [
-    2,
-    4,
+    6,
 ]
 
 R_range = [
     (
-        [3.51, -1.0, 0.106],
-        [(0, 0), (1, 0), (2, 0)],
-    ),
-    (
-        [3.80, -1.10, 0.12],
-        [(0, 0), (1, 0), (2, 0)],
+        [4.60, -0.72, 0.14, -0.04],
+        [(0, 0), (1, 0), (2, 0), (1, 1)],
     ),
 ]
 
 Z_range = [
     (
-        [1.47, 0.16],
-        [(-1, 0), (-2, 0)],
-    ),
-    (
-        [1.60, 0.20],
-        [(-1, 0), (-2, 0)],
+        [1.02, 0.08, -0.02, 0.025],
+        [(1, 0), (2, 0), (3, 0), (1, 1)],
     ),
 ]
 
 p_l_range = [
-    [1600.0, -3200.0, 1600.0],
-    [2000.0, -4000.0, 2000.0],
+    [5e5, -1e6, 5e5],
 ]
 
 i_l_range = [
-    [-1.0, 0.67],
-    [-0.8, 0.50],
+    [1.55, 0.12],
 ]
 
 Psi_range = [
     1.0,
-    0.8,
 ]
 
 weights = [10, 5, 1, 2] # w_n, w_gc, w_pc, w_c
@@ -392,7 +379,7 @@ def main():
     #---------------------
     t_end = time.perf_counter()
     print("elapsed =", t_end - t_start, "s")
-    print("loss_total =", rows[0]["loss_total"])
+    print("score_total =", rows[0]["score_total"])
 #===========================================
 
 

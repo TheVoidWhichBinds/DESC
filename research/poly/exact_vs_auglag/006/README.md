@@ -1,53 +1,4 @@
-#===================================================================================================================================================
-from pathlib import Path
-repo_root = Path(__file__).resolve().parents[4]
-import jax.numpy as jnp
-from desc.geometry import FourierRZToroidalSurface
-from desc.grid import LinearGrid
-from desc.profiles import PowerSeriesProfile
-from research.poly.exact_vs_auglag.poly_constraints import (
-    pressure_axis_range,
-    pressure_shape,
-    iota_axis_range,
-    iota_edge_range,
-    pressure_octic,
-    pressure_DOF,
-    pressure_edge,
-    grad_pressure_edge,
-    iota_quadratic,
-)
-from research.poly.exact_vs_auglag.helper import (
-    iota_between_rationals,
-    pressure_generator,
-)
-from .driver import run_from_config
-#===================================================================================================================================================
-
-
-
-#================ NOTES ============================================================================================================================
-# DESC Part I recreation of D-shape equilibrium using proximal and Auglag
-#===================================================================================================================================================
-
-
-
-
-
-
-
-
-
-
-#================ EQUILIBRIUM INPUTS ================================================================================================================
-#==================================
-#------------------------
-# Equilibrium resolution:
-L = 8
-M = 8
-N = 3
-eq_resolution = [L, M, N]
-#------------------------
-
+```python
 #----------------------------------
 # Number of toroidal field periods:
 NFP = 19
@@ -360,3 +311,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```

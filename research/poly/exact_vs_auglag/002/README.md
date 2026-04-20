@@ -1,35 +1,4 @@
-#===================================================================================================================================================
-from pathlib import Path
-repo_root = Path(__file__).resolve().parents[4]
-import jax.numpy as jnp
-from desc.geometry import FourierRZToroidalSurface
-from desc.grid import LinearGrid
-from desc.profiles import PowerSeriesProfile
-from research.poly.exact_vs_auglag.poly_constraints import (
-    pressure_axis_range,
-    pressure_shape,
-    iota_axis_range,
-    iota_edge_range,
-    pressure_octic,
-    pressure_DOF,
-    pressure_edge,
-    grad_pressure_edge,
-    iota_quadratic,
-)
-from research.poly.exact_vs_auglag.helper import (
-    iota_between_rationals,
-    pressure_generator,
-)
-from .driver import run_from_config
-#===================================================================================================================================================
-
-
-
-#================ NOTES ============================================================================================================================
-# DESC Part I recreation of D-shape equilibrium using proximal and Auglag
-#===================================================================================================================================================
-
-
+```python
 
 
 
@@ -50,33 +19,35 @@ eq_resolution = [L, M, N]
 
 #----------------------------------
 # Number of toroidal field periods:
-NFP = 19
+NFP = 6
 #-------
 
 #----------------------
 # Initializing surface:
 surface_init = FourierRZToroidalSurface(
-    R_lmn   = [10.0, -1.0, -0.3, 0.3],
-    modes_R = [(0, 0), (1, 0), (1, 1), (-1, -1)],
-    Z_lmn   = [1.0, -0.3, -0.3],
-    modes_Z = [(-1, 0), (-1, 1), (1, -1)],
+    R_lmn   = [4.60, -2.20, 0.90, 0.75],
+    modes_R = [(0, 0), (1, 0), (2, 0), (1, 1)],
+    Z_lmn   = [2.10, 0.80, 0.45, 0.60],
+    modes_Z = [(1, 0), (2, 0), (3, 0), (1, 1)],
     NFP = NFP,
 )
 #-------------
 
 #-----------------------
 # Initializing pressure:
-p_axis = 1.8e4
+p_axis = 5e5
 pressure_init = PowerSeriesProfile(
-    [1.8e4, 0, -3.6e4, 0, 1.8e4],
+    [5e5, -3.0e6, 2.5e6],
+    sym=True,
 )
 #--------------
 
 #-------------------
 # Initializing iota:
-iota_axis_init = 1.0
+iota_axis_init = 0.15
 iota_init = PowerSeriesProfile(
-    [1.0, 0, 1.5],
+    [0.15, 2.20],
+    sym=True,
 )
 #--------------
 #==============
@@ -360,3 +331,4 @@ def main():
 if __name__ == "__main__":
     main()
 #===================================================================================================================================================
+```
