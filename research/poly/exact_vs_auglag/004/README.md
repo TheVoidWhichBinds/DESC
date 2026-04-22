@@ -1,35 +1,49 @@
 ```python
 #----------------------------------
 # Number of toroidal field periods:
-NFP = 6
+NFP = 4
 #-------
 
 #----------------------
 # Initializing surface:
 surface_init = FourierRZToroidalSurface(
-    R_lmn   = [4.60, -0.72, 0.14, -0.04],
-    modes_R = [(0, 0), (1, 0), (2, 0), (1, 1)],
-    Z_lmn   = [1.02, 0.08, -0.02, 0.025],
-    modes_Z = [(1, 0), (2, 0), (3, 0), (1, 1)],
+    R_lmn   = [
+        3.75, 
+        -0.55, 
+        -0.12, 
+    ],
+    modes_R = [
+        (0, 0), 
+        (1, 0), 
+        (1, 1), 
+    ],
+    Z_lmn   = [
+        0.55, 
+        -0.12, 
+    ],
+    modes_Z = [
+        (-1, 0), 
+        (-1, 1), 
+    ],
     NFP = NFP,
 )
 #-------------
 
 #-----------------------
 # Initializing pressure:
-p_axis = 5e5
+p_axis = 1.0e4
 pressure_init = PowerSeriesProfile(
-    [5e5, -1e6, 5e5],
-    sym=True,
+    [1.0e4, -2e4,  1.0e4],
+    sym = True
 )
 #--------------
 
 #-------------------
 # Initializing iota:
-iota_axis_init = 1.55
+iota_axis_init = 0.25
 iota_init = PowerSeriesProfile(
-    [1.55, 0.12],
-    sym=True,
+    [0.25, -0.23],
+    sym = True
 )
 #--------------
 #==============

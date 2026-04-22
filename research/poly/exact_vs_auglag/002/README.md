@@ -1,53 +1,49 @@
 ```python
-
-
-
-
-
-
-
-
-#================ EQUILIBRIUM INPUTS ================================================================================================================
-#==================================
-#------------------------
-# Equilibrium resolution:
-L = 8
-M = 8
-N = 3
-eq_resolution = [L, M, N]
-#------------------------
-
 #----------------------------------
 # Number of toroidal field periods:
-NFP = 6
+NFP = 4
 #-------
 
 #----------------------
 # Initializing surface:
 surface_init = FourierRZToroidalSurface(
-    R_lmn   = [4.60, -2.20, 0.90, 0.75],
-    modes_R = [(0, 0), (1, 0), (2, 0), (1, 1)],
-    Z_lmn   = [2.10, 0.80, 0.45, 0.60],
-    modes_Z = [(1, 0), (2, 0), (3, 0), (1, 1)],
+    R_lmn   = [
+        3.75, 
+        -0.55, 
+        -0.12, 
+    ],
+    modes_R = [
+        (0, 0), 
+        (1, 0), 
+        (1, 1), 
+    ],
+    Z_lmn   = [
+        0.55, 
+        -0.12, 
+    ],
+    modes_Z = [
+        (-1, 0), 
+        (-1, 1), 
+    ],
     NFP = NFP,
 )
 #-------------
 
 #-----------------------
 # Initializing pressure:
-p_axis = 5e5
+p_axis = 1.0e4
 pressure_init = PowerSeriesProfile(
-    [5e5, -3.0e6, 2.5e6],
-    sym=True,
+    [1.0e4, -2e4,  1.0e4],
+    sym = True
 )
 #--------------
 
 #-------------------
 # Initializing iota:
-iota_axis_init = 0.15
+iota_axis_init = 0.25
 iota_init = PowerSeriesProfile(
-    [0.15, 2.20],
-    sym=True,
+    [0.25, -0.23],
+    sym = True
 )
 #--------------
 #==============

@@ -1,33 +1,60 @@
+# initializer.py
+
 from multiprocessing import Pool, cpu_count
 import numpy as np
 import time
-
+import os
+import matplotlib.pyplot as plt
 from desc.equilibrium import Equilibrium
 from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
 from desc.objectives import PrincipalCurvature, MeanCurvature, GoodCoordinates
-
+from desc.plotting import plot_comparison
+from desc.continuation import solve_continuation_automatic
 from .helper import (
     cond_generator,
     feature_generator,
     data_saver,
     build_torch_dataset,
     torch_data_saver,
+    save_valid_equilibrium,
 )
 
 
 
 
+
+
+
+
+
+
+
 #============== HYPERPARAMETERS ================================================================================
+NFP = 4
 weights = [5, 1, 2]   # w_gc, w_pc, w_c
-N_options = 1
+
+N_R0 = 1
+N_Rs = 1
+N_Z = 1
+N_p0 = 1
+N_i0 = 1
+N_i2 = 1
+N_psi = 1
 #==============================================================================================================
 
 
 
 
+
+
+
+
+
+
+
 #============== SINGLE-CONDITION SCORING =======================================================================
-#==================
+#====================
 def score(cond):
     """
     Build one equilibrium from one condition dictionary and score it.
@@ -38,7 +65,7 @@ def score(cond):
         data_point["meta"][...]
     """
 
-    #=======================
+    #-----------------------
     # Unpack feature vector:
     L, M, N = cond["resolution"]
     NFP = cond["NFP"]
@@ -50,10 +77,9 @@ def score(cond):
     i_l = cond["i_l"]
     Psi = float(cond["Psi"])
     w_gc, w_pc, w_c = cond["weights"]
-    #=======================
+    #-----------------------
 
-
-    #==========================
+    #--------------------------
     # Default data-point build:
     data_point = {
         "features": {
@@ -72,110 +98,151 @@ def score(cond):
             "is_nested": False,
             "gc_mean": np.nan,
             "pc_mean": np.nan,
-            "mc_max": np.nan,
+            "mc_mean": np.nan,
             "score_total": 100.0,
         },
         "meta": {
-            "error": None,
+            "errors": [],
+            "valid_eq_path": None,
         },
     }
-    #==========================
-
+    #--------------------------
 
     try:
-        #==========================
+        #--------------------------
         # Equilibrium construction:
         surface_init = FourierRZToroidalSurface(
-            R_lmn=R_lmn,
-            modes_R=modes_R,
-            Z_lmn=Z_lmn,
-            modes_Z=modes_Z,
-            NFP=NFP,
+            R_lmn = R_lmn,
+            modes_R = modes_R,
+            Z_lmn = Z_lmn,
+            modes_Z = modes_Z,
+            NFP = NFP,
         )
 
         pressure_init = PowerSeriesProfile(
             p_l,
-            sym=True,
+            sym = True,
         )
 
         iota_init = PowerSeriesProfile(
             i_l,
-            sym=True,
+            sym = True,
         )
 
         eq = Equilibrium(
-            L=L,
-            M=M,
-            N=N,
-            surface=surface_init,
-            pressure=pressure_init,
-            iota=iota_init,
-            Psi=Psi,
-            ensure_nested=False,
+            L = L,
+            M = M,
+            N = N,
+            surface = surface_init,
+            pressure = pressure_init,
+            iota = iota_init,
+            Psi = Psi,
+            ensure_nested = False,
         )
 
         data_point["labels"]["build_ok"] = True
-        #======================================
+        #--------------------------------------
 
-
-        #================================
-        # Extracting raw criteria values:
         #-------------------
         # Nested flux check:
         try:
             data_point["labels"]["is_nested"] = bool(eq.is_nested())
-        except Exception:
+        except Exception as e:
             data_point["labels"]["is_nested"] = False
-        #--------------------
+            data_point["meta"]["errors"].append(
+                {
+                    "stage": "is_nested",
+                    "error": repr(e),
+                    "build_ok": data_point["labels"]["build_ok"],
+                    "is_nested": data_point["labels"]["is_nested"],
+                }
+            )
+        #-------------------
+
+        #-----------------------------------------
+        # Save equilibrium if it is actually valid:
+        try:
+            if data_point["labels"]["is_nested"]:
+                save_path = save_valid_equilibrium(eq = eq)
+                data_point["meta"]["valid_eq_path"] = save_path
+        except Exception as e:
+            data_point["meta"]["errors"].append(
+                {
+                    "stage": "save_valid_equilibrium",
+                    "error": repr(e),
+                    "build_ok": data_point["labels"]["build_ok"],
+                    "is_nested": data_point["labels"]["is_nested"],
+                }
+            )
+        #-----------------------------------------
 
         #-------------------------
         # GoodCoordinates penalty:
         try:
             gc_obj = GoodCoordinates(
-                eq=eq,
-                loss_function="mean",
-                normalize=False,
+                eq = eq,
+                loss_function = "mean",
+                normalize = False,
             )
             gc_obj.build()
             gc_val = gc_obj.compute_unscaled(eq.params_dict)
             data_point["labels"]["gc_mean"] = float(np.asarray(gc_val).item())
         except Exception as e:
-            print("GoodCoordinates error:", repr(e))
+            data_point["meta"]["errors"].append(
+                {
+                    "stage": "GoodCoordinates",
+                    "error": repr(e),
+                    "build_ok": data_point["labels"]["build_ok"],
+                    "is_nested": data_point["labels"]["is_nested"],
+                }
+            )
         #-------------------------
 
         #------------------------------
         # PrincipalCurvature penalty:
         try:
             pc_obj = PrincipalCurvature(
-                eq=eq,
-                loss_function="mean",
-                normalize=False,
+                eq = eq,
+                loss_function = "mean",
+                normalize = False,
             )
             pc_obj.build()
             pc_val = pc_obj.compute_unscaled(eq.params_dict)
             data_point["labels"]["pc_mean"] = float(np.asarray(pc_val).item())
         except Exception as e:
-            print("PrincipalCurvature error:", repr(e))
+            data_point["meta"]["errors"].append(
+                {
+                    "stage": "PrincipalCurvature",
+                    "error": repr(e),
+                    "build_ok": data_point["labels"]["build_ok"],
+                    "is_nested": data_point["labels"]["is_nested"],
+                }
+            )
         #------------------------------
 
-        #--------------------------------------------
-        # MeanCurvature penalty, max over all nodes:
+        #-------------------------------
+        # MeanCurvature penalty, mean:
         try:
             mc_obj = MeanCurvature(
-                eq=eq,
-                loss_function="max",
-                normalize=False,
+                eq = eq,
+                loss_function = "mean",
+                normalize = False,
             )
             mc_obj.build()
             mc_val = mc_obj.compute_unscaled(eq.params_dict)
-            data_point["labels"]["mc_max"] = float(np.asarray(mc_val).item())
+            data_point["labels"]["mc_mean"] = float(np.asarray(mc_val).item())
         except Exception as e:
-            print("MeanCurvature error:", repr(e))
-        #-----------------------------------------
-        #=========================================
+            data_point["meta"]["errors"].append(
+                {
+                    "stage": "MeanCurvature",
+                    "error": repr(e),
+                    "build_ok": data_point["labels"]["build_ok"],
+                    "is_nested": data_point["labels"]["is_nested"],
+                }
+            )
+        #-------------------------------
 
-
-        #========================================
+        #----------------------------------------
         # Assigning criteria residuals to scores:
         gc_penalty = data_point["labels"]["gc_mean"]
         if not np.isfinite(gc_penalty):
@@ -185,16 +252,11 @@ def score(cond):
         if not np.isfinite(pc_penalty):
             pc_penalty = 100.0
 
-        c_penalty = data_point["labels"]["mc_max"]
+        c_penalty = data_point["labels"]["mc_mean"]
         if not np.isfinite(c_penalty):
             c_penalty = 100.0
-        if c_penalty < 0:
-            c_penalty = 0.0
 
         print("is_nested =", data_point["labels"]["is_nested"])
-        print("gc_mean =", data_point["labels"]["gc_mean"])
-        print("pc_mean =", data_point["labels"]["pc_mean"])
-        print("mc_max =", data_point["labels"]["mc_max"])
 
         data_point["labels"]["score_total"] = float(
             np.linalg.norm([
@@ -203,15 +265,49 @@ def score(cond):
                 w_c * c_penalty,
             ])
         )
-        #=======================
+
+        print(f"Total Score:{data_point["labels"]["score_total"]}")
+        #----------------------------------------
 
 
+
+
+
+
+
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        #--------------------------------------------------------------
+        # Plotting toroidal cross-sections (confirmation of eq health):
+        plt.title("Toroidal Cross-Sections of Initial Equilibrium")
+        fig, ax = plot_comparison(
+            eqs=[eq],
+            labels=["Initial Equilibrium"],
+            color=["green"],
+        )
+        toroidal_cuts_path = os.path.join(base_dir, "toroidal_cuts.png")
+        plt.savefig(toroidal_cuts_path, dpi=200)
+        plt.close()
+        #----------
+
+
+
+
+
+    #----------
     except Exception as e:
-        data_point["meta"]["error"] = repr(e)
+        data_point["meta"]["errors"].append(
+            {
+                "stage": "EquilibriumBuild",
+                "error": repr(e),
+                "build_ok": data_point["labels"]["build_ok"],
+                "is_nested": data_point["labels"]["is_nested"],
+            }
+        )
+    
+
 
     return data_point
-#==============================
-#==============================================================================================================
+#====================
 
 
 
@@ -222,7 +318,9 @@ def score(cond):
 
 
 
-#============== SERIAL RUNNER =================================================================================
+
+#============== SERIAL OR PARALLEL RUNNER ======================================================================
+#=====================
 def run_serial(
     resolution: tuple,
     NFP: int,
@@ -239,30 +337,26 @@ def run_serial(
     Serial evaluation of all conditions.
     """
     conds = cond_generator(
-        resolution=resolution,
-        NFP=NFP,
-        modes_R=modes_R,
-        modes_Z=modes_Z,
-        R_lmn_options=R_lmn_options,
-        Z_lmn_options=Z_lmn_options,
-        p_l_options=p_l_options,
-        i_l_options=i_l_options,
-        Psi_options=Psi_options,
-        weights=weights,
+        resolution = resolution,
+        NFP = NFP,
+        modes_R = modes_R,
+        modes_Z = modes_Z,
+        R_lmn_options = R_lmn_options,
+        Z_lmn_options = Z_lmn_options,
+        p_l_options = p_l_options,
+        i_l_options = i_l_options,
+        Psi_options = Psi_options,
+        weights = weights,
     )
+
     return [score(cond) for cond in conds]
-#==============================================================================================================
+#=========================================
 
 
 
 
 
-
-
-
-
-
-#============== PARALLEL RUNNER ===============================================================================
+#================
 def run_parallel(
     resolution: tuple,
     NFP: int,
@@ -281,37 +375,41 @@ def run_parallel(
     Parallel evaluation of all conditions using multiprocessing.
     """
     #-----------------
+    # Process count:
     if nprocs is None:
         nprocs = cpu_count()
-    #-----------------------
+    #-----------------
 
-    #------------
+    #-----------------------
+    # Materialize generator:
     conds = list(
         cond_generator(
-            resolution=resolution,
-            NFP=NFP,
-            modes_R=modes_R,
-            modes_Z=modes_Z,
-            R_lmn_options=R_lmn_options,
-            Z_lmn_options=Z_lmn_options,
-            p_l_options=p_l_options,
-            i_l_options=i_l_options,
-            Psi_options=Psi_options,
-            weights=weights,
+            resolution = resolution,
+            NFP = NFP,
+            modes_R = modes_R,
+            modes_Z = modes_Z,
+            R_lmn_options = R_lmn_options,
+            Z_lmn_options = Z_lmn_options,
+            p_l_options = p_l_options,
+            i_l_options = i_l_options,
+            Psi_options = Psi_options,
+            weights = weights,
         )
     )
-    #------------------------
+    #-----------------------
 
-    #-----------------------------------
-    with Pool(processes=nprocs) as pool:
+    #--------------------
+    # Parallel mapping:
+    with Pool(processes = nprocs) as pool:
         data = pool.map(
             score,
             conds,
-            chunksize=chunksize,
+            chunksize = chunksize,
         )
-    #---------------------------
+    #--------------------
 
     return data
+#==============
 #==============================================================================================================
 
 
@@ -324,60 +422,74 @@ def run_parallel(
 
 
 
-
-
-
-
-
-
-
 #============== MAIN ===========================================================================================
-#==========
+#================
 def main():
     """
     Runs equilibrium constructions from generated continuous feature options,
     saves the nested raw dataset, and builds PyTorch-ready tensors.
     """
-    t_start = time.perf_counter()
 
     #---------------------------------------------
     # Generate continuous feature-option lists:
-    options = feature_generator(N = N_options)
+    options = feature_generator(
+        NFP = NFP,
+        N_R0 = N_R0,
+        N_Rs = N_Rs,
+        N_Z = N_Z,
+        N_p0 = N_p0,
+        N_i0 = N_i0,
+        N_i2 = N_i2,
+        N_psi = N_psi,
+    )
     #---------------------------------------------
+
+    #-----------------------------------------
+    # Number of equilibrium constructions:
+    N_eq = (
+        len(options["R_lmn_options"])
+        * len(options["Z_lmn_options"])
+        * len(options["p_l_options"])
+        * len(options["i_l_options"])
+        * len(options["Psi_options"])
+    )
+    print("N_eq =", N_eq)
+    #-----------------------------------------
 
     #-----------------------------------------
     # Choose whichever runner you want here:
     data = run_serial(
-        resolution=options["resolution"],
-        NFP=options["NFP"],
-        modes_R=options["modes_R"],
-        modes_Z=options["modes_Z"],
-        R_lmn_options=options["R_lmn_options"],
-        Z_lmn_options=options["Z_lmn_options"],
-        p_l_options=options["p_l_options"],
-        i_l_options=options["i_l_options"],
-        Psi_options=options["Psi_options"],
-        weights=weights,
+        resolution = options["resolution"],
+        NFP = options["NFP"],
+        modes_R = options["modes_R"],
+        modes_Z = options["modes_Z"],
+        R_lmn_options = options["R_lmn_options"],
+        Z_lmn_options = options["Z_lmn_options"],
+        p_l_options = options["p_l_options"],
+        i_l_options = options["i_l_options"],
+        Psi_options = options["Psi_options"],
+        weights = weights,
     )
     #-----------------------------------------
 
     #----------------------------------
     # Save raw nested dataset to disk:
     data_save_path = data_saver(
-        data=data,
-        filename="dataset.pkl",
+        data = data,
+        NFP = options["NFP"],
+        filename = "dataset.pkl",
     )
     #----------------------------------
 
     #-----------------------------------------
     # Build PyTorch-ready feature/label data:
     torch_data = build_torch_dataset(
-        data=data,
-        label_keys=[
+        data = data,
+        label_keys = [
             "score_total",
             "gc_mean",
             "pc_mean",
-            "mc_max",
+            "mc_mean",
             "is_nested",
             "build_ok",
         ],
@@ -387,31 +499,22 @@ def main():
     #-----------------------------------
     # Save PyTorch-ready tensors to disk:
     torch_save_path = torch_data_saver(
-        torch_data=torch_data,
-        filename="torch_dataset.pt",
+        torch_data = torch_data,
+        NFP = options["NFP"],
+        filename = "torch_dataset.pt",
     )
     #-----------------------------------
 
-    t_end = time.perf_counter()
-
-    print("elapsed =", t_end - t_start, "s")
-    print("saved raw data to =", data_save_path)
-    print("saved torch data to =", torch_save_path)
-    print("n_data =", len(data))
-
-    if len(data) > 0:
-        print("first score_total =", data[0]["labels"]["score_total"])
-
-    print("X shape =", tuple(torch_data["X"].shape))
-    print("y shape =", tuple(torch_data["y"].shape))
-#===================================================
+    # if len(data) > 0:
+    #     print("first score_total =", data[0]["labels"]["score_total"])
+#=====================================================================
 
 
 
 
 
-#-------------------------
+#=========================
 if __name__ == "__main__":
     main()
-#---------
+#=========================
 #==============================================================================================================

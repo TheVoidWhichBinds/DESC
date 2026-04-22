@@ -76,7 +76,7 @@ def comparison(
     # Equilibrium run:
     #--------------------------------------------
     # Running & saving initial equilibrium solve:
-    eq_init = run_equilibrium(eq_config=eq_config)
+    eq, eq_init = run_equilibrium(eq_config=eq_config)
     eq_init.save(os.path.join(out_dir, "eq_init.h5"))
     #--------------------------------------------
 
@@ -84,9 +84,9 @@ def comparison(
     # Plotting toroidal cross-sections (confirmation of eq health):
     plt.title("Toroidal Cross-Sections of Initial Equilibrium")
     fig, ax = plot_comparison(
-        eqs=[eq_init],
-        labels=["Initial Equilibrium"],
-        color=["green"],
+        eqs=[eq, eq_init],
+        labels=["Raw Eq", "Coninuation Eq"],
+        color=["green", "blue"],
     )
     toroidal_cuts_path = os.path.join(out_dir, "initial_toroidal_cuts.png")
     plt.savefig(toroidal_cuts_path, dpi=200)
