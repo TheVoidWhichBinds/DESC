@@ -19,7 +19,26 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 
-#============== MAIN HELPERS  ===========================================================================
+#============== FILE / SAVE DEFAULTS ===========================================================================
+VALID_EQ_DIRNAME = "valid_eq"
+VALID_EQ_PREFIX = "eq_"
+VALID_EQ_DIGITS = 3
+
+DATASET_FILENAME = "dataset.pkl"
+TORCH_DATASET_FILENAME = "torch_dataset.pt"
+#==============================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+#============== MAIN HELPERS ===================================================================================
 #==================
 def cond_generator(
     resolution: tuple,
@@ -65,17 +84,10 @@ def cond_generator(
 
 #==================================
 def feature_generator(
-    NFP,
-    N_R0,
-    N_Rs,
-    N_Z,
-    N_p0,
-    N_i0,
-    N_i2,
-    N_psi,
+    config: dict,
 ):
     """
-    Generates continuous feature options from hard-coded candidate pools.
+    Generates continuous feature options from config-controlled candidate pools.
 
     The discrete structure is fixed for the entire dataset:
         - resolution
@@ -89,62 +101,130 @@ def feature_generator(
         - p_l
         - i_l
         - Psi
-
-    For NFP = 4, the R/Z pools below are chosen to stay in a mild-shaping,
-    low-curvature regime, ranging from nearly circular cross-sections to
-    slightly banana-like cross-sections.
     """
     #------------------------
-    # Fixed quantities
-    resolution = (16, 16, 16)
+    # Fixed quantities:
+    resolution = config["resolution"]
+    NFP = config["NFP"]
+    modes_R = config["modes_R"]
+    modes_Z = config["modes_Z"]
 
-    modes_R = [
-        (0, 0),
-        (1, 0),
-        (1, 1),
-    ]
+    counts = config["counts"]
+    ranges = config["ranges"]
+    #------------------------
 
-    modes_Z = [
-        (-1, 0),
-        (-1, 1)
-    ]
+    #-------------------
+    # R-FK coefficients:
+    modeR00_vals = np.linspace(
+        ranges["modeR00"][0],
+        ranges["modeR00"][1],
+        counts["N_R0"],
+    )
+    modeR10_vals = np.linspace(
+        ranges["modeR10"][0],
+        ranges["modeR10"][1],
+        counts["N_R10"],
+    )
+    modeR20_vals = np.linspace(
+        ranges["modeR20"][0],
+        ranges["modeR20"][1],
+        counts["N_R20"],
+    )
+    modeR11_vals = np.linspace(
+        ranges["modeR11"][0],
+        ranges["modeR11"][1],
+        counts["N_R11"],
+    )
+    modeR21_vals = np.linspace(
+        ranges["modeR21"][0],
+        ranges["modeR21"][1],
+        counts["N_R21"],
+    )
 
-    modeR00_vals = np.linspace(3.75, 10, N_R0)
-    modeR10_vals = np.linspace(-0.55, -0.30, N_Rs)
-    modeR11_vals = np.linspace(-0.12, -0.04, N_Rs)
     R_lmn_pool = [
-        [float(modeR00), float(modeR10), float(modeR11)]
+        [
+            float(modeR00),
+            float(modeR10),
+            float(modeR20),
+            float(modeR11),
+            float(modeR21),
+        ]
         for modeR00 in modeR00_vals
         for modeR10 in modeR10_vals
+        for modeR20 in modeR20_vals
         for modeR11 in modeR11_vals
+        for modeR21 in modeR21_vals
     ]
+    #-------------------
 
-    modeZ10_vals = np.linspace(0.55, 0.30, N_Z)
-    modeZ11_vals = np.linspace(-0.12, -0.04, N_Z)
+    #-------------------
+    # Z-FK coefficients:
+    modeZ10_vals = np.linspace(
+        ranges["modeZ10"][0],
+        ranges["modeZ10"][1],
+        counts["N_Z10"],
+    )
+    modeZ20_vals = np.linspace(
+        ranges["modeZ20"][0],
+        ranges["modeZ20"][1],
+        counts["N_Z20"],
+    )
+    modeZ11_vals = np.linspace(
+        ranges["modeZ11"][0],
+        ranges["modeZ11"][1],
+        counts["N_Z11"],
+    )
+    modeZ21_vals = np.linspace(
+        ranges["modeZ21"][0],
+        ranges["modeZ21"][1],
+        counts["N_Z21"],
+    )
+
     Z_lmn_pool = [
-        [float(modeZ10), float(modeZ11)]
+        [
+            float(modeZ10),
+            float(modeZ20),
+            float(modeZ11),
+            float(modeZ21),
+        ]
         for modeZ10 in modeZ10_vals
+        for modeZ20 in modeZ20_vals
         for modeZ11 in modeZ11_vals
+        for modeZ21 in modeZ21_vals
     ]
-    #-----------------------------
+    #-------------------
 
-    #-------------------------------
-    # Pressure coefficients (octic):
-    p0_vals = np.linspace(1E4, 1e7, N_p0)
+    #-------------------------
+    # Pressure coefficients:
+    p0_vals = np.linspace(
+        ranges["p0"][0],
+        ranges["p0"][1],
+        counts["N_p0"],
+    )
+
     p_l_pool = [
         [
             float(p0),
-            float(p0 * -2),
+            float(p0 * -2.0),
             float(p0),
         ]
         for p0 in p0_vals
     ]
-    #-------------------------------
+    #-------------------------
 
     #-------------------
     # Iota coefficients:
-    i0_vals = np.linspace(0.25, 1.33, N_i0)
-    i2_vals = np.linspace(-0.23, 0.23, N_i2)
+    i0_vals = np.linspace(
+        ranges["i0"][0],
+        ranges["i0"][1],
+        counts["N_i0"],
+    )
+    i2_vals = np.linspace(
+        ranges["i2"][0],
+        ranges["i2"][1],
+        counts["N_i2"],
+    )
+
     i_l_pool = [
         [float(i0), float(i2)]
         for i0 in i0_vals
@@ -154,7 +234,14 @@ def feature_generator(
 
     #-----------
     # Psi range:
-    Psi_pool = [float(psi) for psi in np.linspace(1.0, 1.0, N_psi)]
+    Psi_pool = [
+        float(psi)
+        for psi in np.linspace(
+            ranges["Psi"][0],
+            ranges["Psi"][1],
+            counts["N_psi"],
+        )
+    ]
     #-----------
 
     return {
@@ -169,7 +256,7 @@ def feature_generator(
         "Psi_options": Psi_pool,
     }
 #==================================
-#==========================================================================================================================
+#==============================================================================================================
 
 
 
@@ -181,10 +268,7 @@ def feature_generator(
 
 
 
-
-
-
-#=================== HENCHMEN HELPERS ============================================================================
+#============== SAVE HELPERS ===================================================================================
 #=================================
 def get_nfp_save_dir(
     NFP: int,
@@ -206,7 +290,7 @@ def get_valid_eq_dir():
     """
     Returns the directory used to store valid nested equilibria.
     """
-    save_dir = os.path.join(base_dir, "valid_eq")
+    save_dir = os.path.join(base_dir, VALID_EQ_DIRNAME)
     os.makedirs(save_dir, exist_ok = True)
     return save_dir
 #=====================================
@@ -226,11 +310,12 @@ def save_valid_equilibrium(
 
     existing = [
         name for name in os.listdir(save_dir)
-        if name.startswith("eq_") and name.endswith(".h5")
+        if name.startswith(VALID_EQ_PREFIX) and name.endswith(".h5")
     ]
     next_idx = len(existing) + 1
 
-    save_path = os.path.join(save_dir, f"eq_{next_idx:06d}.h5")
+    filename = f"{VALID_EQ_PREFIX}{next_idx:0{VALID_EQ_DIGITS}d}.h5"
+    save_path = os.path.join(save_dir, filename)
     eq.save(save_path)
 
     return save_path
@@ -244,7 +329,7 @@ def save_valid_equilibrium(
 def data_saver(
     data,
     NFP,
-    filename = "dataset.pkl",
+    filename = DATASET_FILENAME,
 ):
     """
     Save raw nested Python dataset to disk with pickle.
@@ -313,7 +398,7 @@ def build_torch_dataset(
 def torch_data_saver(
     torch_data,
     NFP,
-    filename = "torch_dataset.pt",
+    filename = TORCH_DATASET_FILENAME,
 ):
     """
     Save PyTorch-ready dataset to disk.

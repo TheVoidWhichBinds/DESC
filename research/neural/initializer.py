@@ -2,7 +2,6 @@
 
 from multiprocessing import Pool, cpu_count
 import numpy as np
-import time
 import os
 import matplotlib.pyplot as plt
 from desc.equilibrium import Equilibrium
@@ -10,7 +9,8 @@ from desc.geometry import FourierRZToroidalSurface
 from desc.profiles import PowerSeriesProfile
 from desc.objectives import PrincipalCurvature, MeanCurvature, GoodCoordinates
 from desc.plotting import plot_comparison
-from desc.continuation import solve_continuation_automatic
+
+from .config import FEATURE_CONFIG, SCORING_CONFIG, RUN_CONFIG
 from .helper import (
     cond_generator,
     feature_generator,
@@ -30,17 +30,26 @@ from .helper import (
 
 
 
-#============== HYPERPARAMETERS ================================================================================
-NFP = 4
-weights = [5, 1, 2]   # w_gc, w_pc, w_c
+#============== LOCAL DEFAULTS =================================================================================
+PRESSURE_SYM = True
+IOTA_SYM = True
 
-N_R0 = 1
-N_Rs = 1
-N_Z = 1
-N_p0 = 1
-N_i0 = 1
-N_i2 = 1
-N_psi = 1
+OBJECTIVE_LOSS_FUNCTION = "mean"
+OBJECTIVE_NORMALIZE = False
+
+ENSURE_NESTED = False
+
+TOROIDAL_CUTS_FILENAME = "toroidal_cuts.png"
+PLOT_DPI = 200
+
+LABEL_KEYS = [
+    "score_total",
+    "gc_mean",
+    "pc_mean",
+    "mc_mean",
+    "is_nested",
+    "build_ok",
+]
 #==============================================================================================================
 
 
@@ -79,6 +88,12 @@ def score(cond):
     w_gc, w_pc, w_c = cond["weights"]
     #-----------------------
 
+    #---------------------
+    # Config shortcuts:
+    fallback_penalty = SCORING_CONFIG["fallback_penalty"]
+    default_score_total = SCORING_CONFIG["default_score_total"]
+    #---------------------
+
     #--------------------------
     # Default data-point build:
     data_point = {
@@ -99,7 +114,7 @@ def score(cond):
             "gc_mean": np.nan,
             "pc_mean": np.nan,
             "mc_mean": np.nan,
-            "score_total": 100.0,
+            "score_total": default_score_total,
         },
         "meta": {
             "errors": [],
@@ -121,12 +136,12 @@ def score(cond):
 
         pressure_init = PowerSeriesProfile(
             p_l,
-            sym = True,
+            sym = PRESSURE_SYM,
         )
 
         iota_init = PowerSeriesProfile(
             i_l,
-            sym = True,
+            sym = IOTA_SYM,
         )
 
         eq = Equilibrium(
@@ -137,7 +152,7 @@ def score(cond):
             pressure = pressure_init,
             iota = iota_init,
             Psi = Psi,
-            ensure_nested = False,
+            ensure_nested = ENSURE_NESTED,
         )
 
         data_point["labels"]["build_ok"] = True
@@ -181,8 +196,8 @@ def score(cond):
         try:
             gc_obj = GoodCoordinates(
                 eq = eq,
-                loss_function = "mean",
-                normalize = False,
+                loss_function = OBJECTIVE_LOSS_FUNCTION,
+                normalize = OBJECTIVE_NORMALIZE,
             )
             gc_obj.build()
             gc_val = gc_obj.compute_unscaled(eq.params_dict)
@@ -203,8 +218,8 @@ def score(cond):
         try:
             pc_obj = PrincipalCurvature(
                 eq = eq,
-                loss_function = "mean",
-                normalize = False,
+                loss_function = OBJECTIVE_LOSS_FUNCTION,
+                normalize = OBJECTIVE_NORMALIZE,
             )
             pc_obj.build()
             pc_val = pc_obj.compute_unscaled(eq.params_dict)
@@ -225,8 +240,8 @@ def score(cond):
         try:
             mc_obj = MeanCurvature(
                 eq = eq,
-                loss_function = "mean",
-                normalize = False,
+                loss_function = OBJECTIVE_LOSS_FUNCTION,
+                normalize = OBJECTIVE_NORMALIZE,
             )
             mc_obj.build()
             mc_val = mc_obj.compute_unscaled(eq.params_dict)
@@ -246,27 +261,29 @@ def score(cond):
         # Assigning criteria residuals to scores:
         gc_penalty = data_point["labels"]["gc_mean"]
         if not np.isfinite(gc_penalty):
-            gc_penalty = 100.0
+            gc_penalty = fallback_penalty
 
         pc_penalty = data_point["labels"]["pc_mean"]
         if not np.isfinite(pc_penalty):
-            pc_penalty = 100.0
+            pc_penalty = fallback_penalty
 
         c_penalty = data_point["labels"]["mc_mean"]
         if not np.isfinite(c_penalty):
-            c_penalty = 100.0
+            c_penalty = fallback_penalty
 
         print("is_nested =", data_point["labels"]["is_nested"])
 
         data_point["labels"]["score_total"] = float(
-            np.linalg.norm([
-                w_gc * gc_penalty,
-                w_pc * pc_penalty,
-                w_c * c_penalty,
-            ])
+            np.linalg.norm(
+                [
+                    w_gc * gc_penalty,
+                    w_pc * pc_penalty,
+                    w_c * c_penalty,
+                ]
+            )
         )
 
-        print(f"Total Score:{data_point["labels"]["score_total"]}")
+        print(f'Total Score: {data_point["labels"]["score_total"]:.4e}')
         #----------------------------------------
 
 
@@ -280,12 +297,12 @@ def score(cond):
         # Plotting toroidal cross-sections (confirmation of eq health):
         plt.title("Toroidal Cross-Sections of Initial Equilibrium")
         fig, ax = plot_comparison(
-            eqs=[eq],
-            labels=["Initial Equilibrium"],
-            color=["green"],
+            eqs = [eq],
+            labels = ["Initial Equilibrium"],
+            color = ["green"],
         )
-        toroidal_cuts_path = os.path.join(base_dir, "toroidal_cuts.png")
-        plt.savefig(toroidal_cuts_path, dpi=200)
+        toroidal_cuts_path = os.path.join(base_dir, TOROIDAL_CUTS_FILENAME)
+        plt.savefig(toroidal_cuts_path, dpi = PLOT_DPI)
         plt.close()
         #----------
 
@@ -303,8 +320,6 @@ def score(cond):
                 "is_nested": data_point["labels"]["is_nested"],
             }
         )
-    
-
 
     return data_point
 #====================
@@ -433,14 +448,7 @@ def main():
     #---------------------------------------------
     # Generate continuous feature-option lists:
     options = feature_generator(
-        NFP = NFP,
-        N_R0 = N_R0,
-        N_Rs = N_Rs,
-        N_Z = N_Z,
-        N_p0 = N_p0,
-        N_i0 = N_i0,
-        N_i2 = N_i2,
-        N_psi = N_psi,
+        config = FEATURE_CONFIG,
     )
     #---------------------------------------------
 
@@ -458,18 +466,34 @@ def main():
 
     #-----------------------------------------
     # Choose whichever runner you want here:
-    data = run_serial(
-        resolution = options["resolution"],
-        NFP = options["NFP"],
-        modes_R = options["modes_R"],
-        modes_Z = options["modes_Z"],
-        R_lmn_options = options["R_lmn_options"],
-        Z_lmn_options = options["Z_lmn_options"],
-        p_l_options = options["p_l_options"],
-        i_l_options = options["i_l_options"],
-        Psi_options = options["Psi_options"],
-        weights = weights,
-    )
+    if RUN_CONFIG["use_parallel"]:
+        data = run_parallel(
+            resolution = options["resolution"],
+            NFP = options["NFP"],
+            modes_R = options["modes_R"],
+            modes_Z = options["modes_Z"],
+            R_lmn_options = options["R_lmn_options"],
+            Z_lmn_options = options["Z_lmn_options"],
+            p_l_options = options["p_l_options"],
+            i_l_options = options["i_l_options"],
+            Psi_options = options["Psi_options"],
+            weights = SCORING_CONFIG["weights"],
+            nprocs = RUN_CONFIG["nprocs"],
+            chunksize = RUN_CONFIG["chunksize"],
+        )
+    else:
+        data = run_serial(
+            resolution = options["resolution"],
+            NFP = options["NFP"],
+            modes_R = options["modes_R"],
+            modes_Z = options["modes_Z"],
+            R_lmn_options = options["R_lmn_options"],
+            Z_lmn_options = options["Z_lmn_options"],
+            p_l_options = options["p_l_options"],
+            i_l_options = options["i_l_options"],
+            Psi_options = options["Psi_options"],
+            weights = SCORING_CONFIG["weights"],
+        )
     #-----------------------------------------
 
     #----------------------------------
@@ -477,7 +501,6 @@ def main():
     data_save_path = data_saver(
         data = data,
         NFP = options["NFP"],
-        filename = "dataset.pkl",
     )
     #----------------------------------
 
@@ -485,14 +508,7 @@ def main():
     # Build PyTorch-ready feature/label data:
     torch_data = build_torch_dataset(
         data = data,
-        label_keys = [
-            "score_total",
-            "gc_mean",
-            "pc_mean",
-            "mc_mean",
-            "is_nested",
-            "build_ok",
-        ],
+        label_keys = LABEL_KEYS,
     )
     #-----------------------------------------
 
@@ -501,12 +517,8 @@ def main():
     torch_save_path = torch_data_saver(
         torch_data = torch_data,
         NFP = options["NFP"],
-        filename = "torch_dataset.pt",
     )
     #-----------------------------------
-
-    # if len(data) > 0:
-    #     print("first score_total =", data[0]["labels"]["score_total"])
 #=====================================================================
 
 
