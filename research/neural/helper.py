@@ -19,25 +19,6 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 
-#============== FILE / SAVE DEFAULTS ===========================================================================
-VALID_EQ_DIRNAME = "valid_eq"
-VALID_EQ_PREFIX = "eq_"
-VALID_EQ_DIGITS = 3
-
-DATASET_FILENAME = "dataset.pkl"
-TORCH_DATASET_FILENAME = "torch_dataset.pt"
-#==============================================================================================================
-
-
-
-
-
-
-
-
-
-
-
 #============== MAIN HELPERS ===================================================================================
 #==================
 def cond_generator(
@@ -47,22 +28,15 @@ def cond_generator(
     modes_Z: list,
     R_lmn_options: list,
     Z_lmn_options: list,
-    p_l_options: list,
-    i_l_options: list,
-    Psi_options: list,
-    weights: list,
 ):
     """
     Generates initial-condition dictionaries for all continuous
     feature-vector combinations, while keeping the discrete
     structure fixed across the whole dataset.
     """
-    for R_lmn, Z_lmn, p_l, i_l, Psi in product(
+    for R_lmn, Z_lmn in product(
         R_lmn_options,
         Z_lmn_options,
-        p_l_options,
-        i_l_options,
-        Psi_options,
     ):
         yield {
             "resolution": resolution,
@@ -71,18 +45,15 @@ def cond_generator(
             "modes_Z": modes_Z,
             "R_lmn": R_lmn,
             "Z_lmn": Z_lmn,
-            "p_l": p_l,
-            "i_l": i_l,
-            "Psi": float(Psi),
-            "weights": weights,
         }
-#================================
+#==================
 
 
 
 
 
-#==================================
+
+#==================
 def feature_generator(
     config: dict,
 ):
@@ -98,9 +69,6 @@ def feature_generator(
     Only the continuous amplitudes are varied:
         - R_lmn
         - Z_lmn
-        - p_l
-        - i_l
-        - Psi
     """
     #------------------------
     # Fixed quantities:
@@ -194,56 +162,6 @@ def feature_generator(
     ]
     #-------------------
 
-    #-------------------------
-    # Pressure coefficients:
-    p0_vals = np.linspace(
-        ranges["p0"][0],
-        ranges["p0"][1],
-        counts["N_p0"],
-    )
-
-    p_l_pool = [
-        [
-            float(p0),
-            float(p0 * -2.0),
-            float(p0),
-        ]
-        for p0 in p0_vals
-    ]
-    #-------------------------
-
-    #-------------------
-    # Iota coefficients:
-    i0_vals = np.linspace(
-        ranges["i0"][0],
-        ranges["i0"][1],
-        counts["N_i0"],
-    )
-    i2_vals = np.linspace(
-        ranges["i2"][0],
-        ranges["i2"][1],
-        counts["N_i2"],
-    )
-
-    i_l_pool = [
-        [float(i0), float(i2)]
-        for i0 in i0_vals
-        for i2 in i2_vals
-    ]
-    #-------------------
-
-    #-----------
-    # Psi range:
-    Psi_pool = [
-        float(psi)
-        for psi in np.linspace(
-            ranges["Psi"][0],
-            ranges["Psi"][1],
-            counts["N_psi"],
-        )
-    ]
-    #-----------
-
     return {
         "resolution": resolution,
         "NFP": NFP,
@@ -251,11 +169,8 @@ def feature_generator(
         "modes_Z": modes_Z,
         "R_lmn_options": R_lmn_pool,
         "Z_lmn_options": Z_lmn_pool,
-        "p_l_options": p_l_pool,
-        "i_l_options": i_l_pool,
-        "Psi_options": Psi_pool,
     }
-#==================================
+#==================
 #==============================================================================================================
 
 
@@ -269,7 +184,7 @@ def feature_generator(
 
 
 #============== SAVE HELPERS ===================================================================================
-#=================================
+#==================
 def get_nfp_save_dir(
     NFP: int,
 ):
@@ -279,60 +194,21 @@ def get_nfp_save_dir(
     save_dir = os.path.join(base_dir, f"NFP_{NFP}")
     os.makedirs(save_dir, exist_ok = True)
     return save_dir
-#=================================
+#==================
 
 
 
 
 
-#=====================================
-def get_valid_eq_dir():
-    """
-    Returns the directory used to store valid nested equilibria.
-    """
-    save_dir = os.path.join(base_dir, VALID_EQ_DIRNAME)
-    os.makedirs(save_dir, exist_ok = True)
-    return save_dir
-#=====================================
 
-
-
-
-
-#==========================
-def save_valid_equilibrium(
-    eq,
-):
-    """
-    Save a valid nested DESC equilibrium into ./valid_eq.
-    """
-    save_dir = get_valid_eq_dir()
-
-    existing = [
-        name for name in os.listdir(save_dir)
-        if name.startswith(VALID_EQ_PREFIX) and name.endswith(".h5")
-    ]
-    next_idx = len(existing) + 1
-
-    filename = f"{VALID_EQ_PREFIX}{next_idx:0{VALID_EQ_DIGITS}d}.h5"
-    save_path = os.path.join(save_dir, filename)
-    eq.save(save_path)
-
-    return save_path
-#===================
-
-
-
-
-
-#=========================
+#==================
 def data_saver(
     data,
     NFP,
-    filename = DATASET_FILENAME,
+    filename = "dataset.pkl",
 ):
     """
-    Save raw nested Python dataset to disk with pickle.
+    Save raw Python dataset to disk with pickle.
     """
     save_dir = get_nfp_save_dir(NFP = NFP)
     save_path = os.path.join(save_dir, filename)
@@ -341,22 +217,23 @@ def data_saver(
         pickle.dump(data, f)
 
     return save_path
-#=========================
+#==================
 
 
 
 
 
-#=======================
+
+#==================
 def build_torch_dataset(
     data,
-    label_keys,
+    target_key: str,
 ):
     """
-    Build PyTorch-ready tensors from nested dataset.
+    Build PyTorch-ready tensors for binary classification.
 
     X contains continuous numeric features only.
-    y contains requested labels in the order of label_keys.
+    y contains one binary target column.
     """
     X_rows = []
     y_rows = []
@@ -368,14 +245,8 @@ def build_torch_dataset(
         x = []
         x.extend([float(v) for v in feat["R_lmn"]])
         x.extend([float(v) for v in feat["Z_lmn"]])
-        x.extend([float(v) for v in feat["p_l"]])
-        x.extend([float(v) for v in feat["i_l"]])
-        x.append(float(feat["Psi"]))
 
-        y = []
-        for key in label_keys:
-            val = lab[key]
-            y.append(float(val))
+        y = [float(lab[target_key])]
 
         X_rows.append(x)
         y_rows.append(y)
@@ -386,19 +257,20 @@ def build_torch_dataset(
     return {
         "X": X,
         "y": y,
-        "label_keys": label_keys,
+        "target_key": target_key,
     }
-#=======================
+#==================
 
 
 
 
 
-#==============================
+
+#==================
 def torch_data_saver(
     torch_data,
     NFP,
-    filename = TORCH_DATASET_FILENAME,
+    filename = "torch_dataset.pt",
 ):
     """
     Save PyTorch-ready dataset to disk.
@@ -409,5 +281,5 @@ def torch_data_saver(
     torch.save(torch_data, save_path)
 
     return save_path
-#==============================
+#==================
 #==============================================================================================================
