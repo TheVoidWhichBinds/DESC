@@ -21,6 +21,7 @@ from research.poly.FLO_vs_FNO.poly_constraints import (
     FNO_pressure_monotonic,
     FNO_grad_pressure_edge,
     FNO_iota,
+    current_Redl,
 )
 
 from research.poly.exact_vs_auglag.helper import iota_between_rationals
@@ -75,10 +76,14 @@ surface_source_config = {
         / f"NFP_{NFP}"
         / "dataset.pkl"
     ),
-    "selection_method": "first_nested",
-    "selection_index": 0,
+    "selection_method": "all_nested",
+    "shuffle": True,
+    "shuffle_seed": 42,
 }
-#------------------------------------------
+
+# Number of equilibria to test:
+N_eq = 8
+#------------------------------
 
 #-----------------------
 # Initializing pressure:
@@ -103,13 +108,14 @@ iota_init = PowerSeriesProfile(
 #==========================
 # Grouping eq input config:
 EQ_INPUT_CONFIG = {
-    "NFP":                 NFP,
+    "NFP":                  NFP,
     "surface_source_config": surface_source_config,
-    "pressure_init":       pressure_init,
-    "iota_init":           iota_init,
-    "eq_resolution":       eq_resolution,
+    "pressure_init":        pressure_init,
+    "iota_init":            iota_init,
+    "eq_resolution":        eq_resolution,
+    "N_eq":                 N_eq,
 }
-#==========================
+#================================
 #===================================================================================================================================================
 
 
@@ -157,7 +163,14 @@ iota_fxd = False
 #=============================
 # Grid for data-based customs:
 data_grid = LinearGrid(L = 200, M = 0, N = 0)
-#=============================
+
+redl_grid = LinearGrid(
+    L = 200,
+    M = 24,
+    N = 24,
+    NFP = NFP,
+)
+#=============
 
 
 
@@ -166,7 +179,7 @@ data_grid = LinearGrid(L = 200, M = 0, N = 0)
 # CORE OPT TOGGLES:
 opt_toggles_core = {
     # Objectives:
-    #============
+    #====================
     "forcebalance_obj": {
         "use": True,
         "kwargs": {
@@ -199,6 +212,19 @@ opt_toggles_core = {
             "normalize": True,
         },
     },
+    "current_Redl": {
+        "use": False,
+        "kwargs": {
+            "name": "current_Redl",
+            "fun": current_Redl,
+            "grid": redl_grid,
+            "compute_kwargs": {"helicity": (1, NFP)},
+            "bounds": (-1e4, 1e4),
+            "weight": 1e10,
+            "normalize": True,
+        },
+    },
+
 
     # Constraints:
     #=============
@@ -415,6 +441,8 @@ OPT_CONFIG = {
 #============== DRIVER INPUTS ======================================================================================================================
 DRIVER_CONFIG = {
     "config_path": __file__,
+    "execution_mode": "auto",   # "auto", "local", or "cluster"
+    "cluster_max_workers": 2,
 }
 #===================================================================================================================================================
 ```

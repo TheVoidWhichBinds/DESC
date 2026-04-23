@@ -4,19 +4,19 @@ FLO
   equilibrium_returned = True
   exception_raised = False
   bad_approximation_failure = False
+  final_iterations = 6
   plottable = True
   plotted = True
   failure_stage = None
-  message = Optimization terminated successfully.
-`xtol` condition satisfied. (xtol=1.00e-08)
+  message = Maximum number of function evaluations has been exceeded.
 
 FNO
   equilibrium_returned = True
   exception_raised = False
   bad_approximation_failure = False
+  final_iterations = 1
   plottable = True
   plotted = True
   failure_stage = None
-  message = Optimization terminated successfully.
-`xtol` condition satisfied. (xtol=1.00e-08)
+  message = Maximum number of function evaluations has been exceeded.
 

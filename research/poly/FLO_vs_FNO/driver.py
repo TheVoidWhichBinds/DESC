@@ -1,8 +1,12 @@
+# driver.py
+
 #===================================================================================================================================================
 import os
+from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 import pandas as pd
+from desc.io import load as desc_load
 from tabulate import tabulate
 
 from .config import (
@@ -17,7 +21,7 @@ from .helper import (
     _save_optimization_status_report,
     _write_readme,
     _write_surface_source_summary,
-    build_eq_config,
+    build_eq_configs,
     sci_compact,
 )
 from .opt import run_optimization
@@ -37,143 +41,223 @@ from .plotting import (
 
 
 
-#============== COMPARISON DRIVER ==================================================================================================================
-def comparison(
-        eq_input_config: dict,
-        opt_config: dict,
-        driver_config: dict,
+#============== WORKER HELPERS =====================================================================================================================
+#========================================
+def _load_eq_from_file(
+        eq_path,
     ):
     """
-    Runs initial equilibrium solve, then optimization for:
-        1) proximal-lsq-exact using Core + FLO
-        2) proximal-lsq-exact using Core + FNO
-
-    Run from DESC root with:
-        python3 -m research.poly.FLO_vs_FNO.driver
+    Load a saved DESC equilibrium from disk.
     """
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    eq = desc_load(eq_path)
 
-    eq_config, selected_point = build_eq_config(
-        eq_input_config = eq_input_config,
+    if isinstance(eq, (list, tuple)):
+        if len(eq) == 0:
+            raise ValueError(f"No equilibrium objects found in file: {eq_path}")
+        eq = eq[-1]
+
+    return eq
+#========================================
+
+
+
+
+
+#========================================
+def _run_one_formulation(
+        eq_init_path,
+        optimizer,
+        opt_config,
+        formulation,
+        out_dir,
+    ):
+    """
+    Worker entrypoint for one optimization formulation.
+    Loads eq_init from disk, runs the optimization, saves any returned
+    equilibrium, and returns only lightweight metadata to the parent.
+    """
+    eq_0 = _load_eq_from_file(eq_init_path)
+
+    eq_opt, opt_result, run_status = run_optimization(
+        eq_0 = eq_0,
+        optimizer = optimizer,
+        opt_config = opt_config,
+        formulation = formulation,
     )
 
-    NFP = eq_config["NFP"]
-    opt_toggles_core = opt_config["opt_toggles_core"]
-    opt_toggles_FLO = opt_config["opt_toggles_FLO"]
-    opt_toggles_FNO = opt_config["opt_toggles_FNO"]
-    config_path = driver_config["config_path"]
+    eq_opt_path = None
 
-    out_dir = _next_run_dir(base_dir)
-    _write_readme(out_dir, config_path)
-    _write_surface_source_summary(out_dir, selected_point)
+    if eq_opt is not None:
+        eq_opt_path = os.path.join(out_dir, f"opt_{formulation}.h5")
+        eq_opt.save(eq_opt_path)
+
+    return eq_opt_path, opt_result, run_status
+#========================================
+
+
+
+
+
+#========================================
+def _resolve_execution_mode(
+        driver_config,
+    ):
+    """
+    Decide whether to run FLO/FNO sequentially or in parallel.
+
+    Modes:
+        - "local"   : always sequential
+        - "cluster" : always parallel
+        - "auto"    : parallel if running inside Slurm, else sequential
+    """
+    mode = driver_config.get("execution_mode", "auto")
+
+    if mode not in {"auto", "local", "cluster"}:
+        raise ValueError(
+            f"Unsupported execution_mode='{mode}'. "
+            f"Use 'auto', 'local', or 'cluster'."
+        )
+
+    if mode == "auto":
+        if os.environ.get("SLURM_JOB_ID") is not None:
+            return "cluster"
+        return "local"
+
+    return mode
+#========================================
+
+
+
+
+#========================================
+def _get_slurm_array_info():
+    """
+    Return Slurm array task info if running as a Slurm array.
+    """
+    job_id = os.environ.get("SLURM_JOB_ID")
+    task_id = os.environ.get("SLURM_ARRAY_TASK_ID")
+    task_count = os.environ.get("SLURM_ARRAY_TASK_COUNT")
+
+    if job_id is None or task_id is None:
+        return None
+
+    if task_count is None:
+        task_count = "1"
+
+    return {
+        "job_id": str(job_id),
+        "task_id": int(task_id),
+        "task_count": int(task_count),
+    }
+#========================================
+
+
+
+
+
+#========================================
+def _filter_entries_for_slurm_task(
+        eq_config_entries,
+        slurm_array_info,
+    ):
+    """
+    Give each Slurm array task a disjoint subset of equilibria.
+    """
+    if slurm_array_info is None:
+        return eq_config_entries
+
+    task_id = slurm_array_info["task_id"]
+    task_count = slurm_array_info["task_count"]
+
+    return [
+        entry for i, entry in enumerate(eq_config_entries)
+        if i % task_count == task_id
+    ]
+#========================================
+
+
+
+
+
+#========================================
+def _make_root_out_dir(
+        base_dir,
+        execution_mode,
+        slurm_array_info,
+    ):
+    """
+    Create a collision-safe root output directory.
+    """
+    if execution_mode == "cluster":
+        job_id = os.environ.get("SLURM_JOB_ID", "no_job_id")
+
+        if slurm_array_info is not None:
+            task_id = slurm_array_info["task_id"]
+            root_out_dir = os.path.join(
+                base_dir,
+                f"run_{job_id}_task_{task_id:03d}",
+            )
+        else:
+            root_out_dir = os.path.join(
+                base_dir,
+                f"run_{job_id}",
+            )
+
+        os.makedirs(root_out_dir, exist_ok = False)
+        return root_out_dir
+
+    return _next_run_dir(base_dir)
+#========================================
+
+
+
+
+
+#========================================
+def _collect_active_columns(
+        opt_config,
+        NFP,
+    ):
+    """
+    Collect only shared core result columns for FLO and FNO comparison tables.
+    """
+    opt_toggles_core = opt_config["opt_toggles_core"]
 
     column_map_core = [
         ("forcebalance_obj", "Force error: ", "Force error"),
         ("qs", f"Quasi-symmetry (1,{NFP}) Boozer error: ", "QS Boozer error"),
         ("ballooning", "Ideal ballooning lambda: ", "Ideal ballooning lambda"),
         ("mercier", "Mercier Stability: ", "Mercier Stability"),
+        ("current_Redl", "current_Redl", "Current Redl"),
     ]
 
-    column_map_FLO = [
-        ("FLO_pressure_axis", "FLO_pressure_axis", "FLO pressure axis"),
-        ("FLO_pressure_shape", "FLO_pressure_shape", "FLO pressure shape"),
-        ("FLO_iota_axis", "FLO_iota_axis", "FLO iota axis"),
-        ("FLO_iota_edge", "FLO_iota_edge", "FLO iota edge"),
-    ]
+    active_columns = []
 
-    column_map_FNO = [
-        ("FNO_pressure", "FNO_pressure", "FNO pressure"),
-        ("FNO_pressure_monotonic", "FNO_pressure_monotonic", "FNO pressure monotonic"),
-        ("FNO_grad_pressure_edge", "FNO_grad_pressure_edge", "FNO grad pressure edge"),
-        ("FNO_iota", "FNO_iota", "FNO iota"),
-    ]
-
-    active_columns_FLO = []
     for key, result_label, column_title in column_map_core:
         if opt_toggles_core.get(key, {}).get("use", False):
-            active_columns_FLO.append((key, result_label, column_title))
-    for key, result_label, column_title in column_map_FLO:
-        if opt_toggles_FLO.get(key, {}).get("use", False):
-            active_columns_FLO.append((key, result_label, column_title))
+            active_columns.append((key, result_label, column_title))
 
-    active_columns_FNO = []
-    for key, result_label, column_title in column_map_core:
-        if opt_toggles_core.get(key, {}).get("use", False):
-            active_columns_FNO.append((key, result_label, column_title))
-    for key, result_label, column_title in column_map_FNO:
-        if opt_toggles_FNO.get(key, {}).get("use", False):
-            active_columns_FNO.append((key, result_label, column_title))
+    return active_columns, active_columns
+#========================================
 
-    #----------------------------
-    # Initial equilibrium solve:
-    eq_raw, eq_init = run_equilibrium(eq_config = eq_config)
-    eq_init.save(os.path.join(out_dir, "eq_init.h5"))
 
-    save_initial_toroidal_cuts(
-        out_dir = out_dir,
-        eq_raw = eq_raw,
-        eq_init = eq_init,
-    )
-    #----------------------------
 
-    #-------------------
-    # Optimization run:
-    eq_FLO_0 = eq_init.copy()
-    eq_FNO_0 = eq_init.copy()
 
-    optimizer = "proximal-lsq-exact"
 
-    opt_FLO, opt_result_FLO, status_FLO = run_optimization(
-        eq_0 = eq_FLO_0,
-        optimizer = optimizer,
-        opt_config = opt_config,
-        formulation = "FLO",
-    )
 
-    opt_FNO, opt_result_FNO, status_FNO = run_optimization(
-        eq_0 = eq_FNO_0,
-        optimizer = optimizer,
-        opt_config = opt_config,
-        formulation = "FNO",
-    )
-    #-------------------
-
-    #--------------------------------------
-    # Save every returned optimized eq:
-    if opt_FLO is not None:
-        opt_FLO.save(os.path.join(out_dir, "opt_FLO.h5"))
-
-    if opt_FNO is not None:
-        opt_FNO.save(os.path.join(out_dir, "opt_FNO.h5"))
-    #--------------------------------------
-
-    #--------------------------------------
-    # Determine which runs are plottable:
-    FLO_plottable = (
-        (opt_FLO is not None)
-        and bool(status_FLO["plottable"])
-    )
-    FNO_plottable = (
-        (opt_FNO is not None)
-        and bool(status_FNO["plottable"])
-    )
-
-    status_FLO["plotted"] = FLO_plottable
-    status_FNO["plotted"] = FNO_plottable
-
-    optimization_status = {
-        "FLO": status_FLO,
-        "FNO": status_FNO,
-    }
-
-    _save_optimization_status_report(
-        out_dir = out_dir,
-        optimization_status = optimization_status,
-    )
-    #--------------------------------------
-
-    #---------------------------
-    # Build comparison table:
+#========================================
+def _write_comparison_table(
+        out_dir,
+        active_columns_FLO,
+        active_columns_FNO,
+        opt_result_FLO,
+        opt_result_FNO,
+        opt_FLO,
+        opt_FNO,
+    ):
+    """
+    Save a text comparison table for FLO vs FNO.
+    """
     all_columns = []
     seen_titles = set()
 
@@ -249,6 +333,7 @@ def comparison(
         ["Core + FLO", "Core + FNO"],
         name = "Run",
     )
+
     df = pd.DataFrame(
         values,
         index = index,
@@ -261,35 +346,265 @@ def comparison(
     with open(output_file, "w") as f:
         f.write("Comparison of Post-Optimization Objectives\n\n")
         f.write(ascii_table)
-    #---------------------------
+#========================================
 
-    #---------------------------
-    # Plot only plottable runs:
-    plot_eqs = []
-    plot_labels = []
-    plot_colors = []
 
-    if FLO_plottable:
-        plot_eqs.append(opt_FLO)
-        plot_labels.append("Core + FLO")
-        plot_colors.append("purple")
 
-    if FNO_plottable:
-        plot_eqs.append(opt_FNO)
-        plot_labels.append("Core + FNO")
-        plot_colors.append("orange")
 
-    if len(plot_eqs) > 0:
+
+#========================================
+def _write_batch_summary(
+        root_out_dir,
+        batch_rows,
+    ):
+    """
+    Save one batch-level summary CSV across all equilibria.
+    """
+    if len(batch_rows) == 0:
+        return
+
+    df = pd.DataFrame(batch_rows)
+    save_path = os.path.join(root_out_dir, "batch_summary.csv")
+    df.to_csv(save_path, index = False)
+#========================================
+#===================================================================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+#============== COMPARISON DRIVER ==================================================================================================================
+#========================================
+def comparison(
+        eq_input_config: dict,
+        opt_config: dict,
+        driver_config: dict,
+    ):
+    """
+    Runs N_eq continuation solves, where the surfaces are pulled from the
+    shuffled pool of nested neural initializations.
+
+    Behavior:
+        - local computer  -> FLO and FNO run sequentially
+        - supercomputer   -> FLO and FNO run in parallel
+
+    Run from DESC root with:
+        python3 -m research.poly.FLO_vs_FNO.driver
+    """
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = driver_config["config_path"]
+    optimizer = "proximal-lsq-exact"
+    NFP = eq_input_config["NFP"]
+    execution_mode = _resolve_execution_mode(driver_config)
+    cluster_max_workers = int(driver_config.get("cluster_max_workers", 2))
+
+    slurm_array_info = _get_slurm_array_info()
+
+    eq_config_entries = build_eq_configs(
+        eq_input_config = eq_input_config,
+    )
+
+    eq_config_entries = _filter_entries_for_slurm_task(
+        eq_config_entries = eq_config_entries,
+        slurm_array_info = slurm_array_info,
+    )
+
+    active_columns_FLO, active_columns_FNO = _collect_active_columns(
+        opt_config = opt_config,
+        NFP = NFP,
+    )
+
+    root_out_dir = _make_root_out_dir(
+        base_dir = base_dir,
+        execution_mode = execution_mode,
+        slurm_array_info = slurm_array_info,
+    )
+
+    _write_readme(root_out_dir, config_path)
+
+    batch_rows = []
+
+    for entry in eq_config_entries:
+        run_index = entry["run_index"]
+        eq_config = entry["eq_config"]
+        selected_point = entry["selected_point"]
+
+        out_dir = os.path.join(root_out_dir, f"eq_{run_index:03d}")
+        os.makedirs(out_dir, exist_ok = False)
+
+        _write_surface_source_summary(
+            out_dir = out_dir,
+            selected_point = selected_point,
+        )
+
+        #----------------------------
+        # Initial equilibrium solve:
+        eq_raw, eq_init = run_equilibrium(eq_config = eq_config)
+
+        eq_init_path = os.path.join(out_dir, "eq_init.h5")
+        eq_init.save(eq_init_path)
+
+        save_initial_toroidal_cuts(
+            out_dir = out_dir,
+            eq_raw = eq_raw,
+            eq_init = eq_init,
+        )
+        #----------------------------
+
+        #-----------------------------
+        # FLO / FNO solves:
+        if execution_mode == "cluster":
+            with ProcessPoolExecutor(max_workers = cluster_max_workers) as executor:
+                future_FLO = executor.submit(
+                    _run_one_formulation,
+                    eq_init_path,
+                    optimizer,
+                    opt_config,
+                    "FLO",
+                    out_dir,
+                )
+
+                future_FNO = executor.submit(
+                    _run_one_formulation,
+                    eq_init_path,
+                    optimizer,
+                    opt_config,
+                    "FNO",
+                    out_dir,
+                )
+
+                opt_FLO_path, opt_result_FLO, status_FLO = future_FLO.result()
+                opt_FNO_path, opt_result_FNO, status_FNO = future_FNO.result()
+
+        else:
+            opt_FLO_path, opt_result_FLO, status_FLO = _run_one_formulation(
+                eq_init_path = eq_init_path,
+                optimizer = optimizer,
+                opt_config = opt_config,
+                formulation = "FLO",
+                out_dir = out_dir,
+            )
+
+            opt_FNO_path, opt_result_FNO, status_FNO = _run_one_formulation(
+                eq_init_path = eq_init_path,
+                optimizer = optimizer,
+                opt_config = opt_config,
+                formulation = "FNO",
+                out_dir = out_dir,
+            )
+        #-----------------------------
+
+        #--------------------------------------
+        # Load any returned optimized eqs:
+        opt_FLO = None
+        opt_FNO = None
+
+        if opt_FLO_path is not None:
+            opt_FLO = _load_eq_from_file(opt_FLO_path)
+
+        if opt_FNO_path is not None:
+            opt_FNO = _load_eq_from_file(opt_FNO_path)
+        #--------------------------------------
+
+        #--------------------------------------
+        # Determine which runs are plottable:
+        FLO_plottable = (
+            (opt_FLO is not None)
+            and bool(status_FLO["plottable"])
+        )
+        FNO_plottable = (
+            (opt_FNO is not None)
+            and bool(status_FNO["plottable"])
+        )
+
+        status_FLO["plotted"] = FLO_plottable
+        status_FNO["plotted"] = FNO_plottable
+
+        optimization_status = {
+            "FLO": status_FLO,
+            "FNO": status_FNO,
+        }
+
+        _save_optimization_status_report(
+            out_dir = out_dir,
+            optimization_status = optimization_status,
+        )
+        #--------------------------------------
+
+        #---------------------------
+        # Save comparison table:
+        _write_comparison_table(
+            out_dir = out_dir,
+            active_columns_FLO = active_columns_FLO,
+            active_columns_FNO = active_columns_FNO,
+            opt_result_FLO = opt_result_FLO,
+            opt_result_FNO = opt_result_FNO,
+            opt_FLO = opt_FLO,
+            opt_FNO = opt_FNO,
+        )
+        #---------------------------
+
+        #---------------------------
+        # Plot FLO, FNO, then initial continuation equilibrium:
+        plot_eqs = []
+        plot_labels = []
+        plot_colors = []
+
+        if FLO_plottable:
+            plot_eqs.append(opt_FLO)
+            plot_labels.append("Core + FLO")
+            plot_colors.append("purple")
+
+        if FNO_plottable:
+            plot_eqs.append(opt_FNO)
+            plot_labels.append("Core + FNO")
+            plot_colors.append("orange")
+
+        plot_eqs.append(eq_init)
+        plot_labels.append("Initial (post continuation)")
+        plot_colors.append("blue")
+
         save_all_solution_plots(
             out_dir = out_dir,
             eqs = plot_eqs,
             labels = plot_labels,
             colors = plot_colors,
         )
-    else:
-        print("\nNo post-optimization plots generated.")
-        print("Only initial_toroidal_cuts.png was saved.")
-    #---------------------------
+        #---------------------------
+
+        #---------------------------
+        # Accumulate batch summary:
+        batch_rows.append(
+            {
+                "run_index": run_index,
+                "execution_mode": execution_mode,
+                "surface_is_nested": bool(selected_point.get("labels", {}).get("is_nested", False)),
+                "surface_build_ok": bool(selected_point.get("labels", {}).get("build_ok", False)),
+                "FLO_equilibrium_returned": bool(status_FLO["equilibrium_returned"]),
+                "FLO_bad_approximation_failure": bool(status_FLO["bad_approximation_failure"]),
+                "FLO_final_iterations": status_FLO["final_iterations"],
+                "FLO_plottable": bool(FLO_plottable),
+                "FLO_message": status_FLO["message"],
+                "FNO_equilibrium_returned": bool(status_FNO["equilibrium_returned"]),
+                "FNO_bad_approximation_failure": bool(status_FNO["bad_approximation_failure"]),
+                "FNO_final_iterations": status_FNO["final_iterations"],
+                "FNO_plottable": bool(FNO_plottable),
+                "FNO_message": status_FNO["message"],
+            }
+        )
+        #---------------------------
+
+    _write_batch_summary(
+        root_out_dir = root_out_dir,
+        batch_rows = batch_rows,
+    )
+#========================================
 #===================================================================================================================================================
 
 
@@ -303,12 +618,14 @@ def comparison(
 
 
 #============== MODULE ENTRYPOINT ==================================================================================================================
+#================
 def main():
     comparison(
         eq_input_config = EQ_INPUT_CONFIG,
         opt_config = OPT_CONFIG,
         driver_config = DRIVER_CONFIG,
     )
+#================
 
 
 if __name__ == "__main__":

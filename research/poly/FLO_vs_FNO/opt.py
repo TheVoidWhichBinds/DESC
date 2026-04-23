@@ -1,3 +1,4 @@
+# Opt.py
 #===================================================================================================================================================
 from desc.objectives import (
     BallooningStability,
@@ -17,6 +18,7 @@ from desc.objectives import (
 from .helper import (
     _build_terms,
     _eq,
+    _extract_result_iterations,
     _extract_result_message,
     _has_bad_approximation_failure,
 )
@@ -268,6 +270,7 @@ def run_optimization(
         "plotted": False,
         "failure_stage": None,
         "message": None,
+        "final_iterations": None,
     }
 
     try:
@@ -286,9 +289,11 @@ def run_optimization(
         )
 
         result_message = _extract_result_message(opt_result)
+        result_iterations = _extract_result_iterations(opt_result)
 
         run_status["equilibrium_returned"] = eq_opt is not None
         run_status["message"] = result_message
+        run_status["final_iterations"] = result_iterations
         run_status["bad_approximation_failure"] = _has_bad_approximation_failure(
             result_message
         )

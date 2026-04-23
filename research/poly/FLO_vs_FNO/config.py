@@ -1,3 +1,4 @@
+# Config.py
 #===================================================================================================================================================
 from pathlib import Path
 
@@ -74,10 +75,14 @@ surface_source_config = {
         / f"NFP_{NFP}"
         / "dataset.pkl"
     ),
-    "selection_method": "first_nested",
-    "selection_index": 0,
+    "selection_method": "all_nested",
+    "shuffle": True,
+    "shuffle_seed": 42,
 }
-#------------------------------------------
+
+# Number of equilibria to test:
+N_eq = 8
+#------------------------------
 
 #-----------------------
 # Initializing pressure:
@@ -102,13 +107,14 @@ iota_init = PowerSeriesProfile(
 #==========================
 # Grouping eq input config:
 EQ_INPUT_CONFIG = {
-    "NFP":                 NFP,
+    "NFP":                  NFP,
     "surface_source_config": surface_source_config,
-    "pressure_init":       pressure_init,
-    "iota_init":           iota_init,
-    "eq_resolution":       eq_resolution,
+    "pressure_init":        pressure_init,
+    "iota_init":            iota_init,
+    "eq_resolution":        eq_resolution,
+    "N_eq":                 N_eq,
 }
-#==========================
+#================================
 #===================================================================================================================================================
 
 
@@ -140,7 +146,7 @@ ftol = 1e-4
 xtol = 1e-8
 gtol = 1e-8
 maxiter = 300
-max_nfev = 300
+max_nfev = 15
 x_scale = "auto"
 #======================
 
@@ -156,7 +162,14 @@ iota_fxd = False
 #=============================
 # Grid for data-based customs:
 data_grid = LinearGrid(L = 200, M = 0, N = 0)
-#=============================
+
+redl_grid = LinearGrid(
+    L = 200,
+    M = 24,
+    N = 24,
+    NFP = NFP,
+)
+#=============
 
 
 
@@ -165,7 +178,7 @@ data_grid = LinearGrid(L = 200, M = 0, N = 0)
 # CORE OPT TOGGLES:
 opt_toggles_core = {
     # Objectives:
-    #============
+    #====================
     "forcebalance_obj": {
         "use": True,
         "kwargs": {
@@ -198,6 +211,8 @@ opt_toggles_core = {
             "normalize": True,
         },
     },
+
+
 
     # Constraints:
     #=============
@@ -414,5 +429,7 @@ OPT_CONFIG = {
 #============== DRIVER INPUTS ======================================================================================================================
 DRIVER_CONFIG = {
     "config_path": __file__,
+    "execution_mode": "local",   # "auto", "local", or "cluster"
+    "cluster_max_workers": 2,
 }
 #===================================================================================================================================================

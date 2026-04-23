@@ -1,3 +1,4 @@
+# Helper.py
 #===================================================================================================================================================
 from pathlib import Path
 from copy import deepcopy
@@ -115,56 +116,37 @@ def _load_pickle_file(
 
 
 #==========================
-def _select_surface_point(
+def _select_surface_points(
         dataset,
         selection_method,
-        selection_index,
     ):
     """
-    Select one saved surface description from the neural dataset.
+    Select a list of saved surface descriptions from the neural dataset.
     """
     if not isinstance(dataset, list) or len(dataset) == 0:
         raise ValueError("Dataset must be a non-empty list of data points.")
 
-    if selection_method == "by_index":
-        if selection_index < 0 or selection_index >= len(dataset):
-            raise IndexError(
-                f"selection_index={selection_index} is out of range for "
-                f"dataset of length {len(dataset)}"
-            )
-        return dataset[selection_index]
-
-    if selection_method == "first_nested":
+    if selection_method == "all_nested":
         candidates = [
             point for point in dataset
             if bool(point.get("labels", {}).get("is_nested", False))
         ]
         if len(candidates) == 0:
             raise ValueError("No nested surfaces were found in the source dataset.")
-        if selection_index < 0 or selection_index >= len(candidates):
-            raise IndexError(
-                f"selection_index={selection_index} is out of range for "
-                f"{len(candidates)} nested candidates"
-            )
-        return candidates[selection_index]
+        return candidates
 
-    if selection_method == "first_build_ok":
+    if selection_method == "all_build_ok":
         candidates = [
             point for point in dataset
             if bool(point.get("labels", {}).get("build_ok", False))
         ]
         if len(candidates) == 0:
             raise ValueError("No build_ok surfaces were found in the source dataset.")
-        if selection_index < 0 or selection_index >= len(candidates):
-            raise IndexError(
-                f"selection_index={selection_index} is out of range for "
-                f"{len(candidates)} build_ok candidates"
-            )
-        return candidates[selection_index]
+        return candidates
 
     raise ValueError(
         f"Unsupported selection_method='{selection_method}'. "
-        f"Use 'by_index', 'first_nested', or 'first_build_ok'."
+        f"Use 'all_nested' or 'all_build_ok'."
     )
 #==========================
 
@@ -205,62 +187,84 @@ def _surface_from_features(
 
 
 #==========================
-def load_surface_init(
+def load_surface_pool(
         surface_source_config,
         NFP,
+        N_eq,
     ):
     """
-    Load one saved surface from research/neural/NFP_*/dataset.pkl
-    and reconstruct FourierRZToroidalSurface.
+    Load a shuffled pool of saved surfaces and reconstruct them.
     """
     dataset = _load_pickle_file(surface_source_config["dataset_path"])
 
-    selection_method = surface_source_config.get("selection_method", "first_nested")
-    selection_index = surface_source_config.get("selection_index", 0)
+    selection_method = surface_source_config.get("selection_method", "all_nested")
+    shuffle = surface_source_config.get("shuffle", True)
+    shuffle_seed = surface_source_config.get("shuffle_seed", None)
 
-    selected_point = _select_surface_point(
+    selected_points = _select_surface_points(
         dataset = dataset,
         selection_method = selection_method,
-        selection_index = selection_index,
     )
 
-    features = selected_point["features"]
-    surface_init = _surface_from_features(
-        features = features,
-        NFP = NFP,
-    )
+    if shuffle:
+        rng = np.random.default_rng(shuffle_seed)
+        rng.shuffle(selected_points)
 
-    return surface_init, selected_point
+    if N_eq is not None:
+        selected_points = selected_points[:N_eq]
+
+    surface_pool = []
+    for selected_point in selected_points:
+        features = selected_point["features"]
+        surface_init = _surface_from_features(
+            features = features,
+            NFP = NFP,
+        )
+        surface_pool.append((surface_init, selected_point))
+
+    return surface_pool
 #==========================
 
 
 
 
 #==========================
-def build_eq_config(
+def build_eq_configs(
         eq_input_config,
     ):
     """
-    Convert declarative config values into the runtime eq_config
-    consumed by eq.py.
+    Convert declarative config values into a list of runtime eq_config dicts.
     """
     NFP = eq_input_config["NFP"]
+    N_eq = eq_input_config["N_eq"]
 
-    surface_init, selected_point = load_surface_init(
+    surface_pool = load_surface_pool(
         surface_source_config = eq_input_config["surface_source_config"],
         NFP = NFP,
+        N_eq = N_eq,
     )
 
-    eq_config = {
-        "NFP":           NFP,
-        "surface_init":  surface_init,
-        "pressure_init": eq_input_config["pressure_init"],
-        "iota_init":     eq_input_config["iota_init"],
-        "eq_resolution": eq_input_config["eq_resolution"],
-    }
+    eq_configs = []
 
-    return eq_config, selected_point
-#==========================
+    for idx, (surface_init, selected_point) in enumerate(surface_pool):
+        eq_config = {
+            "NFP":           NFP,
+            "surface_init":  surface_init,
+            "pressure_init": eq_input_config["pressure_init"],
+            "iota_init":     eq_input_config["iota_init"],
+            "eq_resolution": eq_input_config["eq_resolution"],
+        }
+
+        eq_configs.append(
+            {
+                "run_index": idx,
+                "eq_config": eq_config,
+                "selected_point": selected_point,
+            }
+        )
+
+    return eq_configs
+#=====================
 #===================================================================================================================================================
 
 
@@ -457,6 +461,49 @@ def _extract_result_message(
 
 
 #========================================
+def _extract_result_iterations(
+        result,
+    ):
+    """
+    Pull final optimizer iteration count from a DESC result dict.
+    """
+    if result is None:
+        return None
+
+    if not isinstance(result, dict):
+        return None
+
+    candidate_keys = [
+        "nit",
+        "niter",
+        "n_iter",
+        "iterations",
+        "Iterations",
+        "Number of iterations",
+        "Total iterations",
+    ]
+
+    for key in candidate_keys:
+        if key in result:
+            try:
+                return int(result[key])
+            except Exception:
+                pass
+
+    for key, value in result.items():
+        if "iter" in str(key).lower():
+            try:
+                return int(value)
+            except Exception:
+                pass
+
+    return None
+#========================================
+
+
+
+
+#========================================
 def _has_bad_approximation_failure(
         message,
     ):
@@ -493,6 +540,7 @@ def _save_optimization_status_report(
             f.write(f"  equilibrium_returned = {status.get('equilibrium_returned')}\n")
             f.write(f"  exception_raised = {status.get('exception_raised')}\n")
             f.write(f"  bad_approximation_failure = {status.get('bad_approximation_failure')}\n")
+            f.write(f"  final_iterations = {status.get('final_iterations')}\n")
             f.write(f"  plottable = {status.get('plottable')}\n")
             f.write(f"  plotted = {status.get('plotted')}\n")
             f.write(f"  failure_stage = {status.get('failure_stage')}\n")
