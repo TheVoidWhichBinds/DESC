@@ -12,7 +12,7 @@ import jax.numpy as jnp
 #============== FIRM =============================================================================================
 # Objectives:
 #=============================
-def current_range(grid, data):
+def current(grid, data):
     """
     Limits how big parallel current can be.
     """
@@ -33,8 +33,8 @@ def current_range(grid, data):
 
 #============== FLO ==============================================================================================
 # Objectives:
-#===============================
-def pressure_axis_range(params):
+#=============================
+def FLO_pressure_axis(params):
     """
     Range of acceptable pressure on-axis.
     Bounds = (1E4, 1E7).
@@ -42,7 +42,7 @@ def pressure_axis_range(params):
     return params["p_l"][0]
 
 
-def pressure_shape(params):
+def FLO_pressure_shape(params):
     """
     Bounded coefficient of 8th-order term.
     Gives narrow-wideness of pressure.

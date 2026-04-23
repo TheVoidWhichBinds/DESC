@@ -1,362 +1,316 @@
+#===================================================================================================================================================
 import os
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from desc.grid import LinearGrid
-from desc.plotting import plot_comparison
 from tabulate import tabulate
 
+from .config import (
+    DRIVER_CONFIG,
+    EQ_INPUT_CONFIG,
+    OPT_CONFIG,
+)
 from .eq import run_equilibrium
 from .helper import (
     _next_run_dir,
     _safe_extract_from_result,
+    _save_optimization_status_report,
     _write_readme,
+    _write_surface_source_summary,
+    build_eq_config,
     sci_compact,
 )
 from .opt import run_optimization
+from .plotting import (
+    save_all_solution_plots,
+    save_initial_toroidal_cuts,
+)
+#===================================================================================================================================================
 
 
 
 
 
 
-#============== PROX-EXACT VS. PROX-AUGLAG COMPARISON ==========================================================================================
+
+
+
+
+
+#============== COMPARISON DRIVER ==================================================================================================================
 def comparison(
-        eq_config: dict,
+        eq_input_config: dict,
         opt_config: dict,
         driver_config: dict,
     ):
     """
     Runs initial equilibrium solve, then optimization for:
-    proximal-lsq-exact from the initial equilibrium, and
-    proximal-lsq-auglag from the initial equilibrium.
-    Plots and objective table are also generated.
-    """
-    #====================================================
-    # Initializations:
-    #----------------------------------------------------
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    #----------------------------------------------------
+        1) proximal-lsq-exact using Core + FLO
+        2) proximal-lsq-exact using Core + FNO
 
-    #---------------------------------------------
-    # Unpacking config variables needed in driver:
+    Run from DESC root with:
+        python3 -m research.poly.FLO_vs_FNO.driver
+    """
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    eq_config, selected_point = build_eq_config(
+        eq_input_config = eq_input_config,
+    )
+
     NFP = eq_config["NFP"]
     opt_toggles_core = opt_config["opt_toggles_core"]
+    opt_toggles_FLO = opt_config["opt_toggles_FLO"]
+    opt_toggles_FNO = opt_config["opt_toggles_FNO"]
     config_path = driver_config["config_path"]
-    #---------------------------------------------
 
-    #------------------------------------------
-    # Generates meta-data README and directory:
     out_dir = _next_run_dir(base_dir)
     _write_readme(out_dir, config_path)
-    #------------------------------------------
+    _write_surface_source_summary(out_dir, selected_point)
 
-    #---------------------------
-    # Table of objective values:
-    column_map = [
-        ("forcebalance_obj", f"Force error: "),
-        ("qs", f"Quasi-symmetry (1,{NFP}) Boozer error: "),
-        ("aspect_ratio", "Aspect ratio: "),
-        ("ballooning", "Ideal ballooning lambda: "),
-        ("mercier", "Mercier Stability: "),
+    column_map_core = [
+        ("forcebalance_obj", "Force error: ", "Force error"),
+        ("qs", f"Quasi-symmetry (1,{NFP}) Boozer error: ", "QS Boozer error"),
+        ("ballooning", "Ideal ballooning lambda: ", "Ideal ballooning lambda"),
+        ("mercier", "Mercier Stability: ", "Mercier Stability"),
     ]
 
-    active_columns = []
-    for key, label in column_map:
+    column_map_FLO = [
+        ("FLO_pressure_axis", "FLO_pressure_axis", "FLO pressure axis"),
+        ("FLO_pressure_shape", "FLO_pressure_shape", "FLO pressure shape"),
+        ("FLO_iota_axis", "FLO_iota_axis", "FLO iota axis"),
+        ("FLO_iota_edge", "FLO_iota_edge", "FLO iota edge"),
+    ]
+
+    column_map_FNO = [
+        ("FNO_pressure", "FNO_pressure", "FNO pressure"),
+        ("FNO_pressure_monotonic", "FNO_pressure_monotonic", "FNO pressure monotonic"),
+        ("FNO_grad_pressure_edge", "FNO_grad_pressure_edge", "FNO grad pressure edge"),
+        ("FNO_iota", "FNO_iota", "FNO iota"),
+    ]
+
+    active_columns_FLO = []
+    for key, result_label, column_title in column_map_core:
         if opt_toggles_core.get(key, {}).get("use", False):
-            active_columns.append((key, label))
-    #------------------------------------------
-    #==========================================
+            active_columns_FLO.append((key, result_label, column_title))
+    for key, result_label, column_title in column_map_FLO:
+        if opt_toggles_FLO.get(key, {}).get("use", False):
+            active_columns_FLO.append((key, result_label, column_title))
 
+    active_columns_FNO = []
+    for key, result_label, column_title in column_map_core:
+        if opt_toggles_core.get(key, {}).get("use", False):
+            active_columns_FNO.append((key, result_label, column_title))
+    for key, result_label, column_title in column_map_FNO:
+        if opt_toggles_FNO.get(key, {}).get("use", False):
+            active_columns_FNO.append((key, result_label, column_title))
 
-
-
-    #============================================
-    # Equilibrium run:
-    #--------------------------------------------
-    # Running & saving initial equilibrium solve:
-    eq, eq_init = run_equilibrium(eq_config=eq_config)
+    #----------------------------
+    # Initial equilibrium solve:
+    eq_raw, eq_init = run_equilibrium(eq_config = eq_config)
     eq_init.save(os.path.join(out_dir, "eq_init.h5"))
-    #--------------------------------------------
 
-    #--------------------------------------------------------------
-    # Plotting toroidal cross-sections (confirmation of eq health):
-    plt.title("Toroidal Cross-Sections of Initial Equilibrium")
-    fig, ax = plot_comparison(
-        eqs=[eq, eq_init],
-        labels=["Raw Eq", "Coninuation Eq"],
-        color=["green", "blue"],
+    save_initial_toroidal_cuts(
+        out_dir = out_dir,
+        eq_raw = eq_raw,
+        eq_init = eq_init,
     )
-    toroidal_cuts_path = os.path.join(out_dir, "initial_toroidal_cuts.png")
-    plt.savefig(toroidal_cuts_path, dpi=200)
-    plt.close()
-    #----------
-    #==========
+    #----------------------------
 
-
-
-
-    #=========================
+    #-------------------
     # Optimization run:
-    #-------------------------
-    # Running both optimizers:
-    eq_exact_0 = eq_init.copy()
-    eq_auglag_0 = eq_init.copy()
+    eq_FLO_0 = eq_init.copy()
+    eq_FNO_0 = eq_init.copy()
 
-    optimizer_exact = "proximal-lsq-exact"
-    optimizer_auglag = "proximal-lsq-auglag"
+    optimizer = "proximal-lsq-exact"
 
-    opt_exact, opt_result_exact = run_optimization(
-        eq_0=eq_exact_0,
-        optimizer=optimizer_exact,
-        opt_config=opt_config,
+    opt_FLO, opt_result_FLO, status_FLO = run_optimization(
+        eq_0 = eq_FLO_0,
+        optimizer = optimizer,
+        opt_config = opt_config,
+        formulation = "FLO",
     )
 
-    opt_auglag, opt_result_auglag = run_optimization(
-        eq_0=eq_auglag_0,
-        optimizer=optimizer_auglag,
-        opt_config=opt_config,
+    opt_FNO, opt_result_FNO, status_FNO = run_optimization(
+        eq_0 = eq_FNO_0,
+        optimizer = optimizer,
+        opt_config = opt_config,
+        formulation = "FNO",
     )
-    #-------------------------
+    #-------------------
 
-    #--------------------------
-    # Saving optimized outputs:
-    opt_exact.save(os.path.join(out_dir, "opt_exact.h5"))
-    opt_auglag.save(os.path.join(out_dir, "opt_auglag.h5"))
-    #--------------------------
-    #================================================================
+    #--------------------------------------
+    # Save every returned optimized eq:
+    if opt_FLO is not None:
+        opt_FLO.save(os.path.join(out_dir, "opt_FLO.h5"))
 
+    if opt_FNO is not None:
+        opt_FNO.save(os.path.join(out_dir, "opt_FNO.h5"))
+    #--------------------------------------
 
+    #--------------------------------------
+    # Determine which runs are plottable:
+    FLO_plottable = (
+        (opt_FLO is not None)
+        and bool(status_FLO["plottable"])
+    )
+    FNO_plottable = (
+        (opt_FNO is not None)
+        and bool(status_FNO["plottable"])
+    )
 
+    status_FLO["plotted"] = FLO_plottable
+    status_FNO["plotted"] = FNO_plottable
 
-    #===========================
-    # Generating table entries:
+    optimization_status = {
+        "FLO": status_FLO,
+        "FNO": status_FNO,
+    }
+
+    _save_optimization_status_report(
+        out_dir = out_dir,
+        optimization_status = optimization_status,
+    )
+    #--------------------------------------
+
     #---------------------------
-    rows = [
-        ("Exact",),
-        ("AugLag",),
-    ]
+    # Build comparison table:
+    all_columns = []
+    seen_titles = set()
 
-    values = []
+    for _, result_label, column_title in active_columns_FLO + active_columns_FNO:
+        if column_title not in seen_titles:
+            all_columns.append((result_label, column_title))
+            seen_titles.add(column_title)
 
-    row_exact = []
-    row_auglag = []
-    #---------------------------
+    FLO_title_to_label = {
+        column_title: result_label
+        for _, result_label, column_title in active_columns_FLO
+    }
+    FNO_title_to_label = {
+        column_title: result_label
+        for _, result_label, column_title in active_columns_FNO
+    }
 
-    #-----------------------------
-    # Extracting objective values:
-    for key, label in active_columns:
-        fmin_exact, fmean_exact, fmax_exact = _safe_extract_from_result(
-            opt_result_exact, label
+    row_FLO = []
+    row_FNO = []
+
+    for _, column_title in all_columns:
+        if column_title in FLO_title_to_label:
+            fmin_FLO, fmean_FLO, fmax_FLO = _safe_extract_from_result(
+                opt_result_FLO,
+                FLO_title_to_label[column_title],
+            )
+            if np.isnan(fmin_FLO) and np.isnan(fmean_FLO) and np.isnan(fmax_FLO):
+                row_FLO.append("---")
+            else:
+                row_FLO.append(
+                    f"f_min={sci_compact(fmin_FLO, sig = 4)}, "
+                    f"f_mean={sci_compact(fmean_FLO, sig = 4)}, "
+                    f"f_max={sci_compact(fmax_FLO, sig = 4)}"
+                )
+        else:
+            row_FLO.append("---")
+
+        if column_title in FNO_title_to_label:
+            fmin_FNO, fmean_FNO, fmax_FNO = _safe_extract_from_result(
+                opt_result_FNO,
+                FNO_title_to_label[column_title],
+            )
+            if np.isnan(fmin_FNO) and np.isnan(fmean_FNO) and np.isnan(fmax_FNO):
+                row_FNO.append("---")
+            else:
+                row_FNO.append(
+                    f"f_min={sci_compact(fmin_FNO, sig = 4)}, "
+                    f"f_mean={sci_compact(fmean_FNO, sig = 4)}, "
+                    f"f_max={sci_compact(fmax_FNO, sig = 4)}"
+                )
+        else:
+            row_FNO.append("---")
+
+    if opt_FLO is not None:
+        beta_FLO = float(
+            opt_FLO.compute("<beta>_vol", override_grid = True)["<beta>_vol"]
         )
-        fmin_auglag, fmean_auglag, fmax_auglag = _safe_extract_from_result(
-            opt_result_auglag, label
+        row_FLO.append(f"{beta_FLO:.4g}")
+    else:
+        row_FLO.append("---")
+
+    if opt_FNO is not None:
+        beta_FNO = float(
+            opt_FNO.compute("<beta>_vol", override_grid = True)["<beta>_vol"]
         )
+        row_FNO.append(f"{beta_FNO:.4g}")
+    else:
+        row_FNO.append("---")
 
-        row_exact.append(
-            f"f_min={sci_compact(fmin_exact, sig=4)}, "
-            f"f_mean={sci_compact(fmean_exact, sig=4)}, "
-            f"f_max={sci_compact(fmax_exact, sig=4)}"
-        )
-        row_auglag.append(
-            f"f_min={sci_compact(fmin_auglag, sig=4)}, "
-            f"f_mean={sci_compact(fmean_auglag, sig=4)}, "
-            f"f_max={sci_compact(fmax_auglag, sig=4)}"
-        )
-    #-----------------------------------------------------
+    values = [row_FLO, row_FNO]
 
-    #-------------------------
-    # Including Beta in table:
-    beta_exact = float(
-        opt_exact.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
-    )
-    beta_auglag = float(
-        opt_auglag.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
-    )
-
-    row_exact.append(f"{beta_exact:.4g}")
-    row_auglag.append(f"{beta_auglag:.4g}")
-
-    values.append(row_exact)
-    values.append(row_auglag)
-    #-----------------------------
-
-    #------------------------------
-    # Save table inside run folder:
     index = pd.Index(
-        [row[0] for row in rows],
-        name="Run",
+        ["Core + FLO", "Core + FNO"],
+        name = "Run",
     )
     df = pd.DataFrame(
         values,
-        index=index,
-        columns=[label.replace(": ", "") for _, label in active_columns] + ["Beta"],
+        index = index,
+        columns = [column_title for _, column_title in all_columns] + ["Beta"],
     )
 
-    ascii_table = tabulate(df, headers="keys", tablefmt="grid")
+    ascii_table = tabulate(df, headers = "keys", tablefmt = "grid")
 
     output_file = os.path.join(out_dir, "comparison.txt")
     with open(output_file, "w") as f:
         f.write("Comparison of Post-Optimization Objectives\n\n")
         f.write(ascii_table)
-    #-----------------------
-    #=======================
+    #---------------------------
+
+    #---------------------------
+    # Plot only plottable runs:
+    plot_eqs = []
+    plot_labels = []
+    plot_colors = []
+
+    if FLO_plottable:
+        plot_eqs.append(opt_FLO)
+        plot_labels.append("Core + FLO")
+        plot_colors.append("purple")
+
+    if FNO_plottable:
+        plot_eqs.append(opt_FNO)
+        plot_labels.append("Core + FNO")
+        plot_colors.append("orange")
+
+    if len(plot_eqs) > 0:
+        save_all_solution_plots(
+            out_dir = out_dir,
+            eqs = plot_eqs,
+            labels = plot_labels,
+            colors = plot_colors,
+        )
+    else:
+        print("\nNo post-optimization plots generated.")
+        print("Only initial_toroidal_cuts.png was saved.")
+    #---------------------------
+#===================================================================================================================================================
 
 
 
 
-    #====================
-    # Plotting:
-    #--------------------
-    # Plotting pressures:
-    rho = np.linspace(0.0, 1.0, 400)
-    grid = LinearGrid(
-        rho=rho,
-        M=0,
-        N=0,
-        NFP=opt_exact.NFP,
-        sym=opt_exact.sym,
-    )
-
-    p_exact = opt_exact.compute("p", grid=grid)["p"]
-    p_auglag = opt_auglag.compute("p", grid=grid)["p"]
-
-    plt.figure(figsize=(7, 5))
-    plt.plot(rho, p_exact, linewidth=2, label="Exact", color="purple")
-    plt.plot(rho, p_auglag, linewidth=2, label="AugLag", color="orange")
-    plt.xlabel(r"$\rho$", fontsize=14)
-    plt.ylabel("Pressure", fontsize=14)
-    plt.title(r"Pressure vs $\rho$", fontsize=14)
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-
-    pressure_path = os.path.join(out_dir, "pressure_compare.png")
-    plt.savefig(pressure_path, dpi=200)
-    plt.close()
-    #----------
-
-    #----------------------------------
-    # Plotting toroidal cross-sections:
-    plt.title("Toroidal Cross-Sections of Solved Equilibria")
-    fig, ax = plot_comparison(
-        eqs=[
-            opt_exact,
-            opt_auglag,
-        ],
-        labels=[
-            "Optimized (_exact)",
-            "Optimized (_auglag)",
-        ],
-        color=[
-            "purple",
-            "orange",
-        ],
-    )
-
-    toroidal_cuts_path = os.path.join(out_dir, "toroidal_cuts.png")
-    plt.savefig(toroidal_cuts_path, dpi=200)
-    plt.close()
-    #----------
-
-    #-----------------------------
-    # J_parallel vs. rho plotting:
-    rho_grid = np.linspace(0.0, 1.0, 100)
-    grid_J = LinearGrid(
-        rho=rho_grid,
-        M=24,
-        N=24,
-        NFP=opt_exact.NFP,
-        sym=opt_exact.sym,
-    )
-
-    def _j_parallel_profile(eq):
-        data = eq.compute(["J_parallel"], grid=grid_J)
-        J_parallel = np.asarray(data["J_parallel"])
-
-        rho_nodes = grid_J.nodes[:, 0]
-        rho_unique = np.unique(rho_nodes)
-
-        J_parallel_fs = np.empty_like(rho_unique, dtype=float)
-        for i, r in enumerate(rho_unique):
-            mask = np.isclose(rho_nodes, r)
-            J_parallel_fs[i] = np.mean(J_parallel[mask])
-
-        return rho_unique, J_parallel_fs
-
-    rho_u_exact, J_parallel_exact = _j_parallel_profile(opt_exact)
-    rho_u_auglag, J_parallel_auglag = _j_parallel_profile(opt_auglag)
-
-    plt.figure(figsize=(7, 5))
-    plt.plot(
-        rho_u_exact,
-        J_parallel_exact,
-        linewidth=2,
-        label="Exact",
-        color="purple",
-    )
-    plt.plot(
-        rho_u_auglag,
-        J_parallel_auglag,
-        linewidth=2,
-        label="AugLag",
-        color="orange",
-    )
-    plt.xlabel(r"$\rho$", fontsize=14)
-    plt.ylabel(r"$\langle J_{\parallel} \rangle$", fontsize=14)
-    plt.title("Parallel Current", fontsize=13)
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-
-    j_parallel_path = os.path.join(out_dir, "j_parallel.png")
-    plt.savefig(j_parallel_path, dpi=200)
-    plt.close()
-    #----------
-
-    #-----------------------
-    # iota vs. rho plotting:
-    grid_iota = LinearGrid(
-        rho=rho_grid,
-        M=0,
-        N=0,
-        NFP=opt_exact.NFP,
-        sym=opt_exact.sym,
-    )
-
-    iota_exact = opt_exact.compute("iota", grid=grid_iota)["iota"]
-    iota_auglag = opt_auglag.compute("iota", grid=grid_iota)["iota"]
-
-    plt.figure(figsize=(7, 5))
-    plt.plot(rho_grid, iota_exact, linewidth=2, label="Exact", color="purple")
-    plt.plot(rho_grid, iota_auglag, linewidth=2, label="AugLag", color="orange")
-    plt.xlabel(r"$\rho$", fontsize=14)
-    plt.ylabel(r"$\iota$", fontsize=14)
-    plt.title(r"Rotational transform vs $\rho$", fontsize=13)
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-
-    iota_path = os.path.join(out_dir, "iota.png")
-    plt.savefig(iota_path, dpi=200)
-    plt.close()
-    #----------
-    #==========
-#==================================================================================================================================================
 
 
 
 
-#============== CONFIGURATION ENTRYPOINT ==========================================================================================================
-def run_from_config(
-        eq_config: dict,
-        opt_config: dict,
-        driver_config: dict
-    ):
+
+
+
+#============== MODULE ENTRYPOINT ==================================================================================================================
+def main():
     comparison(
-        eq_config=eq_config,
-        opt_config=opt_config,
-        driver_config=driver_config,
+        eq_input_config = EQ_INPUT_CONFIG,
+        opt_config = OPT_CONFIG,
+        driver_config = DRIVER_CONFIG,
     )
-#==================================================================================================================================================
+
+
+if __name__ == "__main__":
+    main()
+#===================================================================================================================================================
