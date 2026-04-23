@@ -1,0 +1,10 @@
+Selected surface source point
+
+NFP = 4
+resolution = (10, 10, 10)
+modes_R = [(0, 0), (1, 0), (2, 0), (1, 1), (2, 1)]
+modes_Z = [(-1, 0), (-2, 0), (-1, 1), (-2, 1)]
+R_lmn = [3.75, -0.55, 0.04, -0.02, -0.43]
+Z_lmn = [0.55, 0.0, 0.0, 0.0]
+build_ok = True
+is_nested = True

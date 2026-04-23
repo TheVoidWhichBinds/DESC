@@ -1,0 +1,20 @@
+Optimization status summary
+
+FLO
+  equilibrium_returned = True
+  exception_raised = False
+  bad_approximation_failure = True
+  plottable = False
+  plotted = False
+  failure_stage = optimizer_result
+  message = A bad approximation caused failure to predict improvement.
+
+FNO
+  equilibrium_returned = True
+  exception_raised = False
+  bad_approximation_failure = True
+  plottable = False
+  plotted = False
+  failure_stage = optimizer_result
+  message = A bad approximation caused failure to predict improvement.
+
