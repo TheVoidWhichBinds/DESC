@@ -23,7 +23,10 @@ from research.poly.FLO_vs_FNO.poly_constraints import (
     FNO_iota,
 )
 
-from research.poly.exact_vs_auglag.helper import iota_between_rationals
+from research.poly.exact_vs_auglag.helper import (
+    iota_between_rationals,
+    pressure_generator,
+)
 #===================================================================================================================================================
 
 
@@ -81,23 +84,26 @@ surface_source_config = {
 }
 
 # Number of equilibria to test:
-N_eq = 20
+N_eq = 5
 #------------------------------
 
 #-----------------------
 # Initializing pressure:
 p_axis = 1.0e4
 pressure_init = PowerSeriesProfile(
-    [1.0e4, -2.0e4, 1.0e4],
+    pressure_generator(
+        p_axis = p_axis,
+        width_percentage = 10
+    ),
     sym = True,
 )
 #-----------------------
 
 #-------------------
 # Initializing iota:
-iota_axis_init = 0.25
+iota_axis_init = 0.26
 iota_init = PowerSeriesProfile(
-    [0.25, -0.23],
+    [0.26, 0.23],
     sym = True,
 )
 #-------------------
@@ -133,7 +139,6 @@ EQ_INPUT_CONFIG = {
 FLO_pressure_axis_bounds = (1e4, 1e7)
 FLO_pressure_shape_bounds = (-1.3, 1.8)
 FNO_pressure_bounds = (0.0, 1e7)
-
 iota_bounds = iota_between_rationals(iota_axis = iota_axis_init)
 #===========================================
 
@@ -143,10 +148,10 @@ iota_bounds = iota_between_rationals(iota_axis = iota_axis_init)
 #======================
 # Optimizer thresholds:
 ftol = 1e-3
-xtol = 1e-5
-gtol = 1e-5
+xtol = 1e-4
+gtol = 1e-4
 maxiter = 300
-max_nfev = 15
+max_nfev = 300
 x_scale = "auto"
 #======================
 
@@ -162,14 +167,7 @@ iota_fxd = False
 #=============================
 # Grid for data-based customs:
 data_grid = LinearGrid(L = 200, M = 0, N = 0)
-
-redl_grid = LinearGrid(
-    L = 200,
-    M = 24,
-    N = 24,
-    NFP = NFP,
-)
-#=============
+#============================================
 
 
 
@@ -429,7 +427,7 @@ OPT_CONFIG = {
 #============== DRIVER INPUTS ======================================================================================================================
 DRIVER_CONFIG = {
     "config_path": __file__,
-    "execution_mode": "local",   # "auto", "local", or "cluster"
+    "execution_mode": "cluster",   # "auto", "local", or "cluster"
     "cluster_max_workers": 1,
 }
 #===================================================================================================================================================
