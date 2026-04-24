@@ -13,6 +13,7 @@ from .helper import (
     data_saver,
     build_torch_dataset,
     torch_data_saver,
+    run_continuation_check,
 )
 
 import os
@@ -69,6 +70,14 @@ def evaluate_condition(
         "meta": {
             "errors": [],
         },
+        "continuation": {
+            "enabled": bool(RUN_CONFIG.get("continuation_check", False)),
+            "success": False,
+            "broke": False,
+            "warning_detected": False,
+            "message": "",
+            "error": None,
+        },
     }
     #--------------------------
 
@@ -105,27 +114,36 @@ def evaluate_condition(
             Psi = Psi,
             ensure_nested = False,
         )
-        print(eq.is_nested())
+
         data_point["labels"]["build_ok"] = True
-        #---------------------------------------
-
 
         #--------------------------------------------------------------
-        # Plotting toroidal cross-sections (confirmation of eq health):
-        base_dir = os.path.dirname(os.path.abspath(__file__))
+        # Plotting toroidal cross-sections:
+        # try:
+        #     base_dir = os.path.dirname(os.path.abspath(__file__))
+        #     toroidal_cuts_path = os.path.join(base_dir, "initial_toroidal_cuts.png")
 
-        plt.title("Toroidal Cross-Sections of Initial Equilibrium")
-        fig, ax = plot_comparison(
-            eqs = [eq],
-            labels = ["Raw Eq"],
-            color = ["green"],
-        )
-        toroidal_cuts_path = os.path.join(base_dir, "initial_toroidal_cuts.png")
-        plt.savefig(toroidal_cuts_path, dpi = 200)
-        plt.close()
+        #     fig, ax = plot_comparison(
+        #         eqs = [eq],
+        #         labels = ["Raw Eq"],
+        #         color = ["green"],
+        #     )
+        #     fig.savefig(
+        #         toroidal_cuts_path,
+        #         dpi = 200,
+        #         bbox_inches = "tight",
+        #     )
+        #     plt.close(fig)
+
+        # except Exception as e:
+        #     print("PLOTTING FAILED:", repr(e))
+        #     data_point["meta"]["errors"].append(
+        #         {
+        #             "stage": "plotting",
+        #             "error": repr(e),
+        #         }
+        #     )
         #--------------------------------------------------------------
-
-
 
 
         #-------------------
@@ -142,9 +160,28 @@ def evaluate_condition(
                     "is_nested": data_point["labels"]["is_nested"],
                 }
             )
+
+        print("is_nested =", data_point["labels"]["is_nested"])
         #----------------------------------------------------------
 
+
+
+
+
+        #----------------------------------------------
+        if RUN_CONFIG.get("continuation_check", False):
+            data_point["continuation"] = run_continuation_check(
+                eq = eq,
+                failure_fragment = RUN_CONFIG.get(
+                    "continuation_failure_fragment",
+                    "WARNING: Automatic continuation failed",
+                ),
+            )
+        #---------------------------------------------------
+
     except Exception as e:
+        print("EQUILIBRIUM BUILD FAILED:", repr(e))
+
         data_point["meta"]["errors"].append(
             {
                 "stage": "EquilibriumBuild",
@@ -261,7 +298,6 @@ def main():
     Runs equilibrium constructions from generated continuous feature options,
     saves the raw classification dataset, and builds PyTorch-ready tensors.
     """
-
     #---------------------------------------------
     # Generate continuous feature-option lists:
     options = feature_generator(
@@ -310,9 +346,9 @@ def main():
 
     frac_nested = float(n_nested) / float(n_total) if n_total > 0 else np.nan
 
-    print("n_total =", n_total)
-    print("n_build_ok =", n_build_ok)
-    print("n_nested =", n_nested)
+    # print("n_total =", n_total)
+    # print("n_build_ok =", n_build_ok)
+    # print("n_nested =", n_nested)
     print(f"frac_nested = {frac_nested:.4f}")
     #----------------------------------------
 

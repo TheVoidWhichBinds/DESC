@@ -12,48 +12,40 @@
 
 #============== FEATURE / SWEEP CONFIG =========================================================================
 FEATURE_CONFIG = {
-    "resolution": (10, 10, 10),
+    "resolution": (16, 16, 16),
     "NFP": 4,
     "modes_R": [
         (0, 0),
         (1, 0),
-        (2, 0),
         (1, 1),
-        (2, 1),
+        (2, 0),
     ],
     "modes_Z": [
         (-1, 0),
-        (-2, 0),
         (-1, 1),
-        (-2, 1),
+        (-2, 0),
     ],
     "counts": {
-        "N_R0": 1,
-        "N_R10": 1,
+        "N_R0": 2,
+        "N_R10": 2,
         "N_Z10": 2,
-        "N_R20": 2,
-        "N_Z20": 1,
         "N_R11": 2,
         "N_Z11": 2,
-        "N_R21": 2,
-        "N_Z21": 2,
+        "N_R20": 2,
+        "N_Z20": 2,
     },
     "ranges": {
         "modeR00": (4.8, 6.2), # major radius
 
-        "modeR10": (-0.6, -0.2), # elongation R
-        "modeZ10": (0.6, 0.8), # elongation Z
+        "modeR10": (-0.52, -0.38), # radial minor size
+        "modeZ10": (0.38, 0.52), # vertical minor size
 
-        "modeR20": (-0.08, 0.08), # inwards(-) outwards(+) bean
-        "modeZ20": (-0.01, 0.01), # horizontal slosh - can lead to False nested
+        "modeR11": (-0.045, 0.045), # mild helical variation
+        "modeZ11": (-0.045, 0.045), # mild helical variation
 
-        "modeR11": (-0.10, 0.110), # pizza zoom
-        "modeZ11": (-0.10, -0.08), # zoom
-
-        "modeR21": (0, 0.0),
-        "modeZ21": (-0, 0.0),
-    }
-
+        "modeR20": (-0.035, 0.035), # weak bean/triangular shaping
+        "modeZ20": (-0.005, 0.005), # very weak vertical second harmonic
+    },
 }
 #==============================================================================================================
 
@@ -78,5 +70,7 @@ RUN_CONFIG = {
     "use_parallel": False,
     "nprocs": None,
     "chunksize": 1,
+    "continuation_check": False,
+    "continuation_failure_fragment": "WARNING: Automatic continuation failed",
 }
 #==============================================================================================================

@@ -5,7 +5,10 @@ import os
 import numpy as np
 import pickle
 import torch
-
+import io
+import contextlib
+import warnings
+from desc.continuation import solve_continuation_automatic
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -13,6 +16,55 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 
+#=========================================================================================
+def run_continuation_check(eq, failure_fragment="WARNING: Automatic continuation failed"):
+    """
+    Runs DESC automatic continuation and returns only serializable status data.
+    """
+    result = {
+        "enabled": True,
+        "success": False,
+        "broke": False,
+        "warning_detected": False,
+        "message": "",
+        "error": None,
+    }
+
+    stdout_buffer = io.StringIO()
+    stderr_buffer = io.StringIO()
+
+    try:
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter("always")
+
+            solved_eq = solve_continuation_automatic(
+                eq,
+                verbose = 2,
+            )
+
+        output_text = "\n".join(
+            [
+                stdout_buffer.getvalue(),
+                stderr_buffer.getvalue(),
+                "\n".join(str(w.message) for w in caught_warnings),
+            ]
+        )
+
+        result["message"] = output_text.strip()
+        result["warning_detected"] = failure_fragment in output_text
+        result["success"] = solved_eq is not None and not result["warning_detected"]
+        result["broke"] = not result["success"]
+
+    except Exception as e:
+        result["success"] = False
+        result["broke"] = True
+        result["error"] = repr(e)
+        result["message"] = "\n".join(
+            [stdout_buffer.getvalue(), stderr_buffer.getvalue()]
+        ).strip()
+
+    return result
+#=========================================================================================
 
 
 
@@ -103,25 +155,18 @@ def feature_generator(
         ranges["modeR11"][1],
         counts["N_R11"],
     )
-    modeR21_vals = np.linspace(
-        ranges["modeR21"][0],
-        ranges["modeR21"][1],
-        counts["N_R21"],
-    )
 
     R_lmn_pool = [
         [
             float(modeR00),
             float(modeR10),
-            float(modeR20),
             float(modeR11),
-            float(modeR21),
+            float(modeR20),
         ]
         for modeR00 in modeR00_vals
         for modeR10 in modeR10_vals
-        for modeR20 in modeR20_vals
         for modeR11 in modeR11_vals
-        for modeR21 in modeR21_vals
+        for modeR20 in modeR20_vals
     ]
     #-------------------
 
@@ -142,25 +187,18 @@ def feature_generator(
         ranges["modeZ11"][1],
         counts["N_Z11"],
     )
-    modeZ21_vals = np.linspace(
-        ranges["modeZ21"][0],
-        ranges["modeZ21"][1],
-        counts["N_Z21"],
-    )
 
     Z_lmn_pool = [
         [
             float(modeZ10),
-            float(modeZ20),
             float(modeZ11),
-            float(modeZ21),
+            float(modeZ20),
         ]
         for modeZ10 in modeZ10_vals
-        for modeZ20 in modeZ20_vals
         for modeZ11 in modeZ11_vals
-        for modeZ21 in modeZ21_vals
+        for modeZ20 in modeZ20_vals
     ]
-    #-------------------
+    #------------------------------
 
     return {
         "resolution": resolution,
