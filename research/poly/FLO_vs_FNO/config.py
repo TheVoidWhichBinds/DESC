@@ -142,9 +142,9 @@ iota_bounds = iota_between_rationals(iota_axis = iota_axis_init)
 
 #======================
 # Optimizer thresholds:
-ftol = 1e-4
-xtol = 1e-8
-gtol = 1e-8
+ftol = 1e-3
+xtol = 1e-5
+gtol = 1e-5
 maxiter = 300
 max_nfev = 15
 x_scale = "auto"
