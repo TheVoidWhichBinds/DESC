@@ -44,14 +44,14 @@ FEATURE_CONFIG = {
         "modeR10": (-0.6, -0.2), # elongation R
         "modeZ10": (0.6, 0.8), # elongation Z
 
-        "modeR20": (-0.12, 0.12), # inwards(-) outwards(+) bean
-        "modeZ20": (-0.02, 0.02), # horizontal slosh - can lead to False nested
+        "modeR20": (-0.08, 0.08), # inwards(-) outwards(+) bean
+        "modeZ20": (-0.01, 0.01), # horizontal slosh - can lead to False nested
 
-        "modeR11": (-0.20, 0.110), # pizza zoom
-        "modeZ11": (-0.20, -0.08), # zoom
+        "modeR11": (-0.10, 0.110), # pizza zoom
+        "modeZ11": (-0.10, -0.08), # zoom
 
-        "modeR21": (0, 0.055),
-        "modeZ21": (-0, 0.060),
+        "modeR21": (0, 0.0),
+        "modeZ21": (-0, 0.0),
     }
 
 }
