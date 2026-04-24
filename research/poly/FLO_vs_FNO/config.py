@@ -54,9 +54,9 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 #==================================
 #------------------------
 # Equilibrium resolution:
-L = 8
-M = 8
-N = 3
+L = 12
+M = 12
+N = 8
 eq_resolution = [L, M, N]
 #------------------------
 
@@ -429,7 +429,7 @@ OPT_CONFIG = {
 #============== DRIVER INPUTS ======================================================================================================================
 DRIVER_CONFIG = {
     "config_path": __file__,
-    "execution_mode": "local",   # "auto", "local", or "cluster"
-    "cluster_max_workers": 2,
+    "execution_mode": "cluster",   # "auto", "local", or "cluster"
+    "cluster_max_workers": 1,
 }
 #===================================================================================================================================================
