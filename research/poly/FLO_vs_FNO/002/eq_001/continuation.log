@@ -1,0 +1,686 @@
+================
+Step 1
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(6,6,0)
+Node resolution (L,M,N)=(12,12,0)
+Boundary ratio = 0
+Pressure ratio = 0
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Building objective: force
+Precomputing transforms
+[32mTimer: Precomputing transforms = 22.9 ms[0m
+[32mTimer: Objective build = 27.1 ms[0m
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+[32mTimer: Objective build = 43.0 ms[0m
+[32mTimer: LinearConstraintProjection build = 16.8 ms[0m
+Number of parameters: 27
+Number of objectives: 98
+[32mTimer: Initializing the optimization = 88.7 ms[0m
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          4.082e-03                                    8.479e-02   
+       1              2          3.236e-05      4.050e-03      1.293e-01      5.330e-03   
+       2              3          4.599e-06      2.776e-05      6.882e-02      2.364e-03   
+       3              4          5.300e-08      4.546e-06      1.538e-02      1.444e-04   
+       4              5          1.137e-10      5.289e-08      6.604e-03      5.687e-06   
+       5              6          1.245e-11      1.013e-10      2.400e-03      2.251e-06   
+       6              8          4.403e-12      8.043e-12      5.162e-04      7.766e-07   
+       7             10          3.291e-12      1.112e-12      2.644e-04      1.712e-07   
+       8             12          3.162e-12      1.285e-13      1.347e-04      4.124e-08   
+       9             13          3.070e-12      9.217e-14      2.745e-04      1.644e-07   
+      10             14          2.959e-12      1.109e-13      2.832e-04      1.535e-07   
+      11             15          2.874e-12      8.513e-14      2.900e-04      1.445e-07   
+      12             16          2.813e-12      6.099e-14      2.939e-04      1.375e-07   
+      13             17          2.775e-12      3.781e-14      2.951e-04      1.339e-07   
+      14             18          2.759e-12      1.587e-14      2.936e-04      1.335e-07   
+Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-02)
+         Current function value: 2.759e-12
+         Total delta_x: 1.809e-01
+         Iterations: 14
+         Function evaluations: 18
+         Jacobian evaluations: 15
+[32mTimer: Solution time = 96.5 ms[0m
+[32mTimer: Avg time per step = 6.43 ms[0m
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      4.082e-03  -->   2.759e-12, 
+Maximum absolute Force error:                                2.596e+05  -->   2.475e+01 (N)
+Minimum absolute Force error:                                5.674e+02  -->   4.848e-03 (N)
+Average absolute Force error:                                8.678e+04  -->   2.026e+00 (N)
+Maximum absolute Force error:                                4.186e-03  -->   3.990e-07 (normalized)
+Minimum absolute Force error:                                9.148e-06  -->   7.817e-11 (normalized)
+Average absolute Force error:                                1.399e-03  -->   3.267e-08 (normalized)
+R boundary error:                                            0.000e+00  -->   3.469e-18 (m)
+Z boundary error:                                            0.000e+00  -->   5.554e-17 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+[32mTimer: Iteration 1 total = 235 ms[0m
+================
+Step 2
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(6,6,0)
+Node resolution (L,M,N)=(12,12,0)
+Boundary ratio = 0
+Pressure ratio = 0.5
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+[32mTimer: Precomputing transforms = 22.4 ms[0m
+[32mTimer: Objective build = 25.9 ms[0m
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+[32mTimer: Objective build = 42.4 ms[0m
+Perturbing p_l
+Factorizing linear constraints
+[32mTimer: linear constraint factorize = 13.1 ms[0m
+Computing df
+[32mTimer: df computation = 1.18 ms[0m
+Factoring df
+[32mTimer: df/dx factorization = 101 us[0m
+Computing d^2f
+[32mTimer: d^2f computation = 311 us[0m
+[32mTimer: Objective build = 848 us[0m
+||dx||/||x|| =  2.180e-02
+[32mTimer: Total perturbation = 86.2 ms[0m
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+[32mTimer: Objective build = 3.94 ms[0m
+[32mTimer: LinearConstraintProjection build = 13.8 ms[0m
+Number of parameters: 27
+Number of objectives: 98
+[32mTimer: Initializing the optimization = 19.2 ms[0m
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          1.022e-06                                    8.538e-04   
+       1              2          2.113e-08      1.001e-06      2.318e-02      9.066e-05   
+       2              3          7.709e-10      2.036e-08      5.055e-03      1.191e-05   
+       3              4          4.835e-10      2.874e-10      6.671e-03      1.074e-05   
+       4              5          1.470e-10      3.364e-10      3.418e-03      2.389e-06   
+       5              7          1.381e-10      8.953e-12      1.983e-04      1.608e-07   
+       6              8          1.380e-10      3.766e-14      1.458e-04      8.390e-08   
+Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-02)
+         Current function value: 1.380e-10
+         Total delta_x: 1.967e-02
+         Iterations: 6
+         Function evaluations: 8
+         Jacobian evaluations: 7
+[32mTimer: Solution time = 46.0 ms[0m
+[32mTimer: Avg time per step = 6.57 ms[0m
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      1.022e-06  -->   1.380e-10, 
+Maximum absolute Force error:                                7.572e+03  -->   1.613e+02 (N)
+Minimum absolute Force error:                                8.524e+00  -->   8.594e-03 (N)
+Average absolute Force error:                                1.147e+03  -->   1.486e+01 (N)
+Maximum absolute Force error:                                1.221e-04  -->   2.602e-06 (normalized)
+Minimum absolute Force error:                                1.374e-07  -->   1.386e-10 (normalized)
+Average absolute Force error:                                1.849e-05  -->   2.396e-07 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+[32mTimer: Iteration 2 total = 271 ms[0m
+================
+Step 3
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(6,6,0)
+Node resolution (L,M,N)=(12,12,0)
+Boundary ratio = 0
+Pressure ratio = 1.0
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+[32mTimer: Precomputing transforms = 23.4 ms[0m
+[32mTimer: Objective build = 27.1 ms[0m
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+[32mTimer: Objective build = 43.5 ms[0m
+Perturbing p_l
+Factorizing linear constraints
+[32mTimer: linear constraint factorize = 13.3 ms[0m
+Computing df
+[32mTimer: df computation = 893 us[0m
+Factoring df
+[32mTimer: df/dx factorization = 52.1 us[0m
+Computing d^2f
+[32mTimer: d^2f computation = 221 us[0m
+[32mTimer: Objective build = 826 us[0m
+||dx||/||x|| =  1.713e-02
+[32mTimer: Total perturbation = 84.3 ms[0m
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+[32mTimer: Objective build = 4.02 ms[0m
+[32mTimer: LinearConstraintProjection build = 13.7 ms[0m
+Number of parameters: 27
+Number of objectives: 98
+[32mTimer: Initializing the optimization = 19.2 ms[0m
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          1.851e-07                                    4.866e-04   
+       1              2          1.694e-07      1.574e-08      9.892e-03      3.552e-04   
+       2              3          2.059e-09      1.673e-07      3.468e-03      2.151e-05   
+       3              5          1.308e-09      7.510e-10      1.413e-03      3.342e-06   
+       4              7          1.223e-09      8.443e-11      6.909e-04      2.048e-06   
+       5              8          1.201e-09      2.282e-11      1.087e-03      6.416e-06   
+       6              9          1.143e-09      5.746e-11      1.094e-03      3.945e-06   
+       7             10          1.118e-09      2.501e-11      1.433e-03      1.404e-06   
+       8             12          1.115e-09      3.472e-12      9.786e-04      5.488e-07   
+Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-02)
+         Current function value: 1.115e-09
+         Total delta_x: 7.466e-03
+         Iterations: 8
+         Function evaluations: 12
+         Jacobian evaluations: 9
+[32mTimer: Solution time = 59.4 ms[0m
+[32mTimer: Avg time per step = 6.61 ms[0m
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      1.851e-07  -->   1.115e-09, 
+Maximum absolute Force error:                                4.988e+03  -->   3.904e+02 (N)
+Minimum absolute Force error:                                4.178e+00  -->   1.243e+00 (N)
+Average absolute Force error:                                5.004e+02  -->   4.209e+01 (N)
+Maximum absolute Force error:                                8.043e-05  -->   6.296e-06 (normalized)
+Minimum absolute Force error:                                6.737e-08  -->   2.005e-08 (normalized)
+Average absolute Force error:                                8.069e-06  -->   6.786e-07 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+[32mTimer: Iteration 3 total = 284 ms[0m
+================
+Step 4
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(6,6,3)
+Node resolution (L,M,N)=(12,12,6)
+Boundary ratio = 0.25
+Pressure ratio = 1
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+[32mTimer: Precomputing transforms = 61.6 ms[0m
+[32mTimer: Objective build = 65.9 ms[0m
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+[32mTimer: Objective build = 49.6 ms[0m
+Perturbing Rb_lmn, Zb_lmn
+Factorizing linear constraints
+[32mTimer: linear constraint factorize = 19.7 ms[0m
+Computing df
+[32mTimer: df computation = 2.04 ms[0m
+Factoring df
+[32mTimer: df/dx factorization = 19.9 us[0m
+Computing d^2f
+[32mTimer: d^2f computation = 277 us[0m
+[32mTimer: Objective build = 905 us[0m
+||dx||/||x|| =  2.133e-03
+[32mTimer: Total perturbation = 163 ms[0m
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+[32mTimer: Objective build = 5.60 ms[0m
+[32mTimer: LinearConstraintProjection build = 22.9 ms[0m
+Number of parameters: 201
+Number of objectives: 1274
+[32mTimer: Initializing the optimization = 30.3 ms[0m
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          1.561e-08                                    7.071e-05   
+       1              2          7.867e-09      7.742e-09      3.528e-03      6.392e-05   
+       2              4          1.336e-09      6.531e-09      1.933e-03      1.248e-05   
+       3              6          1.138e-09      1.978e-10      9.293e-04      2.292e-06   
+       4              8          1.126e-09      1.250e-11      4.066e-04      5.170e-07   
+       5             10          1.124e-09      1.930e-12      1.776e-04      8.638e-08   
+Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-02)
+         Current function value: 1.124e-09
+         Total delta_x: 1.919e-03
+         Iterations: 5
+         Function evaluations: 10
+         Jacobian evaluations: 6
+[32mTimer: Solution time = 361 ms[0m
+[32mTimer: Avg time per step = 60.2 ms[0m
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      1.561e-08  -->   1.124e-09, 
+Maximum absolute Force error:                                7.019e+02  -->   4.366e+02 (N)
+Minimum absolute Force error:                                1.457e-01  -->   4.469e-03 (N)
+Average absolute Force error:                                1.274e+02  -->   4.220e+01 (N)
+Maximum absolute Force error:                                1.132e-05  -->   7.040e-06 (normalized)
+Minimum absolute Force error:                                2.349e-09  -->   7.206e-11 (normalized)
+Average absolute Force error:                                2.054e-06  -->   6.804e-07 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+[32mTimer: Iteration 4 total = 761 ms[0m
+================
+Step 5
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(6,6,3)
+Node resolution (L,M,N)=(12,12,6)
+Boundary ratio = 0.5
+Pressure ratio = 1
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+[32mTimer: Precomputing transforms = 41.9 ms[0m
+[32mTimer: Objective build = 46.5 ms[0m
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+[32mTimer: Objective build = 51.5 ms[0m
+Perturbing Rb_lmn, Zb_lmn
+Factorizing linear constraints
+[32mTimer: linear constraint factorize = 20.5 ms[0m
+Computing df
+[32mTimer: df computation = 1.10 ms[0m
+Factoring df
+[32mTimer: df/dx factorization = 18.5 us[0m
+Computing d^2f
+[32mTimer: d^2f computation = 241 us[0m
+[32mTimer: Objective build = 955 us[0m
+||dx||/||x|| =  2.314e-03
+[32mTimer: Total perturbation = 164 ms[0m
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+[32mTimer: Objective build = 5.64 ms[0m
+[32mTimer: LinearConstraintProjection build = 21.5 ms[0m
+Number of parameters: 201
+Number of objectives: 1274
+[32mTimer: Initializing the optimization = 29.1 ms[0m
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          1.672e-08                                    7.116e-05   
+       1              2          6.352e-09      1.037e-08      3.864e-03      4.902e-05   
+       2              4          1.291e-09      5.062e-09      1.716e-03      9.633e-06   
+       3              6          1.169e-09      1.220e-10      7.669e-04      1.713e-06   
+       4              8          1.162e-09      6.125e-12      2.872e-04      1.990e-07   
+Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-02)
+         Current function value: 1.162e-09
+         Total delta_x: 2.766e-03
+         Iterations: 4
+         Function evaluations: 8
+         Jacobian evaluations: 5
+[32mTimer: Solution time = 279 ms[0m
+[32mTimer: Avg time per step = 55.8 ms[0m
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      1.672e-08  -->   1.162e-09, 
+Maximum absolute Force error:                                7.323e+02  -->   4.755e+02 (N)
+Minimum absolute Force error:                                1.524e-01  -->   3.178e-02 (N)
+Average absolute Force error:                                1.343e+02  -->   4.275e+01 (N)
+Maximum absolute Force error:                                1.181e-05  -->   7.667e-06 (normalized)
+Minimum absolute Force error:                                2.457e-09  -->   5.124e-10 (normalized)
+Average absolute Force error:                                2.165e-06  -->   6.893e-07 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+[32mTimer: Iteration 5 total = 662 ms[0m
+================
+Step 6
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(6,6,3)
+Node resolution (L,M,N)=(12,12,6)
+Boundary ratio = 0.75
+Pressure ratio = 1
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+[32mTimer: Precomputing transforms = 41.4 ms[0m
+[32mTimer: Objective build = 46.1 ms[0m
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+[32mTimer: Objective build = 52.4 ms[0m
+Perturbing Rb_lmn, Zb_lmn
+Factorizing linear constraints
+[32mTimer: linear constraint factorize = 19.3 ms[0m
+Computing df
+[32mTimer: df computation = 1.09 ms[0m
+Factoring df
+[32mTimer: df/dx factorization = 17.8 us[0m
+Computing d^2f
+[32mTimer: d^2f computation = 229 us[0m
+[32mTimer: Objective build = 936 us[0m
+||dx||/||x|| =  2.079e-03
+[32mTimer: Total perturbation = 162 ms[0m
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+[32mTimer: Objective build = 5.67 ms[0m
+[32mTimer: LinearConstraintProjection build = 21.1 ms[0m
+Number of parameters: 201
+Number of objectives: 1274
+[32mTimer: Initializing the optimization = 28.6 ms[0m
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          1.537e-08                                    7.169e-05   
+       1              2          1.421e-09      1.395e-08      1.800e-03      9.673e-06   
+       2              4          1.255e-09      1.662e-10      1.123e-03      3.663e-06   
+       3              5          1.239e-09      1.600e-11      7.537e-04      9.941e-07   
+       4              7          1.235e-09      4.330e-12      3.495e-04      3.671e-07   
+Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-02)
+         Current function value: 1.235e-09
+         Total delta_x: 1.097e-03
+         Iterations: 4
+         Function evaluations: 7
+         Jacobian evaluations: 5
+[32mTimer: Solution time = 227 ms[0m
+[32mTimer: Avg time per step = 45.5 ms[0m
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      1.537e-08  -->   1.235e-09, 
+Maximum absolute Force error:                                7.190e+02  -->   5.086e+02 (N)
+Minimum absolute Force error:                                1.053e-01  -->   8.911e-02 (N)
+Average absolute Force error:                                1.261e+02  -->   4.367e+01 (N)
+Maximum absolute Force error:                                1.159e-05  -->   8.200e-06 (normalized)
+Minimum absolute Force error:                                1.698e-09  -->   1.437e-09 (normalized)
+Average absolute Force error:                                2.033e-06  -->   7.041e-07 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+[32mTimer: Iteration 6 total = 608 ms[0m
+================
+Step 7
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(6,6,3)
+Node resolution (L,M,N)=(12,12,6)
+Boundary ratio = 1.0
+Pressure ratio = 1
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+[32mTimer: Precomputing transforms = 41.9 ms[0m
+[32mTimer: Objective build = 46.5 ms[0m
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+[32mTimer: Objective build = 52.4 ms[0m
+Perturbing Rb_lmn, Zb_lmn
+Factorizing linear constraints
+[32mTimer: linear constraint factorize = 18.4 ms[0m
+Computing df
+[32mTimer: df computation = 1.11 ms[0m
+Factoring df
+[32mTimer: df/dx factorization = 17.8 us[0m
+Computing d^2f
+[32mTimer: d^2f computation = 224 us[0m
+[32mTimer: Objective build = 927 us[0m
+||dx||/||x|| =  2.081e-03
+[32mTimer: Total perturbation = 159 ms[0m
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+[32mTimer: Objective build = 5.38 ms[0m
+[32mTimer: LinearConstraintProjection build = 22.5 ms[0m
+Number of parameters: 201
+Number of objectives: 1274
+[32mTimer: Initializing the optimization = 29.7 ms[0m
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          1.649e-08                                    7.160e-05   
+       1              2          3.559e-09      1.293e-08      3.211e-03      3.249e-05   
+       2              4          1.409e-09      2.150e-09      1.606e-03      6.590e-06   
+       3              6          1.340e-09      6.846e-11      6.751e-04      1.225e-06   
+       4              8          1.336e-09      4.110e-12      3.088e-04      1.595e-07   
+Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-02)
+         Current function value: 1.336e-09
+         Total delta_x: 1.637e-03
+         Iterations: 4
+         Function evaluations: 8
+         Jacobian evaluations: 5
+[32mTimer: Solution time = 285 ms[0m
+[32mTimer: Avg time per step = 57.0 ms[0m
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      1.649e-08  -->   1.336e-09, 
+Maximum absolute Force error:                                9.465e+02  -->   5.463e+02 (N)
+Minimum absolute Force error:                                3.164e-02  -->   1.101e-01 (N)
+Average absolute Force error:                                1.315e+02  -->   4.546e+01 (N)
+Maximum absolute Force error:                                1.526e-05  -->   8.808e-06 (normalized)
+Minimum absolute Force error:                                5.102e-10  -->   1.776e-09 (normalized)
+Average absolute Force error:                                2.120e-06  -->   7.330e-07 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+[32mTimer: Iteration 7 total = 664 ms[0m
+====================
+Done
+[32mTimer: Total time = 3.60 sec[0m
+====================
+
+
+# Python warnings captured during continuation
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
+RuntimeWarning: divide by zero encountered in matmul
+RuntimeWarning: overflow encountered in matmul
+RuntimeWarning: invalid value encountered in matmul
