@@ -1,0 +1,10 @@
+Continuation status summary
+
+equilibrium_built = True
+continuation_returned = True
+exception_raised = False
+automatic_continuation_failure = False
+num_steps_returned = 1
+runtime_seconds = 1652.6361927967519
+failure_stage = None
+message = Continuation completed successfully.

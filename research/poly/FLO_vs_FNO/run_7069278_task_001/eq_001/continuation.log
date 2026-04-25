@@ -1,0 +1,903 @@
+================
+Step 1
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(6,6,0)
+Node resolution (L,M,N)=(12,12,0)
+Boundary ratio = 0
+Pressure ratio = 0
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 950 ms
+Timer: Objective build = 1.34 sec
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 555 ms
+Timer: LinearConstraintProjection build = 3.29 sec
+Number of parameters: 27
+Number of objectives: 98
+Timer: Initializing the optimization = 5.22 sec
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          4.048e-03                                    8.502e-02   
+       1              2          8.083e-06      4.040e-03      1.008e-01      2.602e-03   
+       2              3          5.580e-06      2.503e-06      6.338e-02      2.434e-03   
+       3              4          4.835e-09      5.576e-06      1.257e-02      5.804e-05   
+       4              5          1.709e-09      3.126e-09      1.139e-02      3.807e-05   
+       5              6          6.195e-10      1.090e-09      7.868e-03      1.767e-05   
+       6              7          1.430e-11      6.052e-10      4.949e-04      2.204e-07   
+       7              8          1.398e-11      3.250e-13      3.014e-04      9.450e-08   
+       8              9          1.395e-11      2.923e-14      8.960e-05      1.018e-08   
+Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-02)
+         Current function value: 1.395e-11
+         Total delta_x: 1.805e-01
+         Iterations: 8
+         Function evaluations: 9
+         Jacobian evaluations: 9
+Timer: Solution time = 4.44 sec
+Timer: Avg time per step = 493 ms
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      4.048e-03  -->   1.395e-11, 
+Maximum absolute Force error:                                2.593e+05  -->   5.205e+01 (N)
+Minimum absolute Force error:                                5.176e+02  -->   6.908e-02 (N)
+Average absolute Force error:                                8.638e+04  -->   4.554e+00 (N)
+Maximum absolute Force error:                                4.181e-03  -->   8.392e-07 (normalized)
+Minimum absolute Force error:                                8.346e-06  -->   1.114e-09 (normalized)
+Average absolute Force error:                                1.393e-03  -->   7.343e-08 (normalized)
+R boundary error:                                            0.000e+00  -->   3.469e-18 (m)
+Z boundary error:                                            0.000e+00  -->   5.554e-17 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 1 total = 11.1 sec
+================
+Step 2
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(12,12,0)
+Node resolution (L,M,N)=(24,24,0)
+Boundary ratio = 0
+Pressure ratio = 0
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 1.15 sec
+Timer: Objective build = 1.23 sec
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 511 ms
+Timer: LinearConstraintProjection build = 3.15 sec
+Number of parameters: 108
+Number of objectives: 338
+Timer: Initializing the optimization = 4.93 sec
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          1.380e-11                                    1.045e-06   
+       1              5          5.287e-12      8.514e-12      6.572e-04      3.587e-07   
+       2              7          2.474e-12      2.814e-12      2.505e-04      8.246e-08   
+       3              8          2.160e-12      3.139e-13      5.148e-04      3.325e-07   
+       4              9          7.819e-13      1.378e-12      1.493e-04      2.199e-08   
+       5             10          5.594e-13      2.226e-13      2.209e-04      7.563e-08   
+       6             12          4.318e-13      1.276e-13      9.363e-05      1.755e-08   
+       7             13          3.074e-13      1.243e-13      1.771e-04      5.836e-08   
+       8             15          2.253e-13      8.209e-14      9.024e-05      1.583e-08   
+       9             16          1.649e-13      6.038e-14      1.937e-04      4.466e-08   
+      10             17          1.076e-13      5.733e-14      2.241e-04      5.510e-08   
+      11             18          7.278e-14      3.483e-14      2.478e-04      6.048e-08   
+      12             19          5.350e-14      1.928e-14      2.743e-04      6.923e-08   
+      13             20          4.269e-14      1.081e-14      3.360e-04      8.708e-08   
+      14             21          2.791e-14      1.479e-14      3.516e-04      7.443e-08   
+      15             22          1.254e-14      1.537e-14      3.338e-04      3.720e-08   
+      16             23          1.180e-14      7.368e-16      3.078e-04      4.760e-08   
+      17             24          3.353e-15      8.451e-15      7.502e-05      2.448e-09   
+`gtol` condition satisfied. (gtol=1.00e-08)
+         Current function value: 3.353e-15
+         Total delta_x: 2.428e-03
+         Iterations: 17
+         Function evaluations: 24
+         Jacobian evaluations: 18
+Timer: Solution time = 4.24 sec
+Timer: Avg time per step = 235 ms
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      1.380e-11  -->   3.353e-15, 
+Maximum absolute Force error:                                7.206e+01  -->   1.913e+00 (N)
+Minimum absolute Force error:                                4.113e-03  -->   1.359e-04 (N)
+Average absolute Force error:                                4.406e+00  -->   6.695e-02 (N)
+Maximum absolute Force error:                                1.162e-06  -->   3.085e-08 (normalized)
+Minimum absolute Force error:                                6.632e-11  -->   2.191e-12 (normalized)
+Average absolute Force error:                                7.105e-08  -->   1.079e-09 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 2 total = 12.4 sec
+================
+Step 3
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(12,12,0)
+Node resolution (L,M,N)=(24,24,0)
+Boundary ratio = 0
+Pressure ratio = 0.5
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 41.8 ms
+Timer: Objective build = 47.9 ms
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 69.0 ms
+Perturbing p_l
+Factorizing linear constraints
+Timer: linear constraint factorize = 19.4 ms
+Computing df
+Timer: df computation = 2.92 sec
+Factoring df
+Timer: df/dx factorization = 32.5 ms
+Computing d^2f
+Timer: d^2f computation = 2.24 sec
+Timer: Objective build = 1.43 ms
+||dx||/||x|| =  5.412e-02
+Timer: Total perturbation = 8.55 sec
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 7.03 ms
+Timer: LinearConstraintProjection build = 21.7 ms
+Number of parameters: 108
+Number of objectives: 338
+Timer: Initializing the optimization = 30.9 ms
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          2.333e-01                                    2.713e-01   
+       1              2          1.222e-02      2.211e-01      1.268e-01      5.302e-02   
+       2              3          2.803e-04      1.194e-02      6.302e-02      7.227e-03   
+       3              5          1.294e-05      2.674e-04      4.584e-02      1.224e-03   
+       4              7          1.310e-06      1.163e-05      1.505e-02      6.755e-04   
+       5              9          1.979e-07      1.113e-06      1.082e-02      1.606e-04   
+       6             11          1.141e-07      8.378e-08      5.778e-03      3.066e-05   
+       7             13          1.035e-07      1.061e-08      2.925e-03      6.598e-06   
+       8             14          9.330e-08      1.020e-08      5.988e-03      3.242e-05   
+       9             16          8.577e-08      7.529e-09      3.154e-03      9.600e-06   
+      10             17          8.098e-08      4.781e-09      6.742e-03      4.448e-05   
+      11             18          7.461e-08      6.373e-09      7.063e-03      4.267e-05   
+      12             19          6.848e-08      6.131e-09      7.203e-03      3.263e-05   
+      13             20          6.307e-08      5.412e-09      7.224e-03      2.045e-05   
+      14             21          5.858e-08      4.489e-09      7.191e-03      1.667e-05   
+      15             22          5.468e-08      3.901e-09      7.125e-03      1.735e-05   
+      16             24          5.174e-08      2.936e-09      3.533e-03      4.343e-06   
+      17             25          4.945e-08      2.296e-09      6.975e-03      1.675e-05   
+      18             26          4.629e-08      3.156e-09      6.834e-03      1.568e-05   
+      19             28          4.391e-08      2.381e-09      3.371e-03      3.732e-06   
+      20             29          4.194e-08      1.969e-09      6.598e-03      1.374e-05   
+      21             30          3.930e-08      2.637e-09      6.434e-03      1.374e-05   
+      22             32          3.736e-08      1.948e-09      3.163e-03      3.384e-06   
+      23             33          3.566e-08      1.691e-09      6.184e-03      1.360e-05   
+      24             34          3.346e-08      2.204e-09      6.033e-03      1.333e-05   
+      25             36          3.191e-08      1.551e-09      2.965e-03      3.244e-06   
+      26             37          3.044e-08      1.466e-09      5.807e-03      1.267e-05   
+      27             39          2.912e-08      1.326e-09      2.859e-03      3.067e-06   
+      28             40          2.780e-08      1.321e-09      5.601e-03      1.182e-05   
+      29             42          2.665e-08      1.148e-09      2.758e-03      2.847e-06   
+      30             43          2.550e-08      1.147e-09      5.394e-03      1.158e-05   
+      31             45          2.447e-08      1.030e-09      2.652e-03      3.092e-06   
+      32             46          2.353e-08      9.479e-10      5.166e-03      1.330e-05   
+      33             47          2.236e-08      1.168e-09      4.997e-03      1.428e-05   
+      34             48          2.128e-08      1.074e-09      4.811e-03      1.503e-05   
+      35             49          2.029e-08      9.969e-10      4.616e-03      1.558e-05   
+      36             50          1.935e-08      9.346e-10      4.418e-03      1.596e-05   
+      37             51          1.847e-08      8.810e-10      4.223e-03      1.622e-05   
+      38             52          1.764e-08      8.310e-10      4.037e-03      1.641e-05   
+      39             53          1.686e-08      7.813e-10      3.862e-03      1.657e-05   
+      40             54          1.613e-08      7.303e-10      3.699e-03      1.673e-05   
+      41             55          1.545e-08      6.778e-10      3.541e-03      1.689e-05   
+      42             56          1.483e-08      6.245e-10      3.382e-03      1.706e-05   
+      43             57          1.426e-08      5.709e-10      3.219e-03      1.888e-05   
+      44             58          1.374e-08      5.185e-10      3.049e-03      2.123e-05   
+      45             59          1.327e-08      4.696e-10      2.874e-03      2.360e-05   
+      46             60          1.284e-08      4.260e-10      2.700e-03      2.590e-05   
+      47             61          1.245e-08      3.890e-10      2.535e-03      2.804e-05   
+      48             62          1.209e-08      3.594e-10      2.387e-03      2.995e-05   
+      49             63          1.176e-08      3.374e-10      2.264e-03      3.159e-05   
+      50             64          1.143e-08      3.214e-10      2.169e-03      3.297e-05   
+      51             65          1.037e-08      1.064e-09      5.422e-04      2.056e-06   
+      52             66          1.025e-08      1.227e-10      1.066e-03      8.376e-06   
+      53             67          1.007e-08      1.754e-10      1.054e-03      8.503e-06   
+      54             68          9.900e-09      1.713e-10      1.045e-03      8.613e-06   
+      55             69          9.733e-09      1.675e-10      1.039e-03      8.709e-06   
+      56             70          9.569e-09      1.639e-10      1.037e-03      8.790e-06   
+      57             71          9.409e-09      1.605e-10      1.038e-03      8.857e-06   
+      58             72          9.251e-09      1.573e-10      1.042e-03      8.911e-06   
+      59             73          9.097e-09      1.543e-10      1.048e-03      8.953e-06   
+      60             74          8.946e-09      1.514e-10      1.056e-03      8.982e-06   
+      61             75          8.797e-09      1.487e-10      1.065e-03      9.002e-06   
+      62             76          8.651e-09      1.461e-10      1.076e-03      9.011e-06   
+      63             77          8.507e-09      1.436e-10      1.088e-03      9.012e-06   
+      64             78          8.366e-09      1.412e-10      1.101e-03      9.005e-06   
+      65             79          8.227e-09      1.389e-10      1.114e-03      8.991e-06   
+      66             80          8.090e-09      1.367e-10      1.128e-03      8.970e-06   
+      67             81          7.956e-09      1.346e-10      1.141e-03      8.945e-06   
+      68             82          7.823e-09      1.325e-10      1.155e-03      8.914e-06   
+      69             83          7.693e-09      1.305e-10      1.169e-03      8.880e-06   
+      70             84          7.564e-09      1.286e-10      1.183e-03      8.843e-06   
+      71             85          7.437e-09      1.267e-10      1.197e-03      8.803e-06   
+      72             86          7.313e-09      1.249e-10      1.210e-03      8.760e-06   
+      73             87          7.190e-09      1.231e-10      1.223e-03      8.716e-06   
+      74             88          7.068e-09      1.213e-10      1.236e-03      8.670e-06   
+      75             89          6.949e-09      1.196e-10      1.248e-03      8.624e-06   
+      76             90          6.831e-09      1.179e-10      1.260e-03      8.576e-06   
+      77             91          6.715e-09      1.162e-10      1.271e-03      8.528e-06   
+      78             92          6.600e-09      1.146e-10      1.282e-03      8.480e-06   
+      79             93          6.487e-09      1.130e-10      1.293e-03      8.432e-06   
+      80             94          6.376e-09      1.114e-10      1.303e-03      8.383e-06   
+      81             95          6.266e-09      1.098e-10      1.312e-03      8.334e-06   
+      82             96          6.158e-09      1.083e-10      1.321e-03      8.286e-06   
+      83             97          6.051e-09      1.068e-10      1.330e-03      8.238e-06   
+      84             98          5.946e-09      1.053e-10      1.338e-03      8.189e-06   
+      85             99          5.842e-09      1.038e-10      1.346e-03      8.141e-06   
+      86             100         5.739e-09      1.024e-10      1.354e-03      8.093e-06   
+      87             101         5.638e-09      1.009e-10      1.361e-03      8.045e-06   
+      88             102         5.539e-09      9.952e-11      1.368e-03      7.997e-06   
+      89             103         5.441e-09      9.813e-11      1.374e-03      7.949e-06   
+      90             104         5.344e-09      9.676e-11      1.381e-03      7.901e-06   
+      91             105         5.249e-09      9.540e-11      1.387e-03      7.853e-06   
+      92             106         5.155e-09      9.406e-11      1.392e-03      7.805e-06   
+      93             107         5.062e-09      9.274e-11      1.397e-03      7.756e-06   
+      94             108         4.970e-09      9.144e-11      1.403e-03      7.708e-06   
+      95             109         4.880e-09      9.015e-11      1.407e-03      7.660e-06   
+      96             110         4.791e-09      8.889e-11      1.412e-03      7.611e-06   
+      97             111         4.704e-09      8.763e-11      1.416e-03      7.562e-06   
+      98             112         4.617e-09      8.640e-11      1.421e-03      7.513e-06   
+      99             113         4.532e-09      8.518e-11      1.424e-03      7.464e-06   
+      100            114         4.448e-09      8.398e-11      1.428e-03      7.415e-06   
+Warning: Maximum number of iterations has been exceeded.
+         Current function value: 4.448e-09
+         Total delta_x: 1.447e-01
+         Iterations: 100
+         Function evaluations: 114
+         Jacobian evaluations: 101
+Timer: Solution time = 1.90 sec
+Timer: Avg time per step = 18.8 ms
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      2.333e-01  -->   4.448e-09, 
+Maximum absolute Force error:                                1.817e+07  -->   1.649e+03 (N)
+Minimum absolute Force error:                                3.828e+03  -->   5.732e-01 (N)
+Average absolute Force error:                                5.008e+05  -->   7.907e+01 (N)
+Maximum absolute Force error:                                2.930e-01  -->   2.659e-05 (normalized)
+Minimum absolute Force error:                                6.172e-05  -->   9.242e-09 (normalized)
+Average absolute Force error:                                8.075e-03  -->   1.275e-06 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 3 total = 10.8 sec
+================
+Step 4
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(12,12,0)
+Node resolution (L,M,N)=(24,24,0)
+Boundary ratio = 0
+Pressure ratio = 1.0
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 41.7 ms
+Timer: Objective build = 47.9 ms
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 75.0 ms
+Perturbing p_l
+Factorizing linear constraints
+Timer: linear constraint factorize = 683 ms
+Computing df
+Timer: df computation = 1.17 ms
+Factoring df
+Timer: df/dx factorization = 19.0 us
+Computing d^2f
+Timer: d^2f computation = 232 us
+Timer: Objective build = 1.37 ms
+||dx||/||x|| =  4.935e-02
+Timer: Total perturbation = 1.33 sec
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 6.93 ms
+Timer: LinearConstraintProjection build = 21.0 ms
+Number of parameters: 108
+Number of objectives: 338
+Timer: Initializing the optimization = 30.1 ms
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          8.498e-04                                    2.887e-02   
+       1              2          2.953e-06      8.469e-04      4.008e-02      1.189e-03   
+       2              4          4.906e-07      2.462e-06      2.225e-02      3.579e-04   
+       3              6          3.168e-08      4.589e-07      1.804e-02      1.057e-04   
+       4              8          3.841e-09      2.784e-08      9.372e-03      2.630e-05   
+       5             10          1.029e-09      2.812e-09      4.238e-03      9.990e-06   
+       6             12          7.236e-10      3.050e-10      2.202e-03      2.116e-06   
+       7             14          6.926e-10      3.105e-11      1.065e-03      5.876e-07   
+       8             15          6.689e-10      2.362e-11      2.088e-03      2.421e-06   
+       9             16          6.347e-10      3.429e-11      2.083e-03      2.479e-06   
+      10             17          6.020e-10      3.269e-11      2.083e-03      2.534e-06   
+      11             18          5.708e-10      3.112e-11      2.084e-03      2.584e-06   
+      12             19          5.412e-10      2.965e-11      2.085e-03      2.630e-06   
+      13             20          5.130e-10      2.824e-11      2.087e-03      2.672e-06   
+      14             21          4.861e-10      2.689e-11      2.090e-03      2.708e-06   
+      15             22          4.605e-10      2.559e-11      2.093e-03      2.738e-06   
+      16             23          4.361e-10      2.434e-11      2.098e-03      2.762e-06   
+      17             24          4.130e-10      2.312e-11      2.103e-03      2.778e-06   
+      18             25          3.911e-10      2.195e-11      2.109e-03      2.786e-06   
+      19             26          3.702e-10      2.082e-11      2.116e-03      2.787e-06   
+      20             27          3.505e-10      1.974e-11      2.124e-03      2.780e-06   
+      21             28          3.318e-10      1.871e-11      2.131e-03      2.767e-06   
+      22             29          3.141e-10      1.773e-11      2.138e-03      2.748e-06   
+      23             30          2.973e-10      1.680e-11      2.145e-03      2.724e-06   
+      24             31          2.813e-10      1.592e-11      2.150e-03      2.696e-06   
+      25             32          2.663e-10      1.508e-11      2.155e-03      2.664e-06   
+      26             33          2.520e-10      1.429e-11      2.159e-03      2.628e-06   
+      27             34          2.384e-10      1.354e-11      2.162e-03      2.589e-06   
+      28             35          2.256e-10      1.282e-11      2.164e-03      2.547e-06   
+      29             36          2.135e-10      1.213e-11      2.165e-03      2.501e-06   
+      30             37          2.020e-10      1.147e-11      2.165e-03      2.450e-06   
+      31             38          1.912e-10      1.081e-11      2.164e-03      2.395e-06   
+      32             39          1.810e-10      1.016e-11      2.164e-03      2.334e-06   
+      33             40          1.715e-10      9.503e-12      2.164e-03      2.269e-06   
+      34             41          1.627e-10      8.822e-12      2.164e-03      2.202e-06   
+      35             42          1.546e-10      8.106e-12      2.165e-03      2.134e-06   
+      36             43          1.473e-10      7.339e-12      2.166e-03      2.070e-06   
+      37             44          1.407e-10      6.510e-12      2.167e-03      2.017e-06   
+      38             45          1.351e-10      5.608e-12      2.167e-03      1.980e-06   
+      39             46          1.132e-10      2.194e-11      5.323e-04      1.377e-07   
+      40             47          1.113e-10      1.908e-12      1.082e-03      5.041e-07   
+      41             48          1.081e-10      3.185e-12      1.080e-03      5.064e-07   
+      42             49          1.049e-10      3.165e-12      1.073e-03      5.146e-07   
+      43             50          1.017e-10      3.228e-12      1.062e-03      5.247e-07   
+      44             51          9.844e-11      3.275e-12      1.047e-03      5.518e-07   
+      45             52          9.490e-11      3.538e-12      1.026e-03      5.806e-07   
+      46             53          9.106e-11      3.843e-12      1.001e-03      6.222e-07   
+      47             54          8.678e-11      4.277e-12      9.748e-04      6.680e-07   
+      48             55          8.199e-11      4.785e-12      9.568e-04      6.983e-07   
+      49             56          7.675e-11      5.244e-12      9.632e-04      6.806e-07   
+      50             57          7.142e-11      5.335e-12      1.012e-03      5.973e-07   
+      51             59          6.693e-11      4.483e-12      5.161e-04      1.369e-07   
+      52             60          6.479e-11      2.138e-12      1.186e-03      4.208e-07   
+      53             61          6.156e-11      3.231e-12      1.272e-03      3.012e-07   
+      54             63          5.965e-11      1.919e-12      6.533e-04      5.598e-08   
+      55             64          5.808e-11      1.562e-12      1.326e-03      1.972e-07   
+      56             65          5.800e-11      7.986e-14      2.594e-03      7.156e-07   
+      57             66          5.366e-11      4.341e-12      6.612e-04      4.407e-08   
+      58             67          5.241e-11      1.251e-12      1.338e-03      1.705e-07   
+      59             69          5.147e-11      9.409e-13      6.881e-04      4.355e-08   
+      60             70          5.035e-11      1.119e-12      1.366e-03      1.830e-07   
+      61             72          4.932e-11      1.034e-12      7.234e-04      4.666e-08   
+      62             73          4.826e-11      1.052e-12      1.438e-03      2.378e-07   
+      63             74          4.676e-11      1.506e-12      1.503e-03      2.633e-07   
+      64             76          4.511e-11      1.647e-12      8.499e-04      7.213e-08   
+      65             77          4.407e-11      1.037e-12      1.604e-03      3.773e-07   
+      66             78          4.207e-11      2.005e-12      1.536e-03      3.949e-07   
+      67             79          4.022e-11      1.845e-12      1.400e-03      4.559e-07   
+      68             80          3.867e-11      1.560e-12      1.282e-03      4.376e-07   
+      69             81          3.732e-11      1.344e-12      1.207e-03      3.830e-07   
+      70             82          3.617e-11      1.152e-12      1.159e-03      3.454e-07   
+      71             83          3.520e-11      9.674e-13      1.120e-03      3.572e-07   
+      72             84          3.442e-11      7.853e-13      1.080e-03      3.691e-07   
+      73             85          3.381e-11      6.013e-13      1.031e-03      3.778e-07   
+      74             86          3.340e-11      4.098e-13      9.633e-04      3.774e-07   
+      75             87          3.319e-11      2.139e-13      8.691e-04      4.672e-07   
+      76             88          3.222e-11      9.702e-13      2.080e-04      3.055e-08   
+      77             89          3.212e-11      9.713e-14      3.872e-04      1.539e-07   
+Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-02)
+         Current function value: 3.212e-11
+         Total delta_x: 1.687e-01
+         Iterations: 77
+         Function evaluations: 89
+         Jacobian evaluations: 78
+Timer: Solution time = 1.17 sec
+Timer: Avg time per step = 15.0 ms
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      8.498e-04  -->   3.212e-11, 
+Maximum absolute Force error:                                1.591e+06  -->   2.155e+02 (N)
+Minimum absolute Force error:                                2.808e+01  -->   1.098e-02 (N)
+Average absolute Force error:                                2.622e+04  -->   6.940e+00 (N)
+Maximum absolute Force error:                                2.565e-02  -->   3.475e-06 (normalized)
+Minimum absolute Force error:                                4.528e-07  -->   1.770e-10 (normalized)
+Average absolute Force error:                                4.227e-04  -->   1.119e-07 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 4 total = 2.78 sec
+================
+Step 5
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(12,12,8)
+Node resolution (L,M,N)=(24,24,16)
+Boundary ratio = 0.25
+Pressure ratio = 1
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 1.28 sec
+Timer: Objective build = 1.35 sec
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 824 ms
+Perturbing Rb_lmn, Zb_lmn
+Factorizing linear constraints
+Timer: linear constraint factorize = 3.93 sec
+Computing df
+Timer: df computation = 7.91 sec
+Factoring df
+Timer: df/dx factorization = 42.9 ms
+Computing d^2f
+Timer: d^2f computation = 5.00 sec
+Timer: Objective build = 1.42 ms
+||dx||/||x|| =  6.950e-03
+Timer: Total perturbation = 31.7 sec
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 24.9 ms
+Timer: LinearConstraintProjection build = 1.00 sec
+Number of parameters: 1892
+Number of objectives: 11154
+Timer: Initializing the optimization = 1.35 sec
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          6.377e-05                                    5.143e-03   
+       1              2          6.172e-06      5.760e-05      2.549e-02      2.243e-03   
+       2              3          1.545e-06      4.627e-06      3.023e-02      3.275e-04   
+       3              5          4.986e-09      1.540e-06      4.916e-03      5.122e-05   
+       4              7          5.959e-10      4.390e-09      2.496e-03      1.708e-05   
+       5              9          9.226e-11      5.037e-10      1.403e-03      7.076e-06   
+       6             11          2.877e-11      6.349e-11      9.559e-04      1.851e-06   
+       7             13          2.470e-11      4.072e-12      4.709e-04      7.025e-07   
+       8             15          2.410e-11      6.035e-13      2.431e-04      1.877e-07   
+       9             17          2.401e-11      8.362e-14      1.198e-04      4.954e-08   
+Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-02)
+         Current function value: 2.401e-11
+         Total delta_x: 3.757e-02
+         Iterations: 9
+         Function evaluations: 17
+         Jacobian evaluations: 10
+Timer: Solution time = 3.14 min
+Timer: Avg time per step = 18.8 sec
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      6.377e-05  -->   2.401e-11, 
+Maximum absolute Force error:                                4.162e+05  -->   1.308e+02 (N)
+Minimum absolute Force error:                                1.805e-01  -->   5.173e-04 (N)
+Average absolute Force error:                                6.567e+03  -->   6.005e+00 (N)
+Maximum absolute Force error:                                6.711e-03  -->   2.109e-06 (normalized)
+Minimum absolute Force error:                                2.911e-09  -->   8.342e-12 (normalized)
+Average absolute Force error:                                1.059e-04  -->   9.683e-08 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 5 total = 3.77 min
+================
+Step 6
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(12,12,8)
+Node resolution (L,M,N)=(24,24,16)
+Boundary ratio = 0.5
+Pressure ratio = 1
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 71.1 ms
+Timer: Objective build = 82.9 ms
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 102 ms
+Perturbing Rb_lmn, Zb_lmn
+Factorizing linear constraints
+Timer: linear constraint factorize = 883 ms
+Computing df
+Timer: df computation = 17.3 ms
+Factoring df
+Timer: df/dx factorization = 56.5 us
+Computing d^2f
+Timer: d^2f computation = 281 ms
+Timer: Objective build = 1.40 ms
+||dx||/||x|| =  5.672e-03
+Timer: Total perturbation = 19.5 sec
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 25.4 ms
+Timer: LinearConstraintProjection build = 873 ms
+Number of parameters: 1892
+Number of objectives: 11154
+Timer: Initializing the optimization = 1.26 sec
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          8.267e-05                                    9.469e-03   
+       1              2          2.713e-07      8.240e-05      1.387e-02      3.012e-04   
+       2              4          2.225e-07      4.885e-08      1.257e-02      2.520e-04   
+       3              5          4.528e-09      2.179e-07      3.500e-03      4.420e-05   
+       4              7          2.148e-10      4.313e-09      1.536e-03      9.193e-06   
+       5              9          3.288e-11      1.819e-10      6.674e-04      2.872e-06   
+       6             11          2.204e-11      1.083e-11      2.897e-04      5.858e-07   
+       7             13          2.153e-11      5.119e-13      1.373e-04      1.439e-07   
+       8             15          2.149e-11      4.160e-14      6.717e-05      3.544e-08   
+Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-02)
+         Current function value: 2.149e-11
+         Total delta_x: 7.208e-03
+         Iterations: 8
+         Function evaluations: 15
+         Jacobian evaluations: 9
+Timer: Solution time = 2.87 min
+Timer: Avg time per step = 19.1 sec
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      8.267e-05  -->   2.149e-11, 
+Maximum absolute Force error:                                5.510e+05  -->   1.264e+02 (N)
+Minimum absolute Force error:                                2.311e-03  -->   3.025e-04 (N)
+Average absolute Force error:                                6.793e+03  -->   5.547e+00 (N)
+Maximum absolute Force error:                                8.884e-03  -->   2.039e-06 (normalized)
+Minimum absolute Force error:                                3.726e-11  -->   4.878e-12 (normalized)
+Average absolute Force error:                                1.095e-04  -->   8.944e-08 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 6 total = 3.22 min
+================
+Step 7
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(12,12,8)
+Node resolution (L,M,N)=(24,24,16)
+Boundary ratio = 0.75
+Pressure ratio = 1
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 71.2 ms
+Timer: Objective build = 83.7 ms
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 102 ms
+Perturbing Rb_lmn, Zb_lmn
+Factorizing linear constraints
+Timer: linear constraint factorize = 959 ms
+Computing df
+Timer: df computation = 39.5 ms
+Factoring df
+Timer: df/dx factorization = 53.8 us
+Computing d^2f
+Timer: d^2f computation = 316 ms
+Timer: Objective build = 1.40 ms
+||dx||/||x|| =  4.113e-03
+Timer: Total perturbation = 20.1 sec
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 24.8 ms
+Timer: LinearConstraintProjection build = 879 ms
+Number of parameters: 1892
+Number of objectives: 11154
+Timer: Initializing the optimization = 1.27 sec
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          1.362e-05                                    3.208e-03   
+       1              2          2.381e-06      1.124e-05      1.371e-02      1.558e-03   
+       2              3          2.514e-07      2.130e-06      1.018e-02      4.055e-04   
+       3              5          3.011e-09      2.484e-07      2.841e-03      3.540e-05   
+       4              7          4.040e-10      2.607e-09      1.251e-03      1.548e-05   
+       5              9          4.109e-11      3.629e-10      6.361e-04      3.472e-06   
+       6             11          2.345e-11      1.764e-11      3.257e-04      7.926e-07   
+       7             13          2.250e-11      9.457e-13      1.656e-04      1.880e-07   
+       8             15          2.244e-11      6.434e-14      8.373e-05      4.556e-08   
+Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-02)
+         Current function value: 2.244e-11
+         Total delta_x: 1.576e-02
+         Iterations: 8
+         Function evaluations: 15
+         Jacobian evaluations: 9
+Timer: Solution time = 2.38 min
+Timer: Avg time per step = 15.9 sec
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      1.362e-05  -->   2.244e-11, 
+Maximum absolute Force error:                                1.748e+05  -->   1.401e+02 (N)
+Minimum absolute Force error:                                1.945e-01  -->   7.039e-05 (N)
+Average absolute Force error:                                2.953e+03  -->   5.701e+00 (N)
+Maximum absolute Force error:                                2.819e-03  -->   2.260e-06 (normalized)
+Minimum absolute Force error:                                3.135e-09  -->   1.135e-12 (normalized)
+Average absolute Force error:                                4.761e-05  -->   9.193e-08 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 7 total = 2.74 min
+================
+Step 8
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(12,12,8)
+Node resolution (L,M,N)=(24,24,16)
+Boundary ratio = 1.0
+Pressure ratio = 1
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 71.0 ms
+Timer: Objective build = 83.2 ms
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 100 ms
+Perturbing Rb_lmn, Zb_lmn
+Factorizing linear constraints
+Timer: linear constraint factorize = 889 ms
+Computing df
+Timer: df computation = 17.3 ms
+Factoring df
+Timer: df/dx factorization = 49.4 us
+Computing d^2f
+Timer: d^2f computation = 297 ms
+Timer: Objective build = 1.38 ms
+||dx||/||x|| =  4.363e-03
+Timer: Total perturbation = 19.4 sec
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 24.8 ms
+Timer: LinearConstraintProjection build = 900 ms
+Number of parameters: 1892
+Number of objectives: 11154
+Timer: Initializing the optimization = 1.28 sec
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          1.340e-05                                    3.267e-03   
+       1              2          1.213e-07      1.328e-05      7.935e-03      2.334e-04   
+       2              5          2.577e-09      1.187e-07      3.277e-03      3.282e-05   
+       3              7          3.037e-10      2.273e-09      1.148e-03      1.370e-05   
+       4              9          3.816e-11      2.655e-10      5.970e-04      2.941e-06   
+       5             11          2.470e-11      1.346e-11      2.773e-04      8.564e-07   
+       6             13          2.355e-11      1.150e-12      1.385e-04      2.069e-07   
+       7             15          2.347e-11      8.158e-14      6.844e-05      5.212e-08   
+Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-02)
+         Current function value: 2.347e-11
+         Total delta_x: 7.103e-03
+         Iterations: 7
+         Function evaluations: 15
+         Jacobian evaluations: 8
+Timer: Solution time = 2.82 min
+Timer: Avg time per step = 21.1 sec
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      1.340e-05  -->   2.347e-11, 
+Maximum absolute Force error:                                2.515e+05  -->   1.436e+02 (N)
+Minimum absolute Force error:                                1.585e-01  -->   3.288e-04 (N)
+Average absolute Force error:                                2.898e+03  -->   5.748e+00 (N)
+Maximum absolute Force error:                                4.055e-03  -->   2.315e-06 (normalized)
+Minimum absolute Force error:                                2.555e-09  -->   5.301e-12 (normalized)
+Average absolute Force error:                                4.672e-05  -->   9.268e-08 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 8 total = 3.17 min
+====================
+Done
+Timer: Total time = 13.6 min
+====================
+
+
+# Python warnings captured during continuation
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
