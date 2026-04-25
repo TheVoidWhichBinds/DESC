@@ -2,7 +2,8 @@
 
 #===================================================================================================================================================
 import os
-from concurrent.futures import ProcessPoolExecutor
+import traceback
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import numpy as np
 import pandas as pd
@@ -16,9 +17,13 @@ from .config import (
 )
 from .eq import run_equilibrium
 from .helper import (
+    _append_progress_log,
+    _make_skipped_run_status,
     _next_run_dir,
     _safe_extract_from_result,
+    _save_continuation_status_report,
     _save_optimization_status_report,
+    _save_text_file,
     _write_readme,
     _write_surface_source_summary,
     build_eq_configs,
@@ -76,22 +81,43 @@ def _run_one_formulation(
     Loads eq_init from disk, runs the optimization, saves any returned
     equilibrium, and returns only lightweight metadata to the parent.
     """
-    eq_0 = _load_eq_from_file(eq_init_path)
+    try:
+        eq_0 = _load_eq_from_file(eq_init_path)
 
-    eq_opt, opt_result, run_status = run_optimization(
-        eq_0 = eq_0,
-        optimizer = optimizer,
-        opt_config = opt_config,
-        formulation = formulation,
-    )
+        eq_opt, opt_result, run_status, optimization_log = run_optimization(
+            eq_0 = eq_0,
+            optimizer = optimizer,
+            opt_config = opt_config,
+            formulation = formulation,
+        )
 
-    eq_opt_path = None
+        eq_opt_path = None
 
-    if eq_opt is not None:
-        eq_opt_path = os.path.join(out_dir, f"opt_{formulation}.h5")
-        eq_opt.save(eq_opt_path)
+        if eq_opt is not None:
+            eq_opt_path = os.path.join(out_dir, f"opt_{formulation}.h5")
+            eq_opt.save(eq_opt_path)
 
-    return eq_opt_path, opt_result, run_status
+        return eq_opt_path, opt_result, run_status, optimization_log
+
+    except Exception:
+        worker_trace = traceback.format_exc()
+
+        run_status = {
+            "formulation": formulation,
+            "optimizer": optimizer,
+            "equilibrium_returned": False,
+            "exception_raised": True,
+            "bad_approximation_failure": False,
+            "automatic_continuation_failure": False,
+            "plottable": False,
+            "plotted": False,
+            "failure_stage": "worker_exception",
+            "message": worker_trace.strip().splitlines()[-1],
+            "final_iterations": None,
+            "runtime_seconds": None,
+        }
+
+        return None, None, run_status, worker_trace
 #========================================
 
 
@@ -137,6 +163,7 @@ def _get_slurm_array_info():
     job_id = os.environ.get("SLURM_JOB_ID")
     task_id = os.environ.get("SLURM_ARRAY_TASK_ID")
     task_count = os.environ.get("SLURM_ARRAY_TASK_COUNT")
+    task_min = os.environ.get("SLURM_ARRAY_TASK_MIN")
 
     if job_id is None or task_id is None:
         return None
@@ -144,10 +171,14 @@ def _get_slurm_array_info():
     if task_count is None:
         task_count = "1"
 
+    if task_min is None:
+        task_min = task_id
+
     return {
         "job_id": str(job_id),
         "task_id": int(task_id),
         "task_count": int(task_count),
+        "task_min": int(task_min),
     }
 #========================================
 
@@ -168,10 +199,12 @@ def _filter_entries_for_slurm_task(
 
     task_id = slurm_array_info["task_id"]
     task_count = slurm_array_info["task_count"]
+    task_min = slurm_array_info["task_min"]
+    zero_based_task_index = task_id - task_min
 
     return [
         entry for i, entry in enumerate(eq_config_entries)
-        if i % task_count == task_id
+        if i % task_count == zero_based_task_index
     ]
 #========================================
 
@@ -254,6 +287,8 @@ def _write_comparison_table(
         opt_result_FNO,
         opt_FLO,
         opt_FNO,
+        status_FLO,
+        status_FNO,
     ):
     """
     Save a text comparison table for FLO vs FNO.
@@ -345,6 +380,19 @@ def _write_comparison_table(
     output_file = os.path.join(out_dir, "comparison.txt")
     with open(output_file, "w") as f:
         f.write("Comparison of Post-Optimization Objectives\n\n")
+
+        f.write("FLO status\n")
+        f.write(f"  plottable = {status_FLO.get('plottable')}\n")
+        f.write(f"  runtime_seconds = {status_FLO.get('runtime_seconds')}\n")
+        f.write(f"  final_iterations = {status_FLO.get('final_iterations')}\n")
+        f.write(f"  message = {status_FLO.get('message')}\n\n")
+
+        f.write("FNO status\n")
+        f.write(f"  plottable = {status_FNO.get('plottable')}\n")
+        f.write(f"  runtime_seconds = {status_FNO.get('runtime_seconds')}\n")
+        f.write(f"  final_iterations = {status_FNO.get('final_iterations')}\n")
+        f.write(f"  message = {status_FNO.get('message')}\n\n")
+
         f.write(ascii_table)
 #========================================
 
@@ -443,62 +491,228 @@ def comparison(
             selected_point = selected_point,
         )
 
+        _append_progress_log(
+            out_dir = out_dir,
+            message = f"Started run_index = {run_index}",
+        )
+
         #----------------------------
         # Initial equilibrium solve:
-        eq_raw, eq_init = run_equilibrium(eq_config = eq_config)
-
-        eq_init_path = os.path.join(out_dir, "eq_init.h5")
-        eq_init.save(eq_init_path)
-
-        save_initial_toroidal_cuts(
+        _append_progress_log(
             out_dir = out_dir,
-            eq_raw = eq_raw,
-            eq_init = eq_init,
+            message = "Starting automatic continuation.",
         )
+
+        eq_raw, eq_init, continuation_status, continuation_log = run_equilibrium(
+            eq_config = eq_config,
+        )
+
+        _save_text_file(
+            out_dir = out_dir,
+            filename = "continuation.log",
+            text = continuation_log,
+        )
+
+        _save_continuation_status_report(
+            out_dir = out_dir,
+            continuation_status = continuation_status,
+        )
+
+        _append_progress_log(
+            out_dir = out_dir,
+            message = (
+                "Finished automatic continuation. "
+                f"continuation_returned = {continuation_status['continuation_returned']}, "
+                f"automatic_continuation_failure = {continuation_status['automatic_continuation_failure']}"
+            ),
+        )
+
+        if eq_raw is not None:
+            eq_raw_path = os.path.join(out_dir, "eq_raw.h5")
+            eq_raw.save(eq_raw_path)
+
+        if eq_init is not None:
+            eq_init_path = os.path.join(out_dir, "eq_init.h5")
+            eq_init.save(eq_init_path)
+
+            try:
+                save_initial_toroidal_cuts(
+                    out_dir = out_dir,
+                    eq_raw = eq_raw,
+                    eq_init = eq_init,
+                )
+                _append_progress_log(
+                    out_dir = out_dir,
+                    message = "Saved initial_toroidal_cuts.png.",
+                )
+
+            except Exception:
+                _save_text_file(
+                    out_dir = out_dir,
+                    filename = "initial_plot_error.txt",
+                    text = traceback.format_exc(),
+                )
+                _append_progress_log(
+                    out_dir = out_dir,
+                    message = "Initial toroidal-cut plotting failed. See initial_plot_error.txt.",
+                )
+
+        else:
+            eq_init_path = None
+        #----------------------------
+
+        #----------------------------
+        # Abort whole run if continuation failed:
+        if eq_init is None:
+            status_FLO = _make_skipped_run_status(
+                formulation = "FLO",
+                message = "Skipped because initial continuation failed.",
+                failure_stage = "skipped_due_to_continuation_failure",
+            )
+
+            status_FNO = _make_skipped_run_status(
+                formulation = "FNO",
+                message = "Skipped because initial continuation failed.",
+                failure_stage = "skipped_due_to_continuation_failure",
+            )
+
+            optimization_status = {
+                "FLO": status_FLO,
+                "FNO": status_FNO,
+            }
+
+            _save_optimization_status_report(
+                out_dir = out_dir,
+                optimization_status = optimization_status,
+            )
+
+            _write_comparison_table(
+                out_dir = out_dir,
+                active_columns_FLO = active_columns_FLO,
+                active_columns_FNO = active_columns_FNO,
+                opt_result_FLO = None,
+                opt_result_FNO = None,
+                opt_FLO = None,
+                opt_FNO = None,
+                status_FLO = status_FLO,
+                status_FNO = status_FNO,
+            )
+
+            batch_rows.append(
+                {
+                    "run_index": run_index,
+                    "execution_mode": execution_mode,
+                    "surface_is_nested": bool(selected_point.get("labels", {}).get("is_nested", False)),
+                    "surface_build_ok": bool(selected_point.get("labels", {}).get("build_ok", False)),
+                    "continuation_returned": bool(continuation_status["continuation_returned"]),
+                    "continuation_automatic_failure": bool(continuation_status["automatic_continuation_failure"]),
+                    "continuation_exception_raised": bool(continuation_status["exception_raised"]),
+                    "continuation_runtime_seconds": continuation_status["runtime_seconds"],
+                    "continuation_message": continuation_status["message"],
+                    "FLO_equilibrium_returned": False,
+                    "FLO_bad_approximation_failure": False,
+                    "FLO_automatic_continuation_failure": False,
+                    "FLO_final_iterations": None,
+                    "FLO_runtime_seconds": None,
+                    "FLO_plottable": False,
+                    "FLO_message": status_FLO["message"],
+                    "FNO_equilibrium_returned": False,
+                    "FNO_bad_approximation_failure": False,
+                    "FNO_automatic_continuation_failure": False,
+                    "FNO_final_iterations": None,
+                    "FNO_runtime_seconds": None,
+                    "FNO_plottable": False,
+                    "FNO_message": status_FNO["message"],
+                }
+            )
+
+            _append_progress_log(
+                out_dir = out_dir,
+                message = "Skipping FLO/FNO because continuation did not return a usable eq_init.",
+            )
+
+            continue
         #----------------------------
 
         #-----------------------------
         # FLO / FNO solves:
+        _append_progress_log(
+            out_dir = out_dir,
+            message = "Starting FLO/FNO optimizations.",
+        )
+
         if execution_mode == "cluster":
+            results_by_formulation = {}
+
             with ProcessPoolExecutor(max_workers = cluster_max_workers) as executor:
-                future_FLO = executor.submit(
-                    _run_one_formulation,
-                    eq_init_path,
-                    optimizer,
-                    opt_config,
-                    "FLO",
-                    out_dir,
-                )
+                future_map = {
+                    executor.submit(
+                        _run_one_formulation,
+                        eq_init_path,
+                        optimizer,
+                        opt_config,
+                        "FLO",
+                        out_dir,
+                    ): "FLO",
+                    executor.submit(
+                        _run_one_formulation,
+                        eq_init_path,
+                        optimizer,
+                        opt_config,
+                        "FNO",
+                        out_dir,
+                    ): "FNO",
+                }
 
-                future_FNO = executor.submit(
-                    _run_one_formulation,
-                    eq_init_path,
-                    optimizer,
-                    opt_config,
-                    "FNO",
-                    out_dir,
-                )
+                for future in as_completed(future_map):
+                    formulation = future_map[future]
+                    results_by_formulation[formulation] = future.result()
 
-                opt_FLO_path, opt_result_FLO, status_FLO = future_FLO.result()
-                opt_FNO_path, opt_result_FNO, status_FNO = future_FNO.result()
+                    _append_progress_log(
+                        out_dir = out_dir,
+                        message = f"{formulation} optimization finished.",
+                    )
+
+            opt_FLO_path, opt_result_FLO, status_FLO, log_FLO = results_by_formulation["FLO"]
+            opt_FNO_path, opt_result_FNO, status_FNO, log_FNO = results_by_formulation["FNO"]
 
         else:
-            opt_FLO_path, opt_result_FLO, status_FLO = _run_one_formulation(
+            opt_FLO_path, opt_result_FLO, status_FLO, log_FLO = _run_one_formulation(
                 eq_init_path = eq_init_path,
                 optimizer = optimizer,
                 opt_config = opt_config,
                 formulation = "FLO",
                 out_dir = out_dir,
             )
+            _append_progress_log(
+                out_dir = out_dir,
+                message = "FLO optimization finished.",
+            )
 
-            opt_FNO_path, opt_result_FNO, status_FNO = _run_one_formulation(
+            opt_FNO_path, opt_result_FNO, status_FNO, log_FNO = _run_one_formulation(
                 eq_init_path = eq_init_path,
                 optimizer = optimizer,
                 opt_config = opt_config,
                 formulation = "FNO",
                 out_dir = out_dir,
             )
+            _append_progress_log(
+                out_dir = out_dir,
+                message = "FNO optimization finished.",
+            )
         #-----------------------------
+
+        _save_text_file(
+            out_dir = out_dir,
+            filename = "FLO_optimization.log",
+            text = log_FLO,
+        )
+
+        _save_text_file(
+            out_dir = out_dir,
+            filename = "FNO_optimization.log",
+            text = log_FNO,
+        )
 
         #--------------------------------------
         # Load any returned optimized eqs:
@@ -523,18 +737,13 @@ def comparison(
             and bool(status_FNO["plottable"])
         )
 
-        status_FLO["plotted"] = FLO_plottable
-        status_FNO["plotted"] = FNO_plottable
+        status_FLO["plotted"] = False
+        status_FNO["plotted"] = False
 
         optimization_status = {
             "FLO": status_FLO,
             "FNO": status_FNO,
         }
-
-        _save_optimization_status_report(
-            out_dir = out_dir,
-            optimization_status = optimization_status,
-        )
         #--------------------------------------
 
         #---------------------------
@@ -547,6 +756,13 @@ def comparison(
             opt_result_FNO = opt_result_FNO,
             opt_FLO = opt_FLO,
             opt_FNO = opt_FNO,
+            status_FLO = status_FLO,
+            status_FNO = status_FNO,
+        )
+
+        _append_progress_log(
+            out_dir = out_dir,
+            message = "Saved comparison.txt.",
         )
         #---------------------------
 
@@ -570,13 +786,39 @@ def comparison(
         plot_labels.append("Initial (post continuation)")
         plot_colors.append("blue")
 
-        save_all_solution_plots(
-            out_dir = out_dir,
-            eqs = plot_eqs,
-            labels = plot_labels,
-            colors = plot_colors,
-        )
+        try:
+            save_all_solution_plots(
+                out_dir = out_dir,
+                eqs = plot_eqs,
+                labels = plot_labels,
+                colors = plot_colors,
+            )
+
+            status_FLO["plotted"] = FLO_plottable
+            status_FNO["plotted"] = FNO_plottable
+
+            _append_progress_log(
+                out_dir = out_dir,
+                message = "Saved final solution plots.",
+            )
+
+        except Exception:
+            _save_text_file(
+                out_dir = out_dir,
+                filename = "solution_plot_error.txt",
+                text = traceback.format_exc(),
+            )
+
+            _append_progress_log(
+                out_dir = out_dir,
+                message = "Final plotting failed. See solution_plot_error.txt.",
+            )
         #---------------------------
+
+        _save_optimization_status_report(
+            out_dir = out_dir,
+            optimization_status = optimization_status,
+        )
 
         #---------------------------
         # Accumulate batch summary:
@@ -586,19 +828,33 @@ def comparison(
                 "execution_mode": execution_mode,
                 "surface_is_nested": bool(selected_point.get("labels", {}).get("is_nested", False)),
                 "surface_build_ok": bool(selected_point.get("labels", {}).get("build_ok", False)),
+                "continuation_returned": bool(continuation_status["continuation_returned"]),
+                "continuation_automatic_failure": bool(continuation_status["automatic_continuation_failure"]),
+                "continuation_exception_raised": bool(continuation_status["exception_raised"]),
+                "continuation_runtime_seconds": continuation_status["runtime_seconds"],
+                "continuation_message": continuation_status["message"],
                 "FLO_equilibrium_returned": bool(status_FLO["equilibrium_returned"]),
                 "FLO_bad_approximation_failure": bool(status_FLO["bad_approximation_failure"]),
+                "FLO_automatic_continuation_failure": bool(status_FLO["automatic_continuation_failure"]),
                 "FLO_final_iterations": status_FLO["final_iterations"],
+                "FLO_runtime_seconds": status_FLO["runtime_seconds"],
                 "FLO_plottable": bool(FLO_plottable),
                 "FLO_message": status_FLO["message"],
                 "FNO_equilibrium_returned": bool(status_FNO["equilibrium_returned"]),
                 "FNO_bad_approximation_failure": bool(status_FNO["bad_approximation_failure"]),
+                "FNO_automatic_continuation_failure": bool(status_FNO["automatic_continuation_failure"]),
                 "FNO_final_iterations": status_FNO["final_iterations"],
+                "FNO_runtime_seconds": status_FNO["runtime_seconds"],
                 "FNO_plottable": bool(FNO_plottable),
                 "FNO_message": status_FNO["message"],
             }
         )
         #---------------------------
+
+        _append_progress_log(
+            out_dir = out_dir,
+            message = "Finished equilibrium run.",
+        )
 
     _write_batch_summary(
         root_out_dir = root_out_dir,

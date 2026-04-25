@@ -1,5 +1,12 @@
-# Opt.py
+# opt.py
+
 #===================================================================================================================================================
+import contextlib
+import io
+import time
+import traceback
+import warnings
+
 from desc.objectives import (
     BallooningStability,
     FixBoundaryR,
@@ -20,6 +27,7 @@ from .helper import (
     _eq,
     _extract_result_iterations,
     _extract_result_message,
+    _has_automatic_continuation_failure,
     _has_bad_approximation_failure,
 )
 #===================================================================================================================================================
@@ -235,7 +243,8 @@ def run_optimization(
     Returns:
         eq_opt,
         opt_result,
-        run_status
+        run_status,
+        optimization_log
     """
     ftol = opt_config["ftol"]
     xtol = opt_config["xtol"]
@@ -266,57 +275,112 @@ def run_optimization(
         "equilibrium_returned": False,
         "exception_raised": False,
         "bad_approximation_failure": False,
+        "automatic_continuation_failure": False,
         "plottable": False,
         "plotted": False,
         "failure_stage": None,
         "message": None,
         "final_iterations": None,
+        "runtime_seconds": None,
     }
 
+    optimization_log_buffer = io.StringIO()
+    eq_opt = None
+    opt_result = None
+    caught_warnings = []
+
     try:
-        eq_opt, opt_result = eq_0.optimize(
-            objective = objectives,
-            constraints = constraints,
-            optimizer = optimizer,
-            ftol = ftol,
-            xtol = xtol,
-            gtol = gtol,
-            maxiter = maxiter,
-            options = {"max_nfev": max_nfev},
-            x_scale = x_scale,
-            copy = True,
-            verbose = 3,
-        )
+        t0 = time.perf_counter()
+
+        with warnings.catch_warnings(record = True) as caught_warnings:
+            warnings.simplefilter("always")
+
+            with contextlib.redirect_stdout(optimization_log_buffer), contextlib.redirect_stderr(optimization_log_buffer):
+                eq_opt, opt_result = eq_0.optimize(
+                    objective = objectives,
+                    constraints = constraints,
+                    optimizer = optimizer,
+                    ftol = ftol,
+                    xtol = xtol,
+                    gtol = gtol,
+                    maxiter = maxiter,
+                    options = {"max_nfev": max_nfev},
+                    x_scale = x_scale,
+                    copy = True,
+                    verbose = 3,
+                )
+
+        run_status["runtime_seconds"] = time.perf_counter() - t0
+
+        optimization_log = optimization_log_buffer.getvalue()
+
+        if len(caught_warnings) > 0:
+            optimization_log += "\n\n# Python warnings captured during optimization\n"
+            for warning_item in caught_warnings:
+                optimization_log += (
+                    f"{warning_item.category.__name__}: "
+                    f"{warning_item.message}\n"
+                )
 
         result_message = _extract_result_message(opt_result)
         result_iterations = _extract_result_iterations(opt_result)
+        combined_message = "\n".join(
+            [
+                "" if result_message is None else str(result_message),
+                optimization_log,
+            ]
+        )
 
         run_status["equilibrium_returned"] = eq_opt is not None
         run_status["message"] = result_message
         run_status["final_iterations"] = result_iterations
         run_status["bad_approximation_failure"] = _has_bad_approximation_failure(
-            result_message
+            combined_message
+        )
+        run_status["automatic_continuation_failure"] = _has_automatic_continuation_failure(
+            combined_message
         )
         run_status["plottable"] = (
             run_status["equilibrium_returned"]
             and not run_status["bad_approximation_failure"]
+            and not run_status["automatic_continuation_failure"]
         )
 
-        if run_status["bad_approximation_failure"]:
+        if run_status["automatic_continuation_failure"]:
+            run_status["failure_stage"] = "optimizer_log"
+
+        elif run_status["bad_approximation_failure"]:
             run_status["failure_stage"] = "optimizer_result"
 
-        return eq_opt, opt_result, run_status
+        return eq_opt, opt_result, run_status, optimization_log
 
-    except Exception as e:
-        error_message = repr(e)
-
+    except Exception:
+        run_status["runtime_seconds"] = time.perf_counter() - t0
         run_status["exception_raised"] = True
-        run_status["message"] = error_message
-        run_status["bad_approximation_failure"] = _has_bad_approximation_failure(
-            error_message
-        )
-        run_status["plottable"] = False
         run_status["failure_stage"] = "optimizer_exception"
 
-        return None, None, run_status
+        optimization_log = optimization_log_buffer.getvalue()
+
+        if len(caught_warnings) > 0:
+            optimization_log += "\n\n# Python warnings captured during optimization\n"
+            for warning_item in caught_warnings:
+                optimization_log += (
+                    f"{warning_item.category.__name__}: "
+                    f"{warning_item.message}\n"
+                )
+
+        error_trace = traceback.format_exc()
+        optimization_log += "\n\n# Exception traceback\n"
+        optimization_log += error_trace
+
+        run_status["message"] = error_trace.strip().splitlines()[-1]
+        run_status["bad_approximation_failure"] = _has_bad_approximation_failure(
+            optimization_log
+        )
+        run_status["automatic_continuation_failure"] = _has_automatic_continuation_failure(
+            optimization_log
+        )
+        run_status["plottable"] = False
+
+        return None, None, run_status, optimization_log
 #===================================================================================================================================================

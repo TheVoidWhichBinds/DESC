@@ -1,7 +1,9 @@
-# Helper.py
+# helper.py
+
 #===================================================================================================================================================
 from pathlib import Path
 from copy import deepcopy
+from datetime import datetime
 import inspect
 import os
 import pickle
@@ -26,7 +28,7 @@ from desc.geometry import FourierRZToroidalSurface
 #======================
 def pressure_generator(
         p_axis,
-        width_percentage
+        width_percentage,
     ):
     """
     Generates an 8th order polynomial for pressure that obeys
@@ -277,7 +279,7 @@ def build_eq_configs(
 
 
 
-#============== DRIVER HELPERS =====================================================================================================================
+#============== DRIVER / STATUS HELPERS ============================================================================================================
 #=========================
 def sci_compact(x, sig = 2):
     s = f"{x:.{sig - 1}e}"
@@ -523,6 +525,90 @@ def _has_bad_approximation_failure(
 
 
 #========================================
+def _has_automatic_continuation_failure(
+        message,
+    ):
+    """
+    Detect DESC automatic-continuation failure text in logs or messages.
+    """
+    if message is None:
+        return False
+
+    text = str(message).strip().lower()
+    target = "warning: automatic continuation failed"
+
+    return target in text
+#========================================
+
+
+
+
+#========================================
+def _save_text_file(
+        out_dir,
+        filename,
+        text,
+    ):
+    """
+    Save arbitrary text into the run directory.
+    """
+    save_path = os.path.join(out_dir, filename)
+
+    with open(save_path, "w") as f:
+        if text is None:
+            text = ""
+        f.write(str(text))
+        if len(str(text)) > 0 and not str(text).endswith("\n"):
+            f.write("\n")
+#========================================
+
+
+
+
+#========================================
+def _append_progress_log(
+        out_dir,
+        message,
+    ):
+    """
+    Append a timestamped progress line to progress.log.
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    save_path = os.path.join(out_dir, "progress.log")
+
+    with open(save_path, "a") as f:
+        f.write(f"[{timestamp}] {message}\n")
+#========================================
+
+
+
+
+#========================================
+def _save_continuation_status_report(
+        out_dir,
+        continuation_status,
+    ):
+    """
+    Save continuation status summary for later analysis.
+    """
+    save_path = os.path.join(out_dir, "continuation_status.txt")
+
+    with open(save_path, "w") as f:
+        f.write("Continuation status summary\n\n")
+        f.write(f"equilibrium_built = {continuation_status.get('equilibrium_built')}\n")
+        f.write(f"continuation_returned = {continuation_status.get('continuation_returned')}\n")
+        f.write(f"exception_raised = {continuation_status.get('exception_raised')}\n")
+        f.write(f"automatic_continuation_failure = {continuation_status.get('automatic_continuation_failure')}\n")
+        f.write(f"num_steps_returned = {continuation_status.get('num_steps_returned')}\n")
+        f.write(f"runtime_seconds = {continuation_status.get('runtime_seconds')}\n")
+        f.write(f"failure_stage = {continuation_status.get('failure_stage')}\n")
+        f.write(f"message = {continuation_status.get('message')}\n")
+#========================================
+
+
+
+
+#========================================
 def _save_optimization_status_report(
         out_dir,
         optimization_status,
@@ -540,11 +626,41 @@ def _save_optimization_status_report(
             f.write(f"  equilibrium_returned = {status.get('equilibrium_returned')}\n")
             f.write(f"  exception_raised = {status.get('exception_raised')}\n")
             f.write(f"  bad_approximation_failure = {status.get('bad_approximation_failure')}\n")
+            f.write(f"  automatic_continuation_failure = {status.get('automatic_continuation_failure')}\n")
             f.write(f"  final_iterations = {status.get('final_iterations')}\n")
+            f.write(f"  runtime_seconds = {status.get('runtime_seconds')}\n")
             f.write(f"  plottable = {status.get('plottable')}\n")
             f.write(f"  plotted = {status.get('plotted')}\n")
             f.write(f"  failure_stage = {status.get('failure_stage')}\n")
             f.write(f"  message = {status.get('message')}\n\n")
+#========================================
+
+
+
+
+#========================================
+def _make_skipped_run_status(
+        formulation,
+        message,
+        failure_stage,
+    ):
+    """
+    Construct a consistent skipped-run status dict.
+    """
+    return {
+        "formulation": formulation,
+        "optimizer": None,
+        "equilibrium_returned": False,
+        "exception_raised": False,
+        "bad_approximation_failure": False,
+        "automatic_continuation_failure": False,
+        "plottable": False,
+        "plotted": False,
+        "failure_stage": failure_stage,
+        "message": message,
+        "final_iterations": None,
+        "runtime_seconds": None,
+    }
 #========================================
 #===================================================================================================================================================
 
