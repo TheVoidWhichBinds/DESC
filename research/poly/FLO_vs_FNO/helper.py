@@ -62,30 +62,6 @@ class Tee:
 
 
 #============== CONFIG HELPERS =====================================================================================================================
-#======================
-def pressure_generator(
-        p_axis,
-        width_percentage,
-    ):
-    """
-    Generates an 8th order polynomial for pressure that obeys
-    boundary relations, DOF constraint, and is within the
-    allowed region for c[4] (coefficient of the 8th-order term).
-    width_percentage gives how narrow (0%) to how wide (100%) the
-    shape is.
-    """
-    c_0 = 1.0
-    c_4 = -1.3 + width_percentage / 100.0 * (1.8 - (-1.3))
-    c_3 = -3.45 * c_4
-    c_1 = -2.0 + c_3 + 2.0 * c_4
-    c_2 = 1.0 - 2.0 * c_3 - 3.0 * c_4
-    coeffs = jnp.array([c_0, c_1, c_2, c_3, c_4])
-
-    return list(p_axis * coeffs)
-#======================
-
-
-
 
 #==========================
 def iota_between_rationals(

@@ -137,7 +137,16 @@ def FNO_pressure_axis(grid, data):
     Range of values of pressure on-axis.
     Bounded (1E4, 1E7).
     """
-    p = data['p']
+    p = data['p'][0]
+    return p
+
+
+def FNO_pressure_edge(grid, data):
+    """
+    Pressure is zero on-edge
+    Targeted 0.0.
+    """
+    p = data['p'][-1]
     return p
 
 

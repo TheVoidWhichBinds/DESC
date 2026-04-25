@@ -195,6 +195,12 @@ FNO_OBJECTIVE_REGISTRY = {
             "thing": _eq,
         },
     },
+    "FNO_pressure_edge": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
     "FNO_pressure_positive": {
         "wrapper": ObjectiveFromUser,
         "defaults": {

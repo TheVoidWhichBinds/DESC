@@ -407,9 +407,9 @@ def comparison(
             plot_labels.append("Raw initial")
             plot_colors.append("green")
 
-        plot_eqs.append(eq_init)
-        plot_labels.append("Initial (post continuation)")
-        plot_colors.append("blue")
+        # plot_eqs.append(eq_init)
+        # plot_labels.append("Initial (post continuation)")
+        # plot_colors.append("blue")
 
         try:
             save_all_solution_plots(
