@@ -1,5 +1,0 @@
-[2026-04-24 20:42:38] Started run_index = 5
-[2026-04-24 20:42:38] Starting automatic continuation.
-[2026-04-24 20:57:16] Finished automatic continuation. continuation_returned = True, automatic_continuation_failure = False
-[2026-04-24 20:57:16] Initial toroidal-cut plotting failed. See initial_plot_error.txt.
-[2026-04-24 20:57:16] Starting FLO/FNO optimizations.

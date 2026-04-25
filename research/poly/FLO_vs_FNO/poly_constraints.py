@@ -132,10 +132,19 @@ def FLO_iota_quadratic(params):
 # Objectives:
 #============================
 #----------------------------
-def FNO_pressure(grid, data):
+def FNO_pressure_axis(grid, data):
     """
-    Range of values of pressure.
-    Bounded (0, 1E7).
+    Range of values of pressure on-axis.
+    Bounded (1E4, 1E7).
+    """
+    p = data['p']
+    return p
+
+
+def FNO_pressure_positive(grid, data):
+    """
+    Maintaining positive pressure.
+    Bounded (0, jnp.inf).
     """
     p = data['p']
     return p

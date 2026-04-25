@@ -6,7 +6,7 @@ import io
 import time
 import traceback
 import warnings
-
+import sys
 from desc.objectives import (
     BallooningStability,
     FixBoundaryR,
@@ -23,6 +23,7 @@ from desc.objectives import (
 )
 
 from .helper import (
+    Tee,
     _build_terms,
     _eq,
     _extract_result_iterations,
@@ -188,7 +189,13 @@ FLO_CONSTRAINT_REGISTRY = {
 #===========================
 # FNO custom registries:
 FNO_OBJECTIVE_REGISTRY = {
-    "FNO_pressure": {
+    "FNO_pressure_axis": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "FNO_pressure_positive": {
         "wrapper": ObjectiveFromUser,
         "defaults": {
             "thing": _eq,
@@ -295,7 +302,7 @@ def run_optimization(
         with warnings.catch_warnings(record = True) as caught_warnings:
             warnings.simplefilter("always")
 
-            with contextlib.redirect_stdout(optimization_log_buffer), contextlib.redirect_stderr(optimization_log_buffer):
+            with contextlib.redirect_stdout(Tee(sys.stdout, optimization_log_buffer)), contextlib.redirect_stderr(Tee(sys.stderr, optimization_log_buffer)):
                 eq_opt, opt_result = eq_0.optimize(
                     objective = objectives,
                     constraints = constraints,

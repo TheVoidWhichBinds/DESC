@@ -8,10 +8,15 @@ import inspect
 import os
 import pickle
 import re
+import traceback
+
+import pandas as pd
 
 import jax.numpy as jnp
 import numpy as np
 from desc.geometry import FourierRZToroidalSurface
+from desc.io import load as desc_load
+from tabulate import tabulate
 #===================================================================================================================================================
 
 
@@ -20,6 +25,38 @@ from desc.geometry import FourierRZToroidalSurface
 
 
 
+
+
+#========================================
+class Tee:
+    """
+    Write stream output to multiple file-like objects.
+
+    This lets DESC verbose output print to terminal while also
+    being captured into a log buffer.
+    """
+    def __init__(
+            self,
+            *streams,
+        ):
+        self.streams = streams
+
+
+    def write(
+            self,
+            data,
+        ):
+        for stream in self.streams:
+            stream.write(data)
+            stream.flush()
+
+
+    def flush(
+            self,
+        ):
+        for stream in self.streams:
+            stream.flush()
+#========================================
 
 
 
@@ -267,6 +304,433 @@ def build_eq_configs(
 
     return eq_configs
 #=====================
+#===================================================================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+#============== DRIVER / WORKER HELPERS ============================================================================================================
+#========================================
+def _extract_last_equilibrium(
+        eq_like,
+    ):
+    """
+    Return the final Equilibrium from a DESC continuation/load result.
+
+    This handles ordinary Equilibrium objects, list/tuple returns, and
+    EquilibriaFamily-like objects returned by automatic continuation.
+
+    Returns:
+        eq_final,
+        num_steps
+    """
+    if eq_like is None:
+        return None, 0
+
+    if eq_like.__class__.__name__ == "Equilibrium":
+        return eq_like, 1
+
+    try:
+        num_steps = len(eq_like)
+    except Exception:
+        return eq_like, 1
+
+    if num_steps == 0:
+        return None, 0
+
+    try:
+        return eq_like[-1], num_steps
+    except Exception:
+        pass
+
+    try:
+        return list(eq_like)[-1], num_steps
+    except Exception:
+        return eq_like, 1
+#========================================
+
+
+
+
+
+#========================================
+def _load_eq_from_file(
+        eq_path,
+    ):
+    """
+    Load a saved DESC equilibrium from disk and collapse any family/list
+    return to the final equilibrium only.
+    """
+    eq_loaded = desc_load(eq_path)
+    eq, num_steps = _extract_last_equilibrium(eq_loaded)
+
+    if eq is None:
+        raise ValueError(f"No equilibrium objects found in file: {eq_path}")
+
+    return eq
+#========================================
+
+
+
+
+
+#========================================
+def _run_one_formulation(
+        eq_init_path,
+        optimizer,
+        opt_config,
+        formulation,
+        out_dir,
+    ):
+    """
+    Worker entrypoint for one optimization formulation.
+    Loads eq_init from disk, runs the optimization, saves any returned
+    equilibrium, and returns only lightweight metadata to the parent.
+    """
+    from .opt import run_optimization
+
+    try:
+        eq_0 = _load_eq_from_file(eq_init_path)
+
+        eq_opt, opt_result, run_status, optimization_log = run_optimization(
+            eq_0 = eq_0,
+            optimizer = optimizer,
+            opt_config = opt_config,
+            formulation = formulation,
+        )
+
+        eq_opt_path = None
+
+        if eq_opt is not None:
+            eq_opt, _ = _extract_last_equilibrium(eq_opt)
+            eq_opt_path = os.path.join(out_dir, f"opt_{formulation}.h5")
+            eq_opt.save(eq_opt_path)
+
+        return eq_opt_path, opt_result, run_status, optimization_log
+
+    except Exception:
+        worker_trace = traceback.format_exc()
+
+        run_status = {
+            "formulation": formulation,
+            "optimizer": optimizer,
+            "equilibrium_returned": False,
+            "exception_raised": True,
+            "bad_approximation_failure": False,
+            "automatic_continuation_failure": False,
+            "plottable": False,
+            "plotted": False,
+            "failure_stage": "worker_exception",
+            "message": worker_trace.strip().splitlines()[-1],
+            "final_iterations": None,
+            "runtime_seconds": None,
+        }
+
+        return None, None, run_status, worker_trace
+#========================================
+
+
+
+
+
+#========================================
+def _resolve_execution_mode(
+        driver_config,
+    ):
+    """
+    Decide whether to run FLO/FNO sequentially or in parallel.
+
+    Modes:
+        - "local"   : always sequential
+        - "cluster" : always parallel
+        - "auto"    : parallel if running inside Slurm, else sequential
+    """
+    mode = driver_config.get("execution_mode", "auto")
+
+    if mode not in {"auto", "local", "cluster"}:
+        raise ValueError(
+            f"Unsupported execution_mode='{mode}'. "
+            f"Use 'auto', 'local', or 'cluster'."
+        )
+
+    if mode == "auto":
+        if os.environ.get("SLURM_JOB_ID") is not None:
+            return "cluster"
+        return "local"
+
+    return mode
+#========================================
+
+
+
+
+
+#========================================
+def _get_slurm_array_info():
+    """
+    Return Slurm array task info if running as a Slurm array.
+    """
+    job_id = os.environ.get("SLURM_JOB_ID")
+    task_id = os.environ.get("SLURM_ARRAY_TASK_ID")
+    task_count = os.environ.get("SLURM_ARRAY_TASK_COUNT")
+    task_min = os.environ.get("SLURM_ARRAY_TASK_MIN")
+
+    if job_id is None or task_id is None:
+        return None
+
+    if task_count is None:
+        task_count = "1"
+
+    if task_min is None:
+        task_min = task_id
+
+    return {
+        "job_id": str(job_id),
+        "task_id": int(task_id),
+        "task_count": int(task_count),
+        "task_min": int(task_min),
+    }
+#========================================
+
+
+
+
+
+#========================================
+def _filter_entries_for_slurm_task(
+        eq_config_entries,
+        slurm_array_info,
+    ):
+    """
+    Give each Slurm array task a disjoint subset of equilibria.
+    """
+    if slurm_array_info is None:
+        return eq_config_entries
+
+    task_id = slurm_array_info["task_id"]
+    task_count = slurm_array_info["task_count"]
+    task_min = slurm_array_info["task_min"]
+    zero_based_task_index = task_id - task_min
+
+    return [
+        entry for i, entry in enumerate(eq_config_entries)
+        if i % task_count == zero_based_task_index
+    ]
+#========================================
+
+
+
+
+
+#========================================
+def _make_root_out_dir(
+        base_dir,
+        execution_mode,
+        slurm_array_info,
+    ):
+    """
+    Create a collision-safe root output directory.
+    """
+    if execution_mode == "cluster":
+        job_id = os.environ.get("SLURM_JOB_ID", "no_job_id")
+
+        if slurm_array_info is not None:
+            task_id = slurm_array_info["task_id"]
+            root_out_dir = os.path.join(
+                base_dir,
+                f"run_{job_id}_task_{task_id:03d}",
+            )
+        else:
+            root_out_dir = os.path.join(
+                base_dir,
+                f"run_{job_id}",
+            )
+
+        os.makedirs(root_out_dir, exist_ok = False)
+        return root_out_dir
+
+    return _next_run_dir(base_dir)
+#========================================
+
+
+
+
+
+#========================================
+def _collect_active_columns(
+        opt_config,
+        NFP,
+    ):
+    """
+    Collect only shared core result columns for FLO and FNO comparison tables.
+    """
+    opt_toggles_core = opt_config["opt_toggles_core"]
+
+    column_map_core = [
+        ("forcebalance_obj", "Force error: ", "Force error"),
+        ("qs", f"Quasi-symmetry (1,{NFP}) Boozer error: ", "QS Boozer error"),
+        ("ballooning", "Ideal ballooning lambda: ", "Ideal ballooning lambda"),
+        ("mercier", "Mercier Stability: ", "Mercier Stability"),
+        ("current_Redl", "current_Redl", "Current Redl"),
+    ]
+
+    active_columns = []
+
+    for key, result_label, column_title in column_map_core:
+        if opt_toggles_core.get(key, {}).get("use", False):
+            active_columns.append((key, result_label, column_title))
+
+    return active_columns, active_columns
+#========================================
+
+
+
+
+
+#========================================
+def _write_comparison_table(
+        out_dir,
+        active_columns_FLO,
+        active_columns_FNO,
+        opt_result_FLO,
+        opt_result_FNO,
+        opt_FLO,
+        opt_FNO,
+        status_FLO,
+        status_FNO,
+    ):
+    """
+    Save a text comparison table for FLO vs FNO.
+    """
+    all_columns = []
+    seen_titles = set()
+
+    for _, result_label, column_title in active_columns_FLO + active_columns_FNO:
+        if column_title not in seen_titles:
+            all_columns.append((result_label, column_title))
+            seen_titles.add(column_title)
+
+    FLO_title_to_label = {
+        column_title: result_label
+        for _, result_label, column_title in active_columns_FLO
+    }
+    FNO_title_to_label = {
+        column_title: result_label
+        for _, result_label, column_title in active_columns_FNO
+    }
+
+    row_FLO = []
+    row_FNO = []
+
+    for _, column_title in all_columns:
+        if column_title in FLO_title_to_label:
+            fmin_FLO, fmean_FLO, fmax_FLO = _safe_extract_from_result(
+                opt_result_FLO,
+                FLO_title_to_label[column_title],
+            )
+            if np.isnan(fmin_FLO) and np.isnan(fmean_FLO) and np.isnan(fmax_FLO):
+                row_FLO.append("---")
+            else:
+                row_FLO.append(
+                    f"f_min={sci_compact(fmin_FLO, sig = 4)}, "
+                    f"f_mean={sci_compact(fmean_FLO, sig = 4)}, "
+                    f"f_max={sci_compact(fmax_FLO, sig = 4)}"
+                )
+        else:
+            row_FLO.append("---")
+
+        if column_title in FNO_title_to_label:
+            fmin_FNO, fmean_FNO, fmax_FNO = _safe_extract_from_result(
+                opt_result_FNO,
+                FNO_title_to_label[column_title],
+            )
+            if np.isnan(fmin_FNO) and np.isnan(fmean_FNO) and np.isnan(fmax_FNO):
+                row_FNO.append("---")
+            else:
+                row_FNO.append(
+                    f"f_min={sci_compact(fmin_FNO, sig = 4)}, "
+                    f"f_mean={sci_compact(fmean_FNO, sig = 4)}, "
+                    f"f_max={sci_compact(fmax_FNO, sig = 4)}"
+                )
+        else:
+            row_FNO.append("---")
+
+    if opt_FLO is not None:
+        beta_FLO = float(
+            opt_FLO.compute("<beta>_vol", override_grid = True)["<beta>_vol"]
+        )
+        row_FLO.append(f"{beta_FLO:.4g}")
+    else:
+        row_FLO.append("---")
+
+    if opt_FNO is not None:
+        beta_FNO = float(
+            opt_FNO.compute("<beta>_vol", override_grid = True)["<beta>_vol"]
+        )
+        row_FNO.append(f"{beta_FNO:.4g}")
+    else:
+        row_FNO.append("---")
+
+    values = [row_FLO, row_FNO]
+
+    index = pd.Index(
+        ["Core + FLO", "Core + FNO"],
+        name = "Run",
+    )
+
+    df = pd.DataFrame(
+        values,
+        index = index,
+        columns = [column_title for _, column_title in all_columns] + ["Beta"],
+    )
+
+    ascii_table = tabulate(df, headers = "keys", tablefmt = "grid")
+
+    output_file = os.path.join(out_dir, "comparison.txt")
+    with open(output_file, "w") as f:
+        f.write("Comparison of Post-Optimization Objectives\n\n")
+
+        f.write("FLO status\n")
+        f.write(f"  plottable = {status_FLO.get('plottable')}\n")
+        f.write(f"  runtime_seconds = {status_FLO.get('runtime_seconds')}\n")
+        f.write(f"  final_iterations = {status_FLO.get('final_iterations')}\n")
+        f.write(f"  message = {status_FLO.get('message')}\n\n")
+
+        f.write("FNO status\n")
+        f.write(f"  plottable = {status_FNO.get('plottable')}\n")
+        f.write(f"  runtime_seconds = {status_FNO.get('runtime_seconds')}\n")
+        f.write(f"  final_iterations = {status_FNO.get('final_iterations')}\n")
+        f.write(f"  message = {status_FNO.get('message')}\n\n")
+
+        f.write(ascii_table)
+#========================================
+
+
+
+
+
+#========================================
+def _write_batch_summary(
+        root_out_dir,
+        batch_rows,
+    ):
+    """
+    Save one batch-level summary CSV across all equilibria.
+    """
+    if len(batch_rows) == 0:
+        return
+
+    df = pd.DataFrame(batch_rows)
+    save_path = os.path.join(root_out_dir, "batch_summary.csv")
+    df.to_csv(save_path, index = False)
+#========================================
 #===================================================================================================================================================
 
 

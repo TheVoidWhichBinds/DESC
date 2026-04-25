@@ -17,7 +17,8 @@ from research.poly.FLO_vs_FNO.poly_constraints import (
     FLO_iota_axis,
     FLO_iota_edge,
     FLO_iota_quadratic,
-    FNO_pressure,
+    FNO_pressure_axis,
+    FNO_pressure_positive,
     FNO_pressure_monotonic,
     FNO_grad_pressure_edge,
     FNO_iota,
@@ -57,9 +58,9 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 #==================================
 #------------------------
 # Equilibrium resolution:
-L = 12
-M = 12
-N = 8
+L = 6
+M = 6
+N = 3
 eq_resolution = [L, M, N]
 #------------------------
 
@@ -138,7 +139,7 @@ EQ_INPUT_CONFIG = {
 # Bounds shared by FLO / FNO objective sets:
 FLO_pressure_axis_bounds = (1e4, 1e7)
 FLO_pressure_shape_bounds = (-1.3, 1.8)
-FNO_pressure_bounds = (0.0, 1e7)
+FNO_pressure_axis_bounds = (1e4, 1e7)
 iota_bounds = iota_between_rationals(iota_axis = iota_axis_init)
 #===========================================
 
@@ -147,9 +148,9 @@ iota_bounds = iota_between_rationals(iota_axis = iota_axis_init)
 
 #======================
 # Optimizer thresholds:
-ftol = 1e-3
-xtol = 1e-4
-gtol = 1e-4
+ftol = 1e-4
+xtol = 1e-6
+gtol = 1e-6
 maxiter = 300
 max_nfev = 300
 x_scale = "auto"
@@ -233,11 +234,11 @@ opt_toggles_core = {
         "kwargs": {},
     },
     "fix_boundary_R": {
-        "use": False,
+        "use": True,
         "kwargs": {},
     },
     "fix_boundary_Z": {
-        "use": False,
+        "use": True,
         "kwargs": {},
     },
 }
@@ -345,13 +346,24 @@ opt_toggles_FLO = {
 opt_toggles_FNO = {
     # Objectives:
     #============
-    "FNO_pressure": {
+    "FNO_pressure_axis": {
         "use": not pressure_fxd,
         "kwargs": {
-            "name": "FNO_pressure",
-            "fun": FNO_pressure,
+            "name": "FNO_pressure_axis",
+            "fun": FNO_pressure_axis,
             "grid": data_grid,
-            "bounds": FNO_pressure_bounds,
+            "bounds": FNO_pressure_axis_bounds,
+            "weight": 1e10,
+            "normalize": True,
+        },
+    },
+    "FNO_pressure_positive": {
+        "use": not pressure_fxd,
+        "kwargs": {
+            "name": "FNO_pressure_positive",
+            "fun": FNO_pressure_positive,
+            "grid": data_grid,
+            "bounds": (0.0, jnp.inf),
             "weight": 1e10,
             "normalize": True,
         },
@@ -427,7 +439,7 @@ OPT_CONFIG = {
 #============== DRIVER INPUTS ======================================================================================================================
 DRIVER_CONFIG = {
     "config_path": __file__,
-    "execution_mode": "cluster",   # "auto", "local", or "cluster"
-    "cluster_max_workers": 2,
+    "execution_mode": "local",   # "auto", "local", or "cluster"
+    "cluster_max_workers": 1,
 }
 #===================================================================================================================================================

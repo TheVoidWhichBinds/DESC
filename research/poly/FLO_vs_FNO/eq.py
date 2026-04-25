@@ -6,11 +6,15 @@ import io
 import time
 import traceback
 import warnings
-
+import sys
 from desc.continuation import solve_continuation_automatic
 from desc.equilibrium import Equilibrium
 
-from .helper import _has_automatic_continuation_failure
+from .helper import (
+    _extract_last_equilibrium,
+    _has_automatic_continuation_failure,
+    Tee,
+)
 #===================================================================================================================================================
 
 
@@ -28,8 +32,8 @@ def run_equilibrium(
         eq_config,
     ):
     """
-    Builds the raw equilibrium, runs automatic continuation, captures the full
-    continuation log, and returns a status dict for file-based troubleshooting.
+    Builds the raw equilibrium, runs automatic continuation, keeps only the final
+    continuation step, captures the full continuation log, and returns a status dict for file-based troubleshooting.
 
     Returns:
         eq_raw,
@@ -84,7 +88,7 @@ def run_equilibrium(
         with warnings.catch_warnings(record = True) as caught_warnings:
             warnings.simplefilter("always")
 
-            with contextlib.redirect_stdout(continuation_log_buffer), contextlib.redirect_stderr(continuation_log_buffer):
+            with contextlib.redirect_stdout(Tee(sys.stdout, continuation_log_buffer)), contextlib.redirect_stderr(Tee(sys.stderr, continuation_log_buffer)):
                 continuation_result = solve_continuation_automatic(
                     eq_raw.copy(),
                     verbose = 3,
@@ -92,15 +96,10 @@ def run_equilibrium(
 
         continuation_status["runtime_seconds"] = time.perf_counter() - t0
 
-        if isinstance(continuation_result, (list, tuple)):
-            continuation_status["num_steps_returned"] = len(continuation_result)
-
-            if len(continuation_result) > 0:
-                eq_init = continuation_result[-1]
-
-        else:
-            continuation_status["num_steps_returned"] = 1
-            eq_init = continuation_result
+        eq_init, num_steps_returned = _extract_last_equilibrium(
+            continuation_result
+        )
+        continuation_status["num_steps_returned"] = num_steps_returned
 
         continuation_log = continuation_log_buffer.getvalue()
 
