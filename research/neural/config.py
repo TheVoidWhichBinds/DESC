@@ -12,7 +12,7 @@
 
 #============== FEATURE / SWEEP CONFIG =========================================================================
 FEATURE_CONFIG = {
-    "resolution": (12, 12, 8),
+    "resolution": (16, 16, 12),
     "NFP": 4,
     "modes_R": [
         (0, 0),
@@ -26,9 +26,9 @@ FEATURE_CONFIG = {
         (-2, 0),
     ],
     "counts": {
-        "N_R0": 2,
-        "N_R10": 2,
-        "N_Z10": 2,
+        "N_R0": 1,
+        "N_R10": 1,
+        "N_Z10": 1,
         "N_R11": 2,
         "N_Z11": 2,
         "N_R20": 2,
@@ -40,8 +40,8 @@ FEATURE_CONFIG = {
         "modeR10": (-0.50, -0.42),  # radial minor size
         "modeZ10": (0.42, 0.50),    # vertical minor size, less elongated on average
 
-        "modeR11": (-0.045, 0.045), # mild helical radial variation
-        "modeZ11": (-0.045, 0.045), # actual helical vertical variation
+        "modeR11": (-0.055, 0.055), # mild helical radial variation
+        "modeZ11": (-0.075, 0.075), # actual helical vertical variation
 
         "modeR20": (-0.025, 0.025), # very weak bean/triangular shaping
         "modeZ20": (-0.008, 0.008), # weak vertical second harmonic

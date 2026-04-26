@@ -118,31 +118,31 @@ def evaluate_condition(
         data_point["labels"]["build_ok"] = True
 
         #--------------------------------------------------------------
-        # Plotting toroidal cross-sections:
-        # try:
-        #     base_dir = os.path.dirname(os.path.abspath(__file__))
-        #     toroidal_cuts_path = os.path.join(base_dir, "initial_toroidal_cuts.png")
+        #Plotting toroidal cross-sections:
+        try:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            toroidal_cuts_path = os.path.join(base_dir, "initial_toroidal_cuts.png")
 
-        #     fig, ax = plot_comparison(
-        #         eqs = [eq],
-        #         labels = ["Raw Eq"],
-        #         color = ["green"],
-        #     )
-        #     fig.savefig(
-        #         toroidal_cuts_path,
-        #         dpi = 200,
-        #         bbox_inches = "tight",
-        #     )
-        #     plt.close(fig)
+            fig, ax = plot_comparison(
+                eqs = [eq],
+                labels = ["Raw Eq"],
+                color = ["green"],
+            )
+            fig.savefig(
+                toroidal_cuts_path,
+                dpi = 200,
+                bbox_inches = "tight",
+            )
+            plt.close(fig)
 
-        # except Exception as e:
-        #     print("PLOTTING FAILED:", repr(e))
-        #     data_point["meta"]["errors"].append(
-        #         {
-        #             "stage": "plotting",
-        #             "error": repr(e),
-        #         }
-        #     )
+        except Exception as e:
+            print("PLOTTING FAILED:", repr(e))
+            data_point["meta"]["errors"].append(
+                {
+                    "stage": "plotting",
+                    "error": repr(e),
+                }
+            )
         #--------------------------------------------------------------
 
 
