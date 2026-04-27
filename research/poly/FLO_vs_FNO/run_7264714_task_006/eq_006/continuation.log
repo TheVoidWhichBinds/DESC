@@ -1,0 +1,755 @@
+================
+Step 1
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(6,6,0)
+Node resolution (L,M,N)=(12,12,0)
+Boundary ratio = 0
+Pressure ratio = 0
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 1.39 sec
+Timer: Objective build = 1.97 sec
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 806 ms
+Timer: LinearConstraintProjection build = 5.11 sec
+Number of parameters: 27
+Number of objectives: 98
+Timer: Initializing the optimization = 7.94 sec
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          4.082e-03                                    8.479e-02   
+       1              2          3.236e-05      4.050e-03      1.293e-01      5.330e-03   
+       2              3          4.599e-06      2.776e-05      6.882e-02      2.364e-03   
+       3              4          5.300e-08      4.546e-06      1.538e-02      1.444e-04   
+       4              5          1.137e-10      5.289e-08      6.604e-03      5.687e-06   
+`gtol` condition satisfied. (gtol=1.00e-04)
+         Current function value: 1.137e-10
+         Total delta_x: 1.818e-01
+         Iterations: 4
+         Function evaluations: 5
+         Jacobian evaluations: 5
+Timer: Solution time = 6.31 sec
+Timer: Avg time per step = 1.26 sec
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      4.082e-03  -->   1.137e-10, 
+Maximum absolute Force error:                                2.596e+05  -->   6.095e+01 (N)
+Minimum absolute Force error:                                5.674e+02  -->   6.784e-02 (N)
+Average absolute Force error:                                8.678e+04  -->   1.177e+01 (N)
+Maximum absolute Force error:                                4.186e-03  -->   9.828e-07 (normalized)
+Minimum absolute Force error:                                9.148e-06  -->   1.094e-09 (normalized)
+Average absolute Force error:                                1.399e-03  -->   1.899e-07 (normalized)
+R boundary error:                                            0.000e+00  -->   3.469e-18 (m)
+Z boundary error:                                            0.000e+00  -->   5.554e-17 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 1 total = 16.4 sec
+================
+Step 2
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(12,12,0)
+Node resolution (L,M,N)=(24,24,0)
+Boundary ratio = 0
+Pressure ratio = 0
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 1.75 sec
+Timer: Objective build = 1.89 sec
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 825 ms
+Timer: LinearConstraintProjection build = 4.91 sec
+Number of parameters: 108
+Number of objectives: 338
+Timer: Initializing the optimization = 7.67 sec
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          1.187e-10                                    6.063e-06   
+`gtol` condition satisfied. (gtol=1.00e-04)
+         Current function value: 1.187e-10
+         Total delta_x: 0.000e+00
+         Iterations: 0
+         Function evaluations: 1
+         Jacobian evaluations: 1
+Timer: Solution time = 3.91 sec
+Timer: Avg time per step = 3.91 sec
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      1.187e-10  -->   1.187e-10, 
+Maximum absolute Force error:                                7.660e+01  -->   7.660e+01 (N)
+Minimum absolute Force error:                                4.368e-02  -->   4.368e-02 (N)
+Average absolute Force error:                                1.175e+01  -->   1.175e+01 (N)
+Maximum absolute Force error:                                1.235e-06  -->   1.235e-06 (normalized)
+Minimum absolute Force error:                                7.043e-10  -->   7.043e-10 (normalized)
+Average absolute Force error:                                1.895e-07  -->   1.895e-07 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 2 total = 17.0 sec
+================
+Step 3
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(14,14,0)
+Node resolution (L,M,N)=(28,28,0)
+Boundary ratio = 0
+Pressure ratio = 0
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 1.76 sec
+Timer: Objective build = 1.90 sec
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 695 ms
+Timer: LinearConstraintProjection build = 4.56 sec
+Number of parameters: 147
+Number of objectives: 450
+Timer: Initializing the optimization = 7.22 sec
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          1.196e-10                                    6.143e-06   
+`gtol` condition satisfied. (gtol=1.00e-04)
+         Current function value: 1.196e-10
+         Total delta_x: 0.000e+00
+         Iterations: 0
+         Function evaluations: 1
+         Jacobian evaluations: 1
+Timer: Solution time = 4.46 sec
+Timer: Avg time per step = 4.46 sec
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      1.196e-10  -->   1.196e-10, 
+Maximum absolute Force error:                                7.882e+01  -->   7.882e+01 (N)
+Minimum absolute Force error:                                2.569e-02  -->   2.569e-02 (N)
+Average absolute Force error:                                1.178e+01  -->   1.178e+01 (N)
+Maximum absolute Force error:                                1.271e-06  -->   1.271e-06 (normalized)
+Minimum absolute Force error:                                4.143e-10  -->   4.143e-10 (normalized)
+Average absolute Force error:                                1.899e-07  -->   1.899e-07 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 3 total = 17.2 sec
+================
+Step 4
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(14,14,0)
+Node resolution (L,M,N)=(28,28,0)
+Boundary ratio = 0
+Pressure ratio = 0.5
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 57.6 ms
+Timer: Objective build = 66.5 ms
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 103 ms
+Perturbing p_l
+Factorizing linear constraints
+Timer: linear constraint factorize = 32.0 ms
+Computing df
+Timer: df computation = 3.77 sec
+Factoring df
+Timer: df/dx factorization = 69.9 ms
+Computing d^2f
+Timer: d^2f computation = 2.88 sec
+Timer: Objective build = 1.90 ms
+||dx||/||x|| =  2.917e-02
+Timer: Total perturbation = 11.6 sec
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 11.6 ms
+Timer: LinearConstraintProjection build = 33.2 ms
+Number of parameters: 147
+Number of objectives: 450
+Timer: Initializing the optimization = 48.2 ms
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          3.044e-03                                    2.193e-02   
+       1              2          5.207e-04      2.523e-03      1.077e-01      9.304e-03   
+       2              3          5.107e-05      4.696e-04      3.374e-02      4.389e-03   
+       3              4          6.830e-06      4.424e-05      5.389e-02      1.473e-03   
+       4              5          4.485e-07      6.381e-06      1.404e-02      3.754e-04   
+       5              6          7.844e-08      3.701e-07      3.050e-02      1.214e-04   
+       6              7          5.051e-08      2.793e-08      1.219e-02      1.290e-04   
+       7              8          2.723e-09      4.779e-08      6.547e-03      2.430e-05   
+`gtol` condition satisfied. (gtol=1.00e-04)
+         Current function value: 2.723e-09
+         Total delta_x: 8.790e-02
+         Iterations: 7
+         Function evaluations: 8
+         Jacobian evaluations: 8
+Timer: Solution time = 2.19 sec
+Timer: Avg time per step = 274 ms
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      3.044e-03  -->   2.723e-09, 
+Maximum absolute Force error:                                3.907e+06  -->   5.942e+02 (N)
+Minimum absolute Force error:                                2.629e+00  -->   1.150e-01 (N)
+Average absolute Force error:                                3.717e+04  -->   4.902e+01 (N)
+Maximum absolute Force error:                                6.299e-02  -->   9.581e-06 (normalized)
+Minimum absolute Force error:                                4.239e-08  -->   1.854e-09 (normalized)
+Average absolute Force error:                                5.993e-04  -->   7.904e-07 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 4 total = 14.3 sec
+================
+Step 5
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(14,14,0)
+Node resolution (L,M,N)=(28,28,0)
+Boundary ratio = 0
+Pressure ratio = 1.0
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 59.7 ms
+Timer: Objective build = 69.1 ms
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 107 ms
+Perturbing p_l
+Factorizing linear constraints
+Timer: linear constraint factorize = 933 ms
+Computing df
+Timer: df computation = 1.80 ms
+Factoring df
+Timer: df/dx factorization = 30.8 us
+Computing d^2f
+Timer: d^2f computation = 384 us
+Timer: Objective build = 1.86 ms
+||dx||/||x|| =  1.974e-02
+Timer: Total perturbation = 1.84 sec
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 11.2 ms
+Timer: LinearConstraintProjection build = 33.9 ms
+Number of parameters: 147
+Number of objectives: 450
+Timer: Initializing the optimization = 48.8 ms
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          6.949e-06                                    2.602e-03   
+       1              2          2.968e-06      3.981e-06      4.534e-02      9.946e-04   
+       2              3          8.472e-08      2.883e-06      1.793e-02      2.751e-04   
+       3              5          1.373e-09      8.334e-08      3.028e-03      2.614e-05   
+`gtol` condition satisfied. (gtol=1.00e-04)
+         Current function value: 1.373e-09
+         Total delta_x: 3.435e-02
+         Iterations: 3
+         Function evaluations: 5
+         Jacobian evaluations: 4
+Timer: Solution time = 140 ms
+Timer: Avg time per step = 35.0 ms
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      6.949e-06  -->   1.373e-09, 
+Maximum absolute Force error:                                4.964e+04  -->   1.060e+03 (N)
+Minimum absolute Force error:                                6.621e-01  -->   7.158e-02 (N)
+Average absolute Force error:                                3.126e+03  -->   3.577e+01 (N)
+Maximum absolute Force error:                                8.004e-04  -->   1.710e-05 (normalized)
+Minimum absolute Force error:                                1.068e-08  -->   1.154e-09 (normalized)
+Average absolute Force error:                                5.040e-05  -->   5.768e-07 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 5 total = 2.40 sec
+================
+Step 6
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(14,14,10)
+Node resolution (L,M,N)=(28,28,20)
+Boundary ratio = 0.25
+Pressure ratio = 1
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 1.76 sec
+Timer: Objective build = 1.87 sec
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 1.20 sec
+Perturbing Rb_lmn, Zb_lmn
+Factorizing linear constraints
+Timer: linear constraint factorize = 9.59 sec
+Computing df
+Timer: df computation = 11.0 sec
+Factoring df
+Timer: df/dx factorization = 124 ms
+Computing d^2f
+Timer: d^2f computation = 13.2 sec
+Timer: Objective build = 2.17 ms
+||dx||/||x|| =  4.457e-03
+Timer: Total perturbation = 2.22 min
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 53.6 ms
+Timer: LinearConstraintProjection build = 4.50 sec
+Number of parameters: 3167
+Number of objectives: 18450
+Timer: Initializing the optimization = 6.86 sec
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          5.218e-06                                    1.697e-03   
+       1              2          8.779e-09      5.209e-06      7.980e-03      3.044e-05   
+`gtol` condition satisfied. (gtol=1.00e-04)
+         Current function value: 8.779e-09
+         Total delta_x: 7.980e-03
+         Iterations: 1
+         Function evaluations: 2
+         Jacobian evaluations: 2
+Timer: Solution time = 1.24 min
+Timer: Avg time per step = 37.4 sec
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      5.218e-06  -->   8.779e-09, 
+Maximum absolute Force error:                                6.088e+04  -->   2.160e+03 (N)
+Minimum absolute Force error:                                6.481e-02  -->   1.362e-03 (N)
+Average absolute Force error:                                2.240e+03  -->   7.874e+01 (N)
+Maximum absolute Force error:                                9.816e-04  -->   3.483e-05 (normalized)
+Minimum absolute Force error:                                1.045e-09  -->   2.197e-11 (normalized)
+Average absolute Force error:                                3.612e-05  -->   1.270e-06 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 6 total = 3.70 min
+================
+Step 7
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(14,14,10)
+Node resolution (L,M,N)=(28,28,20)
+Boundary ratio = 0.5
+Pressure ratio = 1
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 131 ms
+Timer: Objective build = 153 ms
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 146 ms
+Perturbing Rb_lmn, Zb_lmn
+Factorizing linear constraints
+Timer: linear constraint factorize = 4.03 sec
+Computing df
+Timer: df computation = 110 ms
+Factoring df
+Timer: df/dx factorization = 95.1 us
+Computing d^2f
+Timer: d^2f computation = 1.90 sec
+Timer: Objective build = 2.01 ms
+||dx||/||x|| =  1.367e-03
+Timer: Total perturbation = 1.89 min
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 51.9 ms
+Timer: LinearConstraintProjection build = 4.82 sec
+Number of parameters: 3167
+Number of objectives: 18450
+Timer: Initializing the optimization = 7.36 sec
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          6.353e-08                                    1.416e-04   
+       1              2          1.036e-08      5.317e-08      5.899e-03      3.857e-05   
+`gtol` condition satisfied. (gtol=1.00e-04)
+         Current function value: 1.036e-08
+         Total delta_x: 5.899e-03
+         Iterations: 1
+         Function evaluations: 2
+         Jacobian evaluations: 2
+Timer: Solution time = 1.11 min
+Timer: Avg time per step = 33.2 sec
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      6.353e-08  -->   1.036e-08, 
+Maximum absolute Force error:                                2.242e+04  -->   4.189e+03 (N)
+Minimum absolute Force error:                                6.592e-03  -->   1.301e-02 (N)
+Average absolute Force error:                                2.188e+02  -->   8.655e+01 (N)
+Maximum absolute Force error:                                3.616e-04  -->   6.755e-05 (normalized)
+Minimum absolute Force error:                                1.063e-10  -->   2.098e-10 (normalized)
+Average absolute Force error:                                3.527e-06  -->   1.396e-06 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 7 total = 3.14 min
+================
+Step 8
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(14,14,10)
+Node resolution (L,M,N)=(28,28,20)
+Boundary ratio = 0.75
+Pressure ratio = 1
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 129 ms
+Timer: Objective build = 151 ms
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 145 ms
+Perturbing Rb_lmn, Zb_lmn
+Factorizing linear constraints
+Timer: linear constraint factorize = 3.94 sec
+Computing df
+Timer: df computation = 102 ms
+Factoring df
+Timer: df/dx factorization = 79.2 us
+Computing d^2f
+Timer: d^2f computation = 1.88 sec
+Timer: Objective build = 1.97 ms
+||dx||/||x|| =  2.172e-03
+Timer: Total perturbation = 1.83 min
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 52.0 ms
+Timer: LinearConstraintProjection build = 4.03 sec
+Number of parameters: 3167
+Number of objectives: 18450
+Timer: Initializing the optimization = 6.53 sec
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          3.089e-07                                    3.658e-04   
+       1              2          9.431e-09      2.994e-07      6.622e-03      4.084e-05   
+`gtol` condition satisfied. (gtol=1.00e-04)
+         Current function value: 9.431e-09
+         Total delta_x: 6.622e-03
+         Iterations: 1
+         Function evaluations: 2
+         Jacobian evaluations: 2
+Timer: Solution time = 1.12 min
+Timer: Avg time per step = 33.6 sec
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      3.089e-07  -->   9.431e-09, 
+Maximum absolute Force error:                                1.874e+04  -->   1.973e+03 (N)
+Minimum absolute Force error:                                1.056e-03  -->   2.145e-05 (N)
+Average absolute Force error:                                5.639e+02  -->   8.201e+01 (N)
+Maximum absolute Force error:                                3.021e-04  -->   3.181e-05 (normalized)
+Minimum absolute Force error:                                1.702e-11  -->   3.458e-13 (normalized)
+Average absolute Force error:                                9.092e-06  -->   1.322e-06 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 8 total = 3.08 min
+================
+Step 9
+================
+Spectral indexing: ansi
+Spectral resolution (L,M,N)=(14,14,10)
+Node resolution (L,M,N)=(28,28,20)
+Boundary ratio = 1.0
+Pressure ratio = 1
+Perturbation Order = 2
+Objective: force
+Optimizer: lsq-exact
+================
+Perturbing equilibrium
+Building objective: force
+Precomputing transforms
+Timer: Precomputing transforms = 140 ms
+Timer: Objective build = 162 ms
+Building objective: lcfs R
+Building objective: lcfs Z
+Building objective: fixed Psi
+Building objective: fixed pressure
+Building objective: fixed iota
+Building objective: fixed sheet current
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 147 ms
+Perturbing Rb_lmn, Zb_lmn
+Factorizing linear constraints
+Timer: linear constraint factorize = 4.21 sec
+Computing df
+Timer: df computation = 101 ms
+Factoring df
+Timer: df/dx factorization = 76.7 us
+Computing d^2f
+Timer: d^2f computation = 1.92 sec
+Timer: Objective build = 1.92 ms
+||dx||/||x|| =  2.128e-03
+Timer: Total perturbation = 1.86 min
+Building objective: self_consistency R
+Building objective: self_consistency Z
+Building objective: lambda gauge
+Building objective: axis R self consistency
+Building objective: axis Z self consistency
+Timer: Objective build = 53.6 ms
+Timer: LinearConstraintProjection build = 4.18 sec
+Number of parameters: 3167
+Number of objectives: 18450
+Timer: Initializing the optimization = 6.69 sec
+
+Starting optimization
+Using method: lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          1.801e-07                                    2.539e-04   
+       1              2          1.464e-08      1.655e-07      8.122e-03      3.147e-05   
+`gtol` condition satisfied. (gtol=1.00e-04)
+         Current function value: 1.464e-08
+         Total delta_x: 8.122e-03
+         Iterations: 1
+         Function evaluations: 2
+         Jacobian evaluations: 2
+Timer: Solution time = 1.13 min
+Timer: Avg time per step = 34.1 sec
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      1.801e-07  -->   1.464e-08, 
+Maximum absolute Force error:                                1.867e+04  -->   3.586e+03 (N)
+Minimum absolute Force error:                                4.864e-03  -->   2.188e-04 (N)
+Average absolute Force error:                                4.176e+02  -->   1.005e+02 (N)
+Maximum absolute Force error:                                3.011e-04  -->   5.783e-05 (normalized)
+Minimum absolute Force error:                                7.842e-11  -->   3.528e-12 (normalized)
+Average absolute Force error:                                6.733e-06  -->   1.620e-06 (normalized)
+R boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Z boundary error:                                            0.000e+00  -->   0.000e+00 (m)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Fixed pressure profile error:                                0.000e+00  -->   0.000e+00 (Pa)
+Fixed iota profile error:                                    0.000e+00  -->   0.000e+00 (dimensionless)
+Fixed sheet current error:                                   0.000e+00  -->   0.000e+00 (~)
+==============================================================================================================
+
+Timer: Iteration 9 total = 3.13 min
+====================
+Done
+Timer: Total time = 14.3 min
+====================
+
+
+# Python warnings captured during continuation
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
+DeprecationWarning: linear_util.wrap_init is missing a DebugInfo object. This behavior is deprecated, use api_util.debug_info() to construct a proper DebugInfo object and propagate it to this function. See https://github.com/jax-ml/jax/issues/26480 for more details.
