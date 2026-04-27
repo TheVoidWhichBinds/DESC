@@ -40,8 +40,8 @@ FEATURE_CONFIG = {
         "modeR10": (-0.50, -0.42),  # radial minor size
         "modeZ10": (0.42, 0.50),    # vertical minor size, less elongated on average
 
-        "modeR11": (-0.055, 0.055), # mild helical radial variation
-        "modeZ11": (-0.075, 0.075), # actual helical vertical variation
+        "modeR11": (-0.025, 0.025), # mild helical radial variation
+        "modeZ11": (-0.025, 0.025), # actual helical vertical variation
 
         "modeR20": (-0.025, 0.025), # very weak bean/triangular shaping
         "modeZ20": (-0.008, 0.008), # weak vertical second harmonic
