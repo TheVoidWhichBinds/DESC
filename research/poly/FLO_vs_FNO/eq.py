@@ -31,42 +31,13 @@ from .helper import (
 def run_equilibrium(
         eq_config,
     ):
-    """
-    Builds the raw equilibrium, runs automatic continuation, keeps only the final
-    continuation step, captures the full continuation log, and returns a status dict for file-based troubleshooting.
-
-    Returns:
-        eq_raw,
-        eq_init,
-        continuation_status,
-        continuation_log
-    """
-
-    #-----------------------------------------------
-    # Unpacking equilibrium configuration variables:
     surface_init = eq_config["surface_init"]
     pressure_init = eq_config["pressure_init"]
     iota_init = eq_config["iota_init"]
     eq_resolution = eq_config["eq_resolution"]
-    #-----------------------------------------------
-
-    #----------------------
-    # Prepping equilibrium:
-    L, M, N = eq_resolution
-    eq_raw = Equilibrium(
-        L = L,
-        M = M,
-        N = N,
-        surface = surface_init,
-        pressure = pressure_init,
-        iota = iota_init,
-        Psi = 1.0,
-        ensure_nested = True,
-    )
-    #----------------------
 
     continuation_status = {
-        "equilibrium_built": True,
+        "equilibrium_built": False,
         "continuation_returned": False,
         "exception_raised": False,
         "automatic_continuation_failure": False,
@@ -77,13 +48,27 @@ def run_equilibrium(
     }
 
     continuation_log_buffer = io.StringIO()
+    eq_raw = None
     eq_init = None
     caught_warnings = []
+    t0 = time.perf_counter()
 
-    #------------------------------------------------------------
-    # Solving initial equilibrium and returning last step of opt:
     try:
-        t0 = time.perf_counter()
+        L, M, N = eq_resolution
+
+        with contextlib.redirect_stdout(Tee(sys.stdout, continuation_log_buffer)), contextlib.redirect_stderr(Tee(sys.stderr, continuation_log_buffer)):
+            eq_raw = Equilibrium(
+                L = L,
+                M = M,
+                N = N,
+                surface = surface_init,
+                pressure = pressure_init,
+                iota = iota_init,
+                Psi = 1.0,
+                ensure_nested = True,
+            )
+
+        continuation_status["equilibrium_built"] = True
 
         with warnings.catch_warnings(record = True) as caught_warnings:
             warnings.simplefilter("always")
@@ -136,7 +121,11 @@ def run_equilibrium(
     except Exception:
         continuation_status["runtime_seconds"] = time.perf_counter() - t0
         continuation_status["exception_raised"] = True
-        continuation_status["failure_stage"] = "continuation_exception"
+
+        if not continuation_status["equilibrium_built"]:
+            continuation_status["failure_stage"] = "equilibrium_build_exception"
+        else:
+            continuation_status["failure_stage"] = "continuation_exception"
 
         continuation_log = continuation_log_buffer.getvalue()
         error_trace = traceback.format_exc()
