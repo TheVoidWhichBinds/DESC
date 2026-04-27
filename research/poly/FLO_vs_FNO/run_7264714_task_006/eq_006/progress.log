@@ -1,5 +1,0 @@
-[2026-04-27 00:23:13] Started run_index = 6
-[2026-04-27 00:23:13] Starting automatic continuation.
-[2026-04-27 00:37:39] Finished automatic continuation. continuation_returned = True, automatic_continuation_failure = False
-[2026-04-27 00:37:53] Saved initial_toroidal_cuts.png.
-[2026-04-27 00:37:53] Starting FLO/FNO optimizations.

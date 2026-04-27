@@ -85,7 +85,7 @@ surface_source_config = {
 }
 
 # Number of equilibria to test:
-N_eq = 16
+N_eq = 4
 #------------------------------
 
 #-----------------------
