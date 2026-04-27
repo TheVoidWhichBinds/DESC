@@ -58,9 +58,9 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 #==================================
 #------------------------
 # Equilibrium resolution:
-L = 6
-M = 6
-N = 3
+L = 14
+M = 14
+N = 10
 eq_resolution = [L, M, N]
 #------------------------
 
@@ -85,7 +85,7 @@ surface_source_config = {
 }
 
 # Number of equilibria to test:
-N_eq = 10
+N_eq = 4
 #------------------------------
 
 #-----------------------
@@ -447,7 +447,7 @@ OPT_CONFIG = {
 #============== DRIVER INPUTS ======================================================================================================================
 DRIVER_CONFIG = {
     "config_path": __file__,
-    "execution_mode": "local",   # "auto", "local", or "cluster"
-    "cluster_max_workers": 1,
+    "execution_mode": "cluster",   # "auto", "local", or "cluster"
+    "cluster_max_workers": 2,
 }
 #===================================================================================================================================================
