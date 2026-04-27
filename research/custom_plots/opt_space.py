@@ -40,7 +40,7 @@ n_base_grid = 9
 y_slice = 0.0
 
 view_elev = 16
-view_azim = 40
+view_azim = 150
 
 show_figures = True
 
@@ -314,15 +314,15 @@ def style_axes(
     ax.yaxis.line.set_color((1, 1, 1, 0))
     ax.zaxis.line.set_color((1, 1, 1, 0))
 
-    draw_bounding_box(
-        ax,
-        xlim = xlim,
-        ylim = ylim,
-        zlim = zlim,
-        color = "black",
-        linewidth = 1.8,
-        alpha = 0.95,
-    )
+    # draw_bounding_box(
+    #     ax,
+    #     xlim = xlim,
+    #     ylim = ylim,
+    #     zlim = zlim,
+    #     color = "black",
+    #     linewidth = 1.8,
+    #     alpha = 0.95,
+    # )
 
 
 
