@@ -448,6 +448,6 @@ OPT_CONFIG = {
 DRIVER_CONFIG = {
     "config_path": __file__,
     "execution_mode": "cluster",   # "auto", "local", or "cluster"
-    "cluster_max_workers": 2,
+    "cluster_max_workers": 1,
 }
 #===================================================================================================================================================

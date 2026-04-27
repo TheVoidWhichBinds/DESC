@@ -261,7 +261,7 @@ def comparison(
             message = "Starting FLO/FNO optimizations.",
         )
 
-        if execution_mode == "cluster":
+        if execution_mode == "cluster" and cluster_max_workers > 1:
             results_by_formulation = {}
 
             with ProcessPoolExecutor(max_workers = cluster_max_workers) as executor:

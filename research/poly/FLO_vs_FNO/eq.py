@@ -31,10 +31,24 @@ from .helper import (
 def run_equilibrium(
         eq_config,
     ):
+    """
+    Builds the raw equilibrium, runs automatic continuation, keeps only the final
+    continuation step, captures the full continuation log, and returns a status dict for file-based troubleshooting.
+
+    Returns:
+        eq_raw,
+        eq_init,
+        continuation_status,
+        continuation_log
+    """
+
+    #-----------------------------------------------
+    # Unpacking equilibrium configuration variables:
     surface_init = eq_config["surface_init"]
     pressure_init = eq_config["pressure_init"]
     iota_init = eq_config["iota_init"]
     eq_resolution = eq_config["eq_resolution"]
+    #-----------------------------------------------
 
     continuation_status = {
         "equilibrium_built": False,
@@ -53,6 +67,8 @@ def run_equilibrium(
     caught_warnings = []
     t0 = time.perf_counter()
 
+    #------------------------------------------------------------
+    # Build initial equilibrium and solve continuation:
     try:
         L, M, N = eq_resolution
 
@@ -122,10 +138,10 @@ def run_equilibrium(
         continuation_status["runtime_seconds"] = time.perf_counter() - t0
         continuation_status["exception_raised"] = True
 
-        if not continuation_status["equilibrium_built"]:
-            continuation_status["failure_stage"] = "equilibrium_build_exception"
-        else:
+        if continuation_status["equilibrium_built"]:
             continuation_status["failure_stage"] = "continuation_exception"
+        else:
+            continuation_status["failure_stage"] = "equilibrium_build_exception"
 
         continuation_log = continuation_log_buffer.getvalue()
         error_trace = traceback.format_exc()
