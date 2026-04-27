@@ -58,8 +58,8 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 #==================================
 #------------------------
 # Equilibrium resolution:
-L = 14
-M = 14
+L = 12
+M = 12
 N = 10
 eq_resolution = [L, M, N]
 #------------------------
