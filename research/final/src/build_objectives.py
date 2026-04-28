@@ -1,46 +1,141 @@
-from desc.objectives import (
-    ObjectiveFunction,
-    QuasisymmetryBoozer,
-    QuasisymmetryFluxFunction,
-    QuasisymmetryTripleProduct,
-    LinearObjectiveFromUser,
-    ObjectiveFromUser,
-)
+#==============================================================================================================
+# IMPORTS
+#==============================================================================================================
+
+import desc.objectives as desc_objectives
+import inspect
 
 
 
 
+#==============================================================================================================
+# OBJECTIVE CLASS ALIASES
+#==============================================================================================================
 
+OBJECTIVE_CLASS_ALIASES = {
+    "ObjectiveFunction": [
+        "ObjectiveFunction",
+    ],
 
+    "QuasisymmetryBoozer": [
+        "QuasisymmetryBoozer",
+    ],
 
+    "QuasisymmetryFluxFunction": [
+        "QuasisymmetryFluxFunction",
+        "QuasisymmetryTwoTerm",
+    ],
 
+    "QuasisymmetryTwoTerm": [
+        "QuasisymmetryTwoTerm",
+        "QuasisymmetryFluxFunction",
+    ],
 
+    "QuasisymmetryTripleProduct": [
+        "QuasisymmetryTripleProduct",
+    ],
 
-#============== OBJECTIVE REGISTRY ===============================================================================
-OBJECTIVE_CLASS_REGISTRY = {
-    "QuasisymmetryBoozer": QuasisymmetryBoozer,
-    "QuasisymmetryFluxFunction": QuasisymmetryFluxFunction,
-    "QuasisymmetryTripleProduct": QuasisymmetryTripleProduct,
-    "LinearObjectiveFromUser": LinearObjectiveFromUser,
-    "ObjectiveFromUser": ObjectiveFromUser,
+    "LinearObjectiveFromUser": [
+        "LinearObjectiveFromUser",
+    ],
+
+    "ObjectiveFromUser": [
+        "ObjectiveFromUser",
+    ],
 }
+
 
 USER_OBJECTIVE_CLASSES = {
     "LinearObjectiveFromUser",
     "ObjectiveFromUser",
 }
+
+
+
+
+
+#==============================================================================================================
+# OBJECTIVE CLASS LOOKUP
 #==============================================================================================================
 
+def get_desc_objective_class(
+        class_name,
+    ):
+    possible_names = OBJECTIVE_CLASS_ALIASES.get(
+        class_name,
+        [class_name],
+    )
+
+    for possible_name in possible_names:
+        if hasattr(desc_objectives, possible_name):
+            return getattr(
+                desc_objectives,
+                possible_name,
+            )
+
+    available = [
+        name
+        for name in possible_names
+        if hasattr(desc_objectives, name)
+    ]
+
+    raise ImportError(
+        f"Could not find DESC objective class '{class_name}'. "
+        f"Tried aliases: {possible_names}. "
+        f"Available matches: {available}."
+    )
 
 
 
 
 
 
+#==============================================================================================================
+# SANITIZE OBJECTIVE KWARGS
+#==============================================================================================================
+
+def sanitize_objective_kwargs(
+        objective_class,
+        kwargs,
+    ):
+    """
+    Remove or rename kwargs that are not accepted by the installed DESC class.
+
+    This makes older paper configs more robust to DESC API changes.
+    """
+
+    signature = inspect.signature(objective_class.__init__)
+    accepted_kwargs = set(signature.parameters.keys())
+
+    aliases = {
+        "norm": "normalize",
+    }
+
+    sanitized = {}
+
+    for key, value in kwargs.items():
+        mapped_key = aliases.get(key, key)
+
+        if mapped_key in accepted_kwargs:
+            sanitized[mapped_key] = value
+
+        else:
+            print(
+                f"Skipping unsupported kwarg for {objective_class.__name__}: {key}",
+                flush = True,
+            )
+
+    return sanitized
 
 
 
-#========== build_objective =======================================================================================
+
+
+
+#==============================================================================================================
+# BUILD OBJECTIVE
+#==============================================================================================================
+
 def build_objective(
         eq,
         run_config,
@@ -65,25 +160,25 @@ def build_objective(
 
     objective_terms.extend(variant_objectives)
 
-    return ObjectiveFunction(objective_terms)
+    objective_function_class = get_desc_objective_class(
+        class_name = "ObjectiveFunction",
+    )
+
+    return objective_function_class(objective_terms)
+
+
+
+
+
+#==============================================================================================================
+# BUILD PAPER OBJECTIVE
 #==============================================================================================================
 
-
-
-
-
-
-
-
-
-
-#========== build_paper_objective ================================================================================
 def build_paper_objective(
         eq,
         run_config,
     ):
     objective_config = run_config["paper_objectives"]
-
     objective_family = objective_config["objective_family"]
 
     if objective_family == "qs":
@@ -92,19 +187,18 @@ def build_paper_objective(
             run_config = run_config,
         )
 
-    raise ValueError(f"Unknown paper objective_family '{objective_family}'")
+    raise ValueError(
+        f"Unknown paper objective_family '{objective_family}'"
+    )
+
+
+
+
+
+#==============================================================================================================
+# BUILD QS OBJECTIVE
 #==============================================================================================================
 
-
-
-
-
-
-
-
-
-
-#========== build_qs_objective ====================================================================================
 def build_qs_objective(
         eq,
         run_config,
@@ -115,30 +209,35 @@ def build_qs_objective(
     qs_entry = objective_config["available_qs_objectives"][qs]
 
     class_name = qs_entry["class"]
+
     kwargs = resolve_kwargs(
         kwargs = qs_entry.get("kwargs", {}),
         eq = eq,
         run_config = run_config,
     )
 
-    objective_class = OBJECTIVE_CLASS_REGISTRY[class_name]
+    objective_class = get_desc_objective_class(
+        class_name = class_name,
+    )
+
+    kwargs = sanitize_objective_kwargs(
+        objective_class = objective_class,
+        kwargs = kwargs,
+    )
 
     return objective_class(
         eq = eq,
         **kwargs,
     )
+
+
+
+
+
+#==============================================================================================================
+# BUILD VARIANT OBJECTIVES
 #==============================================================================================================
 
-
-
-
-
-
-
-
-
-
-#========== build_variant_objectives =============================================================================
 def build_variant_objectives(
         eq,
         run_config,
@@ -155,18 +254,15 @@ def build_variant_objectives(
         )
 
     return objectives
+
+
+
+
+
+#==============================================================================================================
+# BUILD SINGLE OBJECTIVE
 #==============================================================================================================
 
-
-
-
-
-
-
-
-
-
-#========== build_single_objective ===============================================================================
 def build_single_objective(
         eq,
         run_config,
@@ -180,13 +276,14 @@ def build_single_objective(
         run_config = run_config,
     )
 
-    if class_name not in OBJECTIVE_CLASS_REGISTRY:
-        raise ValueError(
-            f"Objective class '{class_name}' is not registered. "
-            f"Add it to OBJECTIVE_CLASS_REGISTRY in src/build_objectives.py."
-        )
+    objective_class = get_desc_objective_class(
+        class_name = class_name,
+    )
 
-    objective_class = OBJECTIVE_CLASS_REGISTRY[class_name]
+    kwargs = sanitize_objective_kwargs(
+        objective_class = objective_class,
+        kwargs = kwargs,
+    )
 
     if class_name in USER_OBJECTIVE_CLASSES:
         return objective_class(
@@ -198,18 +295,15 @@ def build_single_objective(
         eq = eq,
         **kwargs,
     )
+
+
+
+
+
+#==============================================================================================================
+# RESOLVE KWARGS
 #==============================================================================================================
 
-
-
-
-
-
-
-
-
-
-#========== resolve_kwargs =======================================================================================
 def resolve_kwargs(
         kwargs,
         eq,
@@ -230,18 +324,15 @@ def resolve_kwargs(
             resolved[key] = value
 
     return resolved
+
+
+
+
+
+#==============================================================================================================
+# GET IOTA BOUNDS FROM RUN CONFIG
 #==============================================================================================================
 
-
-
-
-
-
-
-
-
-
-#========== get_iota_bounds_from_run_config ======================================================================
 def get_iota_bounds_from_run_config(
         run_config,
     ):
@@ -254,7 +345,8 @@ def get_iota_bounds_from_run_config(
 
     if iota_params is None or len(iota_params) == 0:
         raise ValueError(
-            "Could not compute iota bounds because run_config['profile_config']['reference_iota']['params'] is missing."
+            "Could not compute iota bounds because "
+            "run_config['profile_config']['reference_iota']['params'] is missing."
         )
 
     iota_axis = float(iota_params[0])
@@ -290,4 +382,5 @@ def get_iota_bounds_from_run_config(
         )
 
     return (lower, upper)
+
 #==============================================================================================================

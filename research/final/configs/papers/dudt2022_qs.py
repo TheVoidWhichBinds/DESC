@@ -90,7 +90,7 @@ PAPER_CONFIG = {
             "B": {
                 "class": "QuasisymmetryBoozer",
                 "kwargs": {
-                    "norm": True,
+                    "normalize": True,
                     "helicity": ("one", "NFP"),
                     "M_booz": 24,
                     "N_booz": 12,
@@ -100,7 +100,7 @@ PAPER_CONFIG = {
             "C": {
                 "class": "QuasisymmetryFluxFunction",
                 "kwargs": {
-                    "norm": True,
+                    "normalize": True,
                     "helicity": ("one", "NFP"),
                 },
             },
@@ -108,7 +108,7 @@ PAPER_CONFIG = {
             "T": {
                 "class": "QuasisymmetryTripleProduct",
                 "kwargs": {
-                    "norm": True,
+                    "normalize": True,
                 },
             },
         },
@@ -138,10 +138,6 @@ PAPER_CONFIG = {
         },
         {
             "class": "FixedPsi",
-            "kwargs": {},
-        },
-        {
-            "class": "LCFSBoundary",
             "kwargs": {},
         },
     ],
