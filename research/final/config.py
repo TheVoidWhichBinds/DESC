@@ -7,7 +7,7 @@ import jax.numpy as jnp
 from desc.grid import LinearGrid
 from desc.profiles import PowerSeriesProfile
 
-from research.poly.FLO_vs_FNO.poly_constraints import (
+from research.questions.poly.FLO_vs_FNO.poly_constraints import (
     FLO_pressure_axis,
     FLO_pressure_shape,
     FLO_pressure_octic,
@@ -25,7 +25,7 @@ from research.poly.FLO_vs_FNO.poly_constraints import (
     FNO_iota,
 )
 
-from research.poly.exact_vs_auglag.helper import (
+from research.questions.poly.exact_vs_auglag.helper import (
     iota_between_rationals,
 )
 #===================================================================================================================================================
