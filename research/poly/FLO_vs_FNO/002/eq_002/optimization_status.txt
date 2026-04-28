@@ -1,0 +1,28 @@
+Optimization status summary
+
+FLO
+  equilibrium_returned = True
+  exception_raised = False
+  bad_approximation_failure = False
+  automatic_continuation_failure = False
+  final_iterations = 7
+  runtime_seconds = 308.42624433292076
+  plottable = True
+  plotted = True
+  failure_stage = None
+  message = Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-04)
+
+FNO
+  equilibrium_returned = True
+  exception_raised = False
+  bad_approximation_failure = False
+  automatic_continuation_failure = False
+  final_iterations = 1
+  runtime_seconds = 488.4921111250296
+  plottable = True
+  plotted = True
+  failure_stage = None
+  message = Optimization terminated successfully.
+`xtol` condition satisfied. (xtol=1.00e-06)
+

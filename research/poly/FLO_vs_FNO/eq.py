@@ -94,8 +94,8 @@ def run_equilibrium(
                     eq_raw.copy(),
                     verbose = 3,
                     ftol = 1e-4,
-                    xtol = 1e-4,
-                    gtol = 1e-4,
+                    xtol = 1e-6,
+                    gtol = 1e-6,
                 )
 
         continuation_status["runtime_seconds"] = time.perf_counter() - t0

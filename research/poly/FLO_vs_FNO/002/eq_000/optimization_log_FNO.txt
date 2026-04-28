@@ -1,0 +1,111 @@
+Starting FNO optimization
+optimizer = proximal-lsq-exact
+log_path = /Users/macdaddi/DESC/research/poly/FLO_vs_FNO/002/eq_000/optimization_log_FNO.txt
+
+Building objective: force
+Precomputing transforms
+[32mTimer: Precomputing transforms = 67.5 ms[0m
+Building objective: QS Boozer
+Precomputing transforms
+[32mTimer: Precomputing transforms = 49.2 ms[0m
+Building objective: ideal ballooning lambda
+Building objective: Mercier Stability
+Precomputing transforms
+[32mTimer: Precomputing transforms = 69.6 ms[0m
+Building objective: FNO_pressure_axis
+Building objective: FNO_pressure_edge
+Building objective: FNO_pressure_positive
+Building objective: FNO_pressure_monotonic
+Building objective: FNO_grad_pressure_edge
+Building objective: FNO_iota
+[32mTimer: Objective build = 2.17 sec[0m
+Building objective: force
+Precomputing transforms
+[32mTimer: Precomputing transforms = 65.2 ms[0m
+[32mTimer: Objective build = 73.7 ms[0m
+[32mTimer: Objective build = 1.80 ms[0m
+[32mTimer: Eq Update LinearConstraintProjection build = 53.2 ms[0m
+[32mTimer: Proximal projection build = 3.11 sec[0m
+Building objective: fixed Psi
+[32mTimer: Objective build = 16.9 ms[0m
+[32mTimer: LinearConstraintProjection build = 763 ms[0m
+Number of parameters: 129
+Number of objectives: 2938
+[32mTimer: Initializing the optimization = 3.95 sec[0m
+
+Starting optimization
+Using method: proximal-lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          7.834e-03                                    1.190e-01   
+       1             21          7.316e-03      5.179e-04      3.362e-02      1.089e-01   
+Optimization terminated successfully.
+`xtol` condition satisfied. (xtol=1.00e-06)
+         Current function value: 7.316e-03
+         Total delta_x: 3.362e-02
+         Iterations: 1
+         Function evaluations: 21
+         Jacobian evaluations: 2
+[32mTimer: Solution time = 6.78 min[0m
+[32mTimer: Avg time per step = 3.39 min[0m
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      7.834e-03  -->   7.316e-03, 
+Maximum absolute Force error:                                6.437e+01  -->   2.351e+02 (N)
+Minimum absolute Force error:                                1.008e-02  -->   1.082e-02 (N)
+Average absolute Force error:                                5.921e+00  -->   1.497e+01 (N)
+Maximum absolute Force error:                                1.038e-06  -->   3.791e-06 (normalized)
+Minimum absolute Force error:                                1.625e-10  -->   1.745e-10 (normalized)
+Average absolute Force error:                                9.547e-08  -->   2.414e-07 (normalized)
+Maximum absolute Quasi-symmetry (1,4) Boozer error:          1.699e-01  -->   1.617e-01 (T)
+Minimum absolute Quasi-symmetry (1,4) Boozer error:          5.062e-15  -->   3.194e-11 (T)
+Average absolute Quasi-symmetry (1,4) Boozer error:          1.673e-03  -->   1.622e-03 (T)
+Maximum absolute Quasi-symmetry (1,4) Boozer error:          8.969e-02  -->   8.536e-02 (normalized)
+Minimum absolute Quasi-symmetry (1,4) Boozer error:          2.672e-15  -->   1.686e-11 (normalized)
+Average absolute Quasi-symmetry (1,4) Boozer error:          8.832e-04  -->   8.561e-04 (normalized)
+Maximum absolute Ideal ballooning lambda:                    0.000e+00  -->   0.000e+00 ~
+Minimum absolute Ideal ballooning lambda:                    0.000e+00  -->   0.000e+00 ~
+Average absolute Ideal ballooning lambda:                    0.000e+00  -->   0.000e+00 ~
+Maximum absolute Ideal ballooning lambda:                    0.000e+00  -->   0.000e+00 (normalized)
+Minimum absolute Ideal ballooning lambda:                    0.000e+00  -->   0.000e+00 (normalized)
+Average absolute Ideal ballooning lambda:                    0.000e+00  -->   0.000e+00 (normalized)
+Maximum Mercier Stability:                                   5.252e+00  -->   8.603e+00 (Wb^-2)
+Minimum Mercier Stability:                                   4.745e-03  -->   5.226e-03 (Wb^-2)
+Average Mercier Stability:                                   4.556e-01  -->   7.389e-01 (Wb^-2)
+Maximum Mercier Stability:                                   5.252e+00  -->   8.603e+00 (normalized)
+Minimum Mercier Stability:                                   4.745e-03  -->   5.226e-03 (normalized)
+Average Mercier Stability:                                   4.556e-01  -->   7.389e-01 (normalized)
+FNO_pressure_axis objective value:                           1.000e+04  -->   1.000e+04 (Unknown)
+FNO_pressure_axis objective value:                           0.000e+00  -->   0.000e+00 (normalized error)
+FNO_pressure_edge objective value:                           0.000e+00  -->   0.000e+00 (Unknown)
+FNO_pressure_edge objective value:                           0.000e+00  -->   0.000e+00 (normalized error)
+Maximum FNO_pressure_positive objective value:               1.000e+04  -->   1.000e+04 (Unknown)
+Minimum FNO_pressure_positive objective value:               0.000e+00  -->   0.000e+00 (Unknown)
+Average FNO_pressure_positive objective value:               5.332e+03  -->   5.332e+03 (Unknown)
+Maximum FNO_pressure_positive objective value:               1.000e+04  -->   1.000e+04 (normalized)
+Minimum FNO_pressure_positive objective value:               0.000e+00  -->   0.000e+00 (normalized)
+Average FNO_pressure_positive objective value:               5.332e+03  -->   5.332e+03 (normalized)
+Maximum FNO_pressure_monotonic objective value:              0.000e+00  -->   0.000e+00 (Unknown)
+Minimum FNO_pressure_monotonic objective value:             -1.540e+04  -->  -1.540e+04 (Unknown)
+Average FNO_pressure_monotonic objective value:             -9.950e+03  -->  -9.950e+03 (Unknown)
+Maximum FNO_pressure_monotonic objective value:              0.000e+00  -->   0.000e+00 (normalized)
+Minimum FNO_pressure_monotonic objective value:             -1.540e+04  -->  -1.540e+04 (normalized)
+Average FNO_pressure_monotonic objective value:             -9.950e+03  -->  -9.950e+03 (normalized)
+FNO_grad_pressure_edge objective value:                      0.000e+00  -->   0.000e+00 (Unknown)
+FNO_grad_pressure_edge objective value:                      0.000e+00  -->   0.000e+00 (normalized error)
+Maximum FNO_iota objective value:                            6.500e-01  -->   6.635e-01 (Unknown)
+Minimum FNO_iota objective value:                            5.100e-01  -->   5.085e-01 (Unknown)
+Average FNO_iota objective value:                            5.568e-01  -->   5.587e-01 (Unknown)
+Maximum FNO_iota objective value:                            6.500e-01  -->   6.635e-01 (normalized)
+Minimum FNO_iota objective value:                            5.100e-01  -->   5.085e-01 (normalized)
+Average FNO_iota objective value:                            5.568e-01  -->   5.587e-01 (normalized)
+Maximum absolute Force error:                                6.437e+01  -->   2.351e+02 (N)
+Minimum absolute Force error:                                1.008e-02  -->   1.082e-02 (N)
+Average absolute Force error:                                5.921e+00  -->   1.497e+01 (N)
+Maximum absolute Force error:                                1.038e-06  -->   3.791e-06 (normalized)
+Minimum absolute Force error:                                1.625e-10  -->   1.745e-10 (normalized)
+Average absolute Force error:                                9.547e-08  -->   2.414e-07 (normalized)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+==============================================================================================================
+
+
+Finished FNO optimization

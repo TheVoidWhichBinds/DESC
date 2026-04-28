@@ -1,0 +1,105 @@
+Starting FLO optimization
+optimizer = proximal-lsq-exact
+log_path = /Users/macdaddi/DESC/research/poly/FLO_vs_FNO/002/eq_002/optimization_log_FLO.txt
+
+Building objective: force
+Precomputing transforms
+[32mTimer: Precomputing transforms = 60.4 ms[0m
+Building objective: QS Boozer
+Precomputing transforms
+[32mTimer: Precomputing transforms = 48.9 ms[0m
+Building objective: ideal ballooning lambda
+Building objective: Mercier Stability
+Precomputing transforms
+[32mTimer: Precomputing transforms = 64.7 ms[0m
+Building objective: FLO_pressure_axis
+Building objective: FLO_pressure_shape
+Building objective: FLO_iota_axis
+Building objective: FLO_iota_edge
+[32mTimer: Objective build = 333 ms[0m
+Building objective: force
+Precomputing transforms
+[32mTimer: Precomputing transforms = 61.2 ms[0m
+[32mTimer: Objective build = 68.6 ms[0m
+[32mTimer: Objective build = 1.73 ms[0m
+[32mTimer: Eq Update LinearConstraintProjection build = 50.3 ms[0m
+[32mTimer: Proximal projection build = 1.10 sec[0m
+Building objective: fixed Psi
+Building objective: FLO_pressure_octic
+Building objective: FLO_pressure_DOF
+Building objective: FLO_pressure_edge
+Building objective: FLO_grad_pressure_edge
+Building objective: FLO_iota_quadratic
+[32mTimer: Objective build = 128 ms[0m
+[32mTimer: LinearConstraintProjection build = 72.8 ms[0m
+Number of parameters: 123
+Number of objectives: 2336
+[32mTimer: Initializing the optimization = 1.32 sec[0m
+
+Starting optimization
+Using method: proximal-lsq-exact
+   Iteration     Total nfev        Cost      Cost reduction    Step norm     Optimality   
+       0              1          3.872e-03                                    7.909e-02   
+       1              3          3.373e-03      4.988e-04      1.487e-01      6.235e-02   
+       2              6          3.324e-03      4.883e-05      1.009e-02      6.093e-02   
+       3              8          3.297e-03      2.735e-05      4.721e-03      6.022e-02   
+       4              9          3.245e-03      5.114e-05      9.592e-03      5.878e-02   
+       5             12          3.238e-03      7.219e-06      1.212e-03      5.859e-02   
+       6             14          3.235e-03      3.052e-06      6.074e-04      5.850e-02   
+       7             18          3.235e-03      1.194e-07      1.901e-05      5.851e-02   
+Optimization terminated successfully.
+`ftol` condition satisfied. (ftol=1.00e-04)
+         Current function value: 3.235e-03
+         Total delta_x: 1.706e-01
+         Iterations: 7
+         Function evaluations: 18
+         Jacobian evaluations: 8
+[32mTimer: Solution time = 4.58 min[0m
+[32mTimer: Avg time per step = 34.3 sec[0m
+==============================================================================================================
+                                                                 Start  -->   End
+Total (sum of squares):                                      3.871e-03  -->   3.235e-03, 
+Maximum absolute Force error:                                1.452e+02  -->   7.597e+02 (N)
+Minimum absolute Force error:                                7.416e-03  -->   8.270e-03 (N)
+Average absolute Force error:                                9.739e+00  -->   3.605e+01 (N)
+Maximum absolute Force error:                                2.342e-06  -->   1.225e-05 (normalized)
+Minimum absolute Force error:                                1.196e-10  -->   1.333e-10 (normalized)
+Average absolute Force error:                                1.570e-07  -->   5.813e-07 (normalized)
+Maximum absolute Quasi-symmetry (1,4) Boozer error:          1.584e-01  -->   1.447e-01 (T)
+Minimum absolute Quasi-symmetry (1,4) Boozer error:          1.560e-13  -->   1.791e-09 (T)
+Average absolute Quasi-symmetry (1,4) Boozer error:          9.388e-04  -->   8.427e-04 (T)
+Maximum absolute Quasi-symmetry (1,4) Boozer error:          8.361e-02  -->   7.637e-02 (normalized)
+Minimum absolute Quasi-symmetry (1,4) Boozer error:          8.233e-14  -->   9.452e-10 (normalized)
+Average absolute Quasi-symmetry (1,4) Boozer error:          4.955e-04  -->   4.448e-04 (normalized)
+Maximum absolute Ideal ballooning lambda:                    0.000e+00  -->   0.000e+00 ~
+Minimum absolute Ideal ballooning lambda:                    0.000e+00  -->   0.000e+00 ~
+Average absolute Ideal ballooning lambda:                    0.000e+00  -->   0.000e+00 ~
+Maximum absolute Ideal ballooning lambda:                    0.000e+00  -->   0.000e+00 (normalized)
+Minimum absolute Ideal ballooning lambda:                    0.000e+00  -->   0.000e+00 (normalized)
+Average absolute Ideal ballooning lambda:                    0.000e+00  -->   0.000e+00 (normalized)
+Maximum Mercier Stability:                                   7.677e+00  -->   9.156e+00 (Wb^-2)
+Minimum Mercier Stability:                                   3.650e-03  -->   5.855e-03 (Wb^-2)
+Average Mercier Stability:                                   6.687e-01  -->   7.963e-01 (Wb^-2)
+Maximum Mercier Stability:                                   7.677e+00  -->   9.156e+00 (normalized)
+Minimum Mercier Stability:                                   3.650e-03  -->   5.855e-03 (normalized)
+Average Mercier Stability:                                   6.687e-01  -->   7.963e-01 (normalized)
+Custom linear objective value:                               0.000e+00  -->   0.000e+00 (Unknown)
+Custom linear objective value:                               0.000e+00  -->   0.000e+00 (Unknown)
+Custom linear objective value:                               0.000e+00  -->   0.000e+00 (Unknown)
+Custom linear objective value:                               0.000e+00  -->   0.000e+00 (Unknown)
+Maximum absolute Force error:                                1.452e+02  -->   7.597e+02 (N)
+Minimum absolute Force error:                                7.416e-03  -->   8.270e-03 (N)
+Average absolute Force error:                                9.739e+00  -->   3.605e+01 (N)
+Maximum absolute Force error:                                2.342e-06  -->   1.225e-05 (normalized)
+Minimum absolute Force error:                                1.196e-10  -->   1.333e-10 (normalized)
+Average absolute Force error:                                1.570e-07  -->   5.813e-07 (normalized)
+Fixed Psi error:                                             0.000e+00  -->   0.000e+00 (Wb)
+Custom linear objective value:                               0.000e+00  -->   0.000e+00 (Unknown)
+Custom linear objective value:                               0.000e+00  -->   6.551e-17 (Unknown)
+Custom linear objective value:                               0.000e+00  -->   3.103e-13 (Unknown)
+Custom linear objective value:                               0.000e+00  -->   4.950e-14 (Unknown)
+Custom linear objective value:                               0.000e+00  -->   0.000e+00 (Unknown)
+==============================================================================================================
+
+
+Finished FLO optimization

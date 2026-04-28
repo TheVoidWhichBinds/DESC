@@ -9,9 +9,9 @@ import os
 import pickle
 import re
 import traceback
-
+import sys
+from contextlib import redirect_stdout, redirect_stderr
 import pandas as pd
-
 import jax.numpy as jnp
 import numpy as np
 from desc.geometry import FourierRZToroidalSurface
@@ -48,7 +48,6 @@ class Tee:
         ):
         for stream in self.streams:
             stream.write(data)
-            stream.flush()
 
 
     def flush(
@@ -357,6 +356,8 @@ def _load_eq_from_file(
 
 
 
+
+#========================================
 #========================================
 def _run_one_formulation(
         eq_init_path,
@@ -367,12 +368,16 @@ def _run_one_formulation(
     ):
     """
     Worker entrypoint for one optimization formulation.
-    Loads eq_init from disk, runs the optimization, saves any returned
-    equilibrium, and returns only lightweight metadata to the parent.
+
+    Logging to optimization_log_FLO.txt / optimization_log_FNO.txt is disabled.
     """
     from .opt import run_optimization
 
     try:
+        print(f"Starting {formulation} optimization")
+        print(f"optimizer = {optimizer}")
+        print("")
+
         eq_0 = _load_eq_from_file(eq_init_path)
 
         eq_opt, opt_result, run_status, optimization_log = run_optimization(
@@ -382,6 +387,9 @@ def _run_one_formulation(
             formulation = formulation,
         )
 
+        print("")
+        print(f"Finished {formulation} optimization")
+
         eq_opt_path = None
 
         if eq_opt is not None:
@@ -389,7 +397,7 @@ def _run_one_formulation(
             eq_opt_path = os.path.join(out_dir, f"opt_{formulation}.h5")
             eq_opt.save(eq_opt_path)
 
-        return eq_opt_path, opt_result, run_status, optimization_log
+        return eq_opt_path, opt_result, run_status, None
 
     except Exception:
         worker_trace = traceback.format_exc()
@@ -409,7 +417,8 @@ def _run_one_formulation(
             "runtime_seconds": None,
         }
 
-        return None, None, run_status, worker_trace
+        return None, None, run_status, None
+#========================================
 #========================================
 
 
@@ -1013,11 +1022,7 @@ def _append_progress_log(
     """
     Append a timestamped progress line to progress.log.
     """
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    save_path = os.path.join(out_dir, "progress.log")
-
-    with open(save_path, "a") as f:
-        f.write(f"[{timestamp}] {message}\n")
+    return
 #========================================
 
 

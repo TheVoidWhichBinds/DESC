@@ -127,11 +127,7 @@ def comparison(
             eq_config = eq_config,
         )
 
-        _save_text_file(
-            out_dir = out_dir,
-            filename = "continuation.log",
-            text = continuation_log,
-        )
+ 
 
         _save_continuation_status_report(
             out_dir = out_dir,
@@ -321,18 +317,6 @@ def comparison(
                 message = "FNO optimization finished.",
             )
         #-----------------------------
-
-        _save_text_file(
-            out_dir = out_dir,
-            filename = "FLO_optimization.log",
-            text = log_FLO,
-        )
-
-        _save_text_file(
-            out_dir = out_dir,
-            filename = "FNO_optimization.log",
-            text = log_FNO,
-        )
 
         #--------------------------------------
         # Load any returned optimized eqs:
