@@ -1,9 +1,6 @@
 import argparse
 import sys
 from pathlib import Path
-from configs.papers.registry import get_paper_config
-from configs.variants.registry import get_variant_config
-from src.run_case import run_case
 
 
 
@@ -17,6 +14,21 @@ from src.run_case import run_case
 #============== PATH SETUP =======================================================================================
 PROJECT_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROJECT_ROOT))
+#==============================================================================================================
+
+
+
+
+
+
+
+
+
+
+#============== IMPORTS ==========================================================================================
+from configs.papers.registry import get_paper_config
+from configs.variants import get_variant_config
+from src.run_case import run_case
 #==============================================================================================================
 
 
@@ -51,7 +63,7 @@ def parse_args():
         "--qs",
         default = None,
         choices = ["B", "C", "T"],
-        help = "QS objective choice for Dudt 2022 base-paper runs.",
+        help = "QS objective choice for paper runs.",
     )
 
     parser.add_argument(
@@ -59,7 +71,7 @@ def parse_args():
         default = None,
         type = int,
         choices = [1, 2],
-        help = "Perturbation order for Dudt 2022 runs.",
+        help = "Perturbation order.",
     )
 
     return parser.parse_args()
@@ -96,6 +108,14 @@ def main():
     print(f"Finished run: {run_config['run_id']}")
     print(f"Saved outputs to: {run_config['paths']['run_dir']}")
 #==============================================================================================================
+
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":

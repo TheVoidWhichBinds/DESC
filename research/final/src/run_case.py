@@ -1,6 +1,4 @@
 import copy
-import json
-from pathlib import Path
 
 from configs.global_config import RUNS_DIR
 from src.build_eq import build_initial_equilibrium
@@ -25,28 +23,22 @@ def merge_paper_with_variant(
     ):
     run_config = copy.deepcopy(paper_config)
 
-    overrides = variant_config.get("overrides", {})
-    allowed_override_keys = set(variant_config.get("allowed_override_keys", []))
-
-    for key in overrides:
-        if key not in allowed_override_keys:
-            raise ValueError(
-                f"Variant '{variant_config['variant_id']}' attempted to override '{key}', "
-                f"but only {sorted(allowed_override_keys)} are allowed."
-            )
-
-        if key in paper_config.get("frozen_keys", []):
-            raise ValueError(
-                f"Variant '{variant_config['variant_id']}' attempted to override frozen key '{key}'."
-            )
-
-    for key, value in overrides.items():
-        run_config[key] = copy.deepcopy(value)
-
     run_config["variant"] = {
         "variant_id": variant_config["variant_id"],
         "description": variant_config.get("description", ""),
     }
+
+    run_config["variant_objectives"] = copy.deepcopy(
+        variant_config.get("objective_additions", [])
+    )
+
+    run_config["variant_constraints"] = copy.deepcopy(
+        variant_config.get("constraint_additions", [])
+    )
+
+    run_config["variant_constraint_removals"] = copy.deepcopy(
+        variant_config.get("constraint_removals", [])
+    )
 
     run_config["run_id"] = f"{run_config['paper_id']}/{variant_config['variant_id']}"
 

@@ -1,5 +1,9 @@
-# global_config.py
 from pathlib import Path
+
+
+
+
+
 
 
 
@@ -11,7 +15,7 @@ DESC_ROOT = PROJECT_ROOT.parents[1]
 
 CONFIGS_DIR = PROJECT_ROOT / "configs"
 PAPERS_DIR = CONFIGS_DIR / "papers"
-VARIANTS_DIR = CONFIGS_DIR / "variants"
+
 RUNS_DIR = PROJECT_ROOT / "runs"
 
 PUBLICATIONS_DIR = DESC_ROOT / "publications"
