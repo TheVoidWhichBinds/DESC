@@ -1,4 +1,3 @@
-#==============================================================================================================
 # FNO.py
 #==============================================================================================================
 #
@@ -15,24 +14,34 @@
 #   "target" : target value for equality-style objectives, OR
 #   "bounds" : lower and upper bounds for bounded objectives
 #   "kwargs" : keyword arguments passed into the DESC objective wrapper
+# 
+# "thing" should be filled in by helper.py with the initial equilibrium object.
 #
-# "thing" should be filled in by opt.py/helper.py with the initial equilibrium object.
-#
-# "lower_rational" and "upper_rational" should be filled in by opt.py/helper.py
+# "lower_rational" and "upper_rational" should be filled in by helper.py
 # from the paper-specific initial on-axis iota value.
 #
 #==============================================================================================================
 
 import jax.numpy as jnp
 
-from VFOs import (
-    FNO_pressure_axis,
-    FNO_pressure_edge,
-    FNO_pressure_positive,
-    FNO_pressure_monotonic,
-    FNO_grad_pressure_edge,
-    FNO_iota,
-)
+try:
+    from .VFOs import (
+        FNO_pressure_axis,
+        FNO_pressure_edge,
+        FNO_pressure_positive,
+        FNO_pressure_monotonic,
+        FNO_grad_pressure_edge,
+        FNO_iota,
+    )
+except ImportError:
+    from VFOs import (
+        FNO_pressure_axis,
+        FNO_pressure_edge,
+        FNO_pressure_positive,
+        FNO_pressure_monotonic,
+        FNO_grad_pressure_edge,
+        FNO_iota,
+    )
 
 
 

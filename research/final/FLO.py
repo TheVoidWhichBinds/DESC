@@ -1,4 +1,3 @@
-#==============================================================================================================
 # FLO.py
 #==============================================================================================================
 #
@@ -21,24 +20,37 @@
 #   "target" : target value for the constraint
 #   "kwargs" : keyword arguments passed into the DESC objective wrapper
 #
-# "thing" should be filled in by opt.py with the initial equilibrium object.
+# "thing" should be filled in by helper.py with the initial equilibrium object.
 #
-# "lower_rational" and "upper_rational" should be filled in by opt.py/helper.py
-# from the paper-specific iota settings.
+# "lower_rational" and "upper_rational" should be filled in by helper.py
+# from the paper-specific initial on-axis iota value.
 #
 #==============================================================================================================
 
-from VFOs import (
-    FLO_pressure_axis,
-    FLO_pressure_shape,
-    FLO_pressure_octic,
-    FLO_pressure_DOF,
-    FLO_pressure_edge,
-    FLO_grad_pressure_edge,
-    FLO_iota_axis,
-    FLO_iota_edge,
-    FLO_iota_quadratic,
-)
+try:
+    from .VFOs import (
+        FLO_pressure_axis,
+        FLO_pressure_shape,
+        FLO_pressure_octic,
+        FLO_pressure_DOF,
+        FLO_pressure_edge,
+        FLO_grad_pressure_edge,
+        FLO_iota_axis,
+        FLO_iota_edge,
+        FLO_iota_quadratic,
+    )
+except ImportError:
+    from VFOs import (
+        FLO_pressure_axis,
+        FLO_pressure_shape,
+        FLO_pressure_octic,
+        FLO_pressure_DOF,
+        FLO_pressure_edge,
+        FLO_grad_pressure_edge,
+        FLO_iota_axis,
+        FLO_iota_edge,
+        FLO_iota_quadratic,
+    )
 
 
 

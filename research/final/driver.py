@@ -1,4 +1,3 @@
-#==============================================================================================================
 # driver.py
 #==============================================================================================================
 #
@@ -16,17 +15,27 @@
 
 from pathlib import Path
 import argparse
-import json
 
-from .opt import run_optimization
+try:
+    from .opt import run_optimization
 
-from .helper import (
-    get_paper_config,
-    load_saved_equilibrium,
-    make_output_dir,
-    save_json,
-    save_text,
-)
+    from .helper import (
+        get_paper_config,
+        load_saved_equilibrium,
+        make_output_dir,
+        save_json,
+        save_text,
+    )
+except ImportError:
+    from opt import run_optimization
+
+    from helper import (
+        get_paper_config,
+        load_saved_equilibrium,
+        make_output_dir,
+        save_json,
+        save_text,
+    )
 
 
 
@@ -68,30 +77,12 @@ def extract_result_value(
 
 
 
-
 def compare_variant_results(
         results,
         output_dir,
     ):
     """
     Compare base, FLO, and FNO optimization outputs.
-
-    This function owns the comparison logic previously described as:
-        9. Compare final objective costs and DESC-computed metrics
-        10. Write comparison table
-
-    Parameters
-    ----------
-    results : dict
-        Dictionary with keys "base", "FLO", and "FNO".
-
-    output_dir : str or pathlib.Path
-        Case-level output directory.
-
-    Returns
-    -------
-    dict
-        Comparison summary.
     """
 
     output_dir = make_output_dir(
@@ -158,7 +149,6 @@ def compare_variant_results(
 
 
 
-
 def format_comparison_table(
         comparison,
     ):
@@ -203,7 +193,6 @@ def format_comparison_table(
 
 
 
-
 #==============================================================================================================
 # Main Driver
 #==============================================================================================================
@@ -215,22 +204,6 @@ def run_all_variants(
     ):
     """
     Run base, FLO, and FNO optimizations for one saved paper equilibrium.
-
-    Parameters
-    ----------
-    paper_id : str
-        Key into base.PAPERS.
-
-    case_id : str
-        Case label used inside the output directory.
-
-    output_root : str or pathlib.Path
-        Root output directory.
-
-    Returns
-    -------
-    tuple
-        (results, comparison)
     """
 
     paper_config = get_paper_config(
@@ -287,7 +260,6 @@ def run_all_variants(
 
 
 
-
 #==============================================================================================================
 # Command-Line Interface
 #==============================================================================================================
@@ -332,7 +304,6 @@ def parse_args():
 
 
 
-
 def main():
     """
     Command-line entry point.
@@ -345,7 +316,6 @@ def main():
         case_id = args.case_id,
         output_root = args.output_root,
     )
-
 
 
 

@@ -1,4 +1,3 @@
-#==============================================================================================================
 # opt.py
 #==============================================================================================================
 #
@@ -24,18 +23,32 @@
 from pathlib import Path
 import traceback
 
-from helper import (
-    get_paper_config,
-    prepare_variant_configs,
-    variant_label,
-    make_output_dir,
-    build_objective_function,
-    build_constraints,
-    save_optimization_outputs,
-    summarize_result,
-    save_json,
-    save_text,
-)
+try:
+    from .helper import (
+        get_paper_config,
+        prepare_variant_configs,
+        variant_label,
+        make_output_dir,
+        build_objective_function,
+        build_constraints,
+        save_optimization_outputs,
+        summarize_result,
+        save_json,
+        save_text,
+    )
+except ImportError:
+    from helper import (
+        get_paper_config,
+        prepare_variant_configs,
+        variant_label,
+        make_output_dir,
+        build_objective_function,
+        build_constraints,
+        save_optimization_outputs,
+        summarize_result,
+        save_json,
+        save_text,
+    )
 
 
 
@@ -58,25 +71,6 @@ def run_optimization(
     ):
     """
     Run one optimization.
-
-    Parameters
-    ----------
-    eq : desc.equilibrium.Equilibrium
-        Initial equilibrium object. This object should be a copy made by driver.py.
-
-    paper_id : str
-        Key into base.PAPERS.
-
-    variant : str or None
-        None, "FLO", or "FNO".
-
-    output_dir : str or pathlib.Path or None
-        Directory where outputs are saved.
-
-    Returns
-    -------
-    dict
-        Optimization output summary.
     """
 
     paper_config = get_paper_config(

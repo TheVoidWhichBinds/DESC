@@ -1,4 +1,3 @@
-#==============================================================================================================
 # helper.py
 #==============================================================================================================
 #
@@ -19,6 +18,7 @@
 
 from copy import deepcopy
 from pathlib import Path
+import inspect
 import json
 
 from desc.equilibrium import Equilibrium
@@ -30,10 +30,14 @@ from desc.objectives import (
     FixBoundaryZ,
     FixPressure,
     FixCurrent,
-    GenericObjective,
+    ObjectiveFromUser,
+    LinearObjectiveFromUser,
 )
 
-from base import PAPERS
+try:
+    from .base import PAPERS
+except ImportError:
+    from base import PAPERS
 
 
 
@@ -97,14 +101,12 @@ def get_paper_config(
 
 
 
-
 def list_papers():
     """
     Return available paper IDs.
     """
 
     return tuple(sorted(PAPERS.keys()))
-
 
 
 
@@ -132,12 +134,16 @@ def load_saved_equilibrium(
             f"Could not find saved equilibrium file: {eq_path}"
         )
 
-    eq = Equilibrium.load(
+    if hasattr(Equilibrium, "load"):
+        return Equilibrium.load(
+            load_from = str(eq_path),
+        )
+
+    from desc.io import load
+
+    return load(
         load_from = str(eq_path),
     )
-
-    return eq
-
 
 
 
@@ -156,16 +162,6 @@ def get_variant_config(
     ):
     """
     Return the variant configuration.
-
-    Parameters
-    ----------
-    variant : str or None
-        None, "FLO", or "FNO".
-
-    Returns
-    -------
-    dict
-        Variant configuration with objectives and constraints.
     """
 
     if variant is None:
@@ -175,19 +171,24 @@ def get_variant_config(
         }
 
     if variant == "FLO":
-        from FLO import FLO_CONFIG
+        try:
+            from .FLO import FLO_CONFIG
+        except ImportError:
+            from FLO import FLO_CONFIG
 
         return deepcopy(FLO_CONFIG)
 
     if variant == "FNO":
-        from FNO import FNO_CONFIG
+        try:
+            from .FNO import FNO_CONFIG
+        except ImportError:
+            from FNO import FNO_CONFIG
 
         return deepcopy(FNO_CONFIG)
 
     raise ValueError(
         f"Unknown variant '{variant}'. Valid variants are: None, 'FLO', 'FNO'."
     )
-
 
 
 
@@ -208,7 +209,6 @@ def variant_label(
         return "base"
 
     return str(variant)
-
 
 
 
@@ -242,7 +242,6 @@ def remove_fix_pressure(
 
 
 
-
 def inject_initial_equilibrium(
         configs,
         eq_initial,
@@ -264,7 +263,6 @@ def inject_initial_equilibrium(
         updated_configs.append(config)
 
     return tuple(updated_configs)
-
 
 
 
@@ -319,7 +317,6 @@ def iota_between_rationals(
 
 
 
-
 def resolve_symbolic_bounds(
         configs,
         lower_rational,
@@ -340,7 +337,6 @@ def resolve_symbolic_bounds(
         updated_configs.append(config)
 
     return tuple(updated_configs)
-
 
 
 
@@ -375,7 +371,6 @@ def get_iota_axis_from_equilibrium(
 
 
 
-
 def prepare_variant_configs(
         paper_config,
         variant = None,
@@ -393,6 +388,11 @@ def prepare_variant_configs(
     )
 
     if variant in ("FLO", "FNO"):
+        if eq_initial is None:
+            raise ValueError(
+                "eq_initial must be supplied when preparing FLO/FNO variant configs."
+            )
+
         base_constraints = remove_fix_pressure(
             constraint_configs = base_constraints,
         )
@@ -444,7 +444,6 @@ def prepare_variant_configs(
 
 
 
-
 #==============================================================================================================
 # DESC Objective / Constraint Builders
 #==============================================================================================================
@@ -471,7 +470,6 @@ def build_named_objective(
         eq = eq,
         **kwargs,
     )
-
 
 
 
@@ -512,33 +510,77 @@ def build_named_constraint(
 
 
 
+def user_function_kind(
+        fun,
+    ):
+    """
+    Determine whether a custom objective function is params-based or grid/data-based.
+    """
 
-def build_generic_objective(
+    parameter_names = tuple(inspect.signature(fun).parameters.keys())
+
+    if parameter_names == ("params",):
+        return "linear"
+
+    if parameter_names[:2] == ("grid", "data"):
+        return "nonlinear"
+
+    raise ValueError(
+        f"Could not infer objective wrapper for function '{fun.__name__}'. "
+        "Expected signature (params) or (grid, data)."
+    )
+
+
+
+
+
+
+
+
+
+def build_user_objective(
         config,
         eq,
     ):
     """
-    Build a DESC GenericObjective from a FLO/FNO config dictionary.
+    Build a DESC custom objective from a FLO/FNO config dictionary.
     """
 
     kwargs = dict(config.get("kwargs", {}))
+    fun = config["fun"]
 
-    generic_kwargs = {
-        "fun": config["fun"],
-        "eq": eq,
+    if kwargs.get("thing") is None:
+        kwargs["thing"] = eq
+
+    objective_kwargs = {
+        "fun": fun,
+        "name": config.get("name", fun.__name__),
         **kwargs,
     }
 
     if "target" in config:
-        generic_kwargs["target"] = config["target"]
+        objective_kwargs["target"] = config["target"]
 
     if "bounds" in config:
-        generic_kwargs["bounds"] = config["bounds"]
+        objective_kwargs["bounds"] = config["bounds"]
 
-    return GenericObjective(
-        **generic_kwargs,
+    kind = config.get("wrapper") or user_function_kind(
+        fun = fun,
     )
 
+    if kind == "linear":
+        return LinearObjectiveFromUser(
+            **objective_kwargs,
+        )
+
+    if kind == "nonlinear":
+        return ObjectiveFromUser(
+            **objective_kwargs,
+        )
+
+    raise ValueError(
+        f"Unknown custom objective wrapper '{kind}' for {config.get('name', fun.__name__)}."
+    )
 
 
 
@@ -553,11 +595,11 @@ def build_objective(
         eq,
     ):
     """
-    Build either a standard DESC objective or a GenericObjective.
+    Build either a standard DESC objective or a custom objective.
     """
 
     if "fun" in config:
-        return build_generic_objective(
+        return build_user_objective(
             config = config,
             eq = eq,
         )
@@ -575,17 +617,16 @@ def build_objective(
 
 
 
-
 def build_constraint(
         config,
         eq,
     ):
     """
-    Build either a standard DESC constraint or a GenericObjective constraint.
+    Build either a standard DESC constraint or a custom objective used as a constraint.
     """
 
     if "fun" in config:
-        return build_generic_objective(
+        return build_user_objective(
             config = config,
             eq = eq,
         )
@@ -594,7 +635,6 @@ def build_constraint(
         config = config,
         eq = eq,
     )
-
 
 
 
@@ -632,7 +672,6 @@ def build_objective_function(
 
 
 
-
 def build_constraints(
         constraint_configs,
         eq,
@@ -650,7 +689,6 @@ def build_constraints(
     )
 
     return constraints
-
 
 
 
@@ -678,7 +716,6 @@ def make_output_dir(
     )
 
     return output_dir
-
 
 
 
@@ -718,7 +755,6 @@ def save_json(
 
 
 
-
 def save_text(
         text,
         path,
@@ -735,7 +771,6 @@ def save_text(
 
     with open(path, "w") as file:
         file.write(text)
-
 
 
 
@@ -779,7 +814,6 @@ def summarize_result(
             summary[key] = getattr(result, key)
 
     return summary
-
 
 
 

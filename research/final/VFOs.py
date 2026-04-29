@@ -1,4 +1,3 @@
-#==============================================================================================================
 # VFOs.py
 #==============================================================================================================
 #
@@ -9,6 +8,9 @@
 # Naming convention:
 #   FLO_* functions are used only by FLO.py.
 #   FNO_* functions are used only by FNO.py.
+#
+# FLO functions take params and are wrapped by LinearObjectiveFromUser.
+# FNO functions take grid, data and are wrapped by ObjectiveFromUser.
 #
 #==============================================================================================================
 
@@ -59,14 +61,9 @@ def FLO_pressure_axis(
     ):
     """
     Range of acceptable pressure on-axis.
-
-    Bounds
-    ------
-    (1e4, 1e7)
     """
 
-    return params["p_l"][0]
-
+    return jnp.atleast_1d(params["p_l"][0])
 
 
 
@@ -80,17 +77,10 @@ def FLO_pressure_shape(
         params,
     ):
     """
-    Bounded coefficient of 8th-order term.
-
-    Gives narrow-wideness of pressure.
-
-    Bounds
-    ------
-    (-1.3, 1.8)
+    Bounded coefficient of 8th-order pressure term.
     """
 
-    return params["p_l"][4]
-
+    return jnp.atleast_1d(params["p_l"][4])
 
 
 
@@ -109,13 +99,6 @@ def FLO_pressure_octic(
     ):
     """
     Limits the pressure profile to an 8th-order polynomial max.
-
-    This prevents non-monotonicity and leaves only one pressure-shape
-    objective degree of freedom.
-
-    Target
-    ------
-    0
     """
 
     c = params["p_l"]
@@ -131,24 +114,18 @@ def FLO_pressure_octic(
 
 
 
-
 def FLO_pressure_DOF(
         params,
     ):
     """
     Constrains pressure coefficients so the pressure-shape degree of freedom
     stays on the smooth-profile relation.
-
-    Target
-    ------
-    0
     """
 
     c = params["p_l"]
     DOF_relation = c[3] + 3.45 * c[4]
 
-    return DOF_relation
-
+    return jnp.atleast_1d(DOF_relation)
 
 
 
@@ -163,14 +140,9 @@ def FLO_pressure_edge(
     ):
     """
     Pressure on edge, rho = 1.
-
-    Target
-    ------
-    0
     """
 
-    return params["p_l"].sum()
-
+    return jnp.atleast_1d(params["p_l"].sum())
 
 
 
@@ -185,17 +157,12 @@ def FLO_grad_pressure_edge(
     ):
     """
     Pressure gradient on edge, rho = 1.
-
-    Target
-    ------
-    0
     """
 
     c = params["p_l"][1:]
     order = jnp.arange(1, len(c) + 1)
 
-    return (order * c).sum()
-
+    return jnp.atleast_1d((order * c).sum())
 
 
 
@@ -210,14 +177,9 @@ def FLO_iota_axis(
     ):
     """
     Allowable range of axis iota.
-
-    Bounds
-    ------
-    (lower rational, upper rational)
     """
 
-    return params["i_l"][0]
-
+    return jnp.atleast_1d(params["i_l"][0])
 
 
 
@@ -232,14 +194,9 @@ def FLO_iota_edge(
     ):
     """
     Allowable range of edge iota.
-
-    Bounds
-    ------
-    (lower rational, upper rational)
     """
 
-    return params["i_l"].sum()
-
+    return jnp.atleast_1d(params["i_l"].sum())
 
 
 
@@ -254,17 +211,12 @@ def FLO_iota_quadratic(
     ):
     """
     Limits iota to a second-order polynomial.
-
-    Target
-    ------
-    0
     """
 
     c = params["i_l"]
     higher_orders = c[2:]
 
     return higher_orders
-
 
 
 
@@ -287,16 +239,11 @@ def FNO_pressure_axis(
     ):
     """
     Range of values of pressure on-axis.
-
-    Bounds
-    ------
-    (1e4, 1e7)
     """
 
     p = data["p"][0]
 
-    return p
-
+    return jnp.atleast_1d(p)
 
 
 
@@ -312,16 +259,11 @@ def FNO_pressure_edge(
     ):
     """
     Pressure is zero on edge.
-
-    Target
-    ------
-    0
     """
 
     p = data["p"][-1]
 
-    return p
-
+    return jnp.atleast_1d(p)
 
 
 
@@ -337,16 +279,11 @@ def FNO_pressure_positive(
     ):
     """
     Maintain positive pressure.
-
-    Bounds
-    ------
-    (0, inf)
     """
 
     p = data["p"]
 
     return p
-
 
 
 
@@ -362,16 +299,11 @@ def FNO_pressure_monotonic(
     ):
     """
     Enforce monotonic pressure.
-
-    Bounds
-    ------
-    (-inf, 0)
     """
 
     dp_dr = data["p_r"]
 
     return dp_dr
-
 
 
 
@@ -387,16 +319,11 @@ def FNO_grad_pressure_edge(
     ):
     """
     Pressure gradient on edge equals zero.
-
-    Target
-    ------
-    0
     """
 
     dp_dr = data["p_r"][-1]
 
-    return dp_dr
-
+    return jnp.atleast_1d(dp_dr)
 
 
 
@@ -412,10 +339,6 @@ def FNO_iota(
     ):
     """
     Keeps iota from crossing rational surfaces.
-
-    Bounds
-    ------
-    (lower rational, upper rational)
     """
 
     iota = data["iota"]
