@@ -1,7 +1,13 @@
+# conlin2024 precise_QA_AL_well2.py
 """Example script for recreating the precise QA configuration of Landreman and Paul."""
 
-from desc import set_device
 
+#========================================================================================================================================
+# IMPORTS
+#========================================================================================================================================
+from pathlib import Path
+
+from desc import set_device
 set_device("gpu")
 
 import pickle
@@ -31,9 +37,47 @@ from desc.objectives import (
 )
 from desc.optimize import Optimizer
 
-eq = desc.io.load("precise_QA_AL.h5")[-2]
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# PATHS
+#========================================================================================================================================
+INPUT_DIR = Path(__file__).resolve().parent
+OUTPUT_DIR = INPUT_DIR.parent / "output"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# EQ
+#========================================================================================================================================
+eq = desc.io.load(str(OUTPUT_DIR / "precise_QA_AL.h5"))[-2]
 eqfam = EquilibriaFamily(eq)
 
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# OPT
+#========================================================================================================================================
 grid = LinearGrid(
     M=eq.M_grid,
     N=eq.N_grid,
@@ -45,6 +89,7 @@ grid = LinearGrid(
 # optimize in steps
 for n in range(1, eq.M + 1, 2):
     jax.clear_caches()
+
     print("\n==================================")
     print("Optimizing boundary modes M,N <= {}".format(n))
     print("====================================")
@@ -57,6 +102,7 @@ for n in range(1, eq.M + 1, 2):
         ),
         verbose=0,
     )
+
     R_modes = np.vstack(
         (
             [0, 0, 0],
@@ -65,11 +111,13 @@ for n in range(1, eq.M + 1, 2):
             ],
         )
     )
+
     Z_modes = eq.surface.Z_basis.modes[
         np.max(np.abs(eq.surface.Z_basis.modes), 1) > n, :
     ]
+
     constraints = (
-        ForceBalance(eq=eqfam[-1], weight=100),  # J x B - grad(p) = 0
+        ForceBalance(eq=eqfam[-1], weight=100),
         FixBoundaryR(eq=eqfam[-1], modes=R_modes),
         FixBoundaryZ(eq=eqfam[-1], modes=Z_modes),
         FixPressure(eq=eqfam[-1]),
@@ -81,7 +129,9 @@ for n in range(1, eq.M + 1, 2):
         MagneticWell(eq=eqfam[-1], bounds=(lambda x: x * 1e-4, np.inf)),
         MeanCurvature(eq=eqfam[-1], bounds=(-np.inf, 0.5), normalize=False),
     )
+
     optimizer = Optimizer("lsq-auglag")
+
     eq_new, out = eqfam[-1].optimize(
         objective=objective,
         constraints=constraints,
@@ -104,15 +154,28 @@ for n in range(1, eq.M + 1, 2):
             "initial_trust_radius": "scipy",
         },
     )
+
     eqfam.append(eq_new)
     eqfam[-1].solve(copy=False, verbose=3)
-    eqfam.save("precise_QA_AL_well2.h5")
 
-with open("precise_QA_AL_well2.pkl", "wb+") as f:
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# SAVES
+#========================================================================================================================================
+eqfam.save(str(OUTPUT_DIR / "precise_QA_AL_well2.h5"))
+
+with open(OUTPUT_DIR / "precise_QA_AL_well2.pkl", "wb+") as f:
     pickle.dump(out, f)
 
-eq_new = eqfam[-1].copy()
-eq_new.change_resolution(12, 12, 12, 24, 24, 24)
-eq_new = solve_continuation_automatic(eq_new)[-1]
-eqfam.append(eq_new)
-eqfam.save("precise_QA_AL_well2.h5")
+
+eq = eqfam[-1].copy()
+eq.change_resolution(12, 12, 12, 24, 24, 24)
+eqf = solve_continuation_automatic(eq)
+eqf.save(str(OUTPUT_DIR / "precise_QA_AL_well2_CHECK.h5"))

@@ -1,14 +1,16 @@
+# conlin2024 precise_QA_AL_well.py
 """Example script for recreating the precise QA configuration of Landreman and Paul."""
 
+
+#========================================================================================================================================
+# IMPORTS
+#========================================================================================================================================
 from desc import set_device
-
 set_device("gpu")
-
 import pickle
-
 import jax
 import numpy as np
-
+from pathlib import Path
 from desc.continuation import solve_continuation_automatic
 from desc.equilibrium import EquilibriaFamily, Equilibrium
 from desc.geometry import FourierRZToroidalSurface
@@ -30,6 +32,34 @@ from desc.objectives import (
 )
 from desc.optimize import Optimizer
 
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# PATHS
+#========================================================================================================================================
+INPUT_DIR = Path(__file__).resolve().parent
+OUTPUT_DIR = INPUT_DIR.parent / "output"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# EQ 
+#========================================================================================================================================
 surf = FourierRZToroidalSurface(
     R_lmn=[1, 0.166, 0.0],
     Z_lmn=[-0.166, -0.0],
@@ -43,6 +73,18 @@ eq = solve_continuation_automatic(eq, objective="force", bdry_step=0.5, verbose=
 # it will be helpful to store intermediate results
 eqfam = EquilibriaFamily(eq)
 
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# OPT 
+#========================================================================================================================================
 grid = LinearGrid(
     M=eq.M_grid,
     N=eq.N_grid,
@@ -119,12 +161,24 @@ for k in range(5, 6):
         eqfam[-1].solve(copy=False, verbose=3)
 
 
-eqfam.save("precise_QA_AL_well.h5")
-with open("precise_QA_AL_well.pkl", "wb+") as f:
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# SAVES
+#========================================================================================================================================
+eqfam.save(str(OUTPUT_DIR / "precise_QA_AL_well.h5"))
+
+with open(OUTPUT_DIR / "precise_QA_AL_well.pkl", "wb+") as f:
     pickle.dump(out, f)
 
 
 eq = eqfam[-1].copy()
 eq.change_resolution(12, 12, 12, 24, 24, 24)
 eqf = solve_continuation_automatic(eq)
-eqf.save("precise_QA_AL_well_highres.h5")
+eqf.save(str(OUTPUT_DIR / "precise_QA_AL_well_CHECK.h5"))

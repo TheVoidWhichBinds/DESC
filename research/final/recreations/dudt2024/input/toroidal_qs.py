@@ -1,11 +1,17 @@
+# toroidal_qs.py
 """Quasi-symmetry with toroidal contours."""
 
-from desc import set_device
 
+#========================================================================================================================================
+# IMPORTS
+#========================================================================================================================================
+from pathlib import Path
+import sys
+
+from desc import set_device
 set_device("gpu")
 
 import numpy as np
-from qsc import Qsc
 
 from desc.equilibrium import EquilibriaFamily, Equilibrium
 from desc.grid import LinearGrid, QuadratureGrid
@@ -18,6 +24,42 @@ from desc.objectives import (
 )
 from desc.objectives.utils import get_fixed_boundary_constraints, get_NAE_constraints
 
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# PATHS
+#========================================================================================================================================
+INPUT_DIR = Path(__file__).resolve().parent
+OUTPUT_DIR = INPUT_DIR.parent / "output"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+REPO_DIR = INPUT_DIR.parents[4]
+DUDT2024_PUBLICATION_DIR = REPO_DIR / "publications" / "dudt2024"
+
+if str(DUDT2024_PUBLICATION_DIR) not in sys.path:
+    sys.path.insert(0, str(DUDT2024_PUBLICATION_DIR))
+
+from qsc import Qsc
+
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# SETUP
+#========================================================================================================================================
 fname = "toroidal_qs"
 sym = True
 NFP = 1
@@ -37,18 +79,48 @@ surfaces = [0.2, 0.4, 0.6, 0.8, 1.0]
 assert len(LM) == len(eq_weights)
 
 
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# HELPERS
+#========================================================================================================================================
 def eq_error(eq):
     grid = QuadratureGrid(L=32, M=32, N=32, NFP=NFP)
     data = eq.compute(["<|F|>_vol", "<|grad(p)|>_vol"], grid=grid)
+
     return data["<|F|>_vol"] / data["<|grad(p)|>_vol"]
 
 
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# EQ
+#========================================================================================================================================
 fam = EquilibriaFamily()
 
-# initial NAE solution
-qsc = Qsc(  # custom
-    nfp=NFP, rc=[1, 0.3], zs=[0, -0.3], B0=1.0, etabar=1.0, I2=1.0, p2=-4e6, order="r1"
+qsc = Qsc(
+    nfp=NFP,
+    rc=[1, 0.3],
+    zs=[0, -0.3],
+    B0=1.0,
+    etabar=1.0,
+    I2=1.0,
+    p2=-4e6,
+    order="r1",
 )
+
 eq = Equilibrium.from_near_axis(
     qsc,
     r=1 / aspect_ratio,
@@ -61,11 +133,11 @@ eq = Equilibrium.from_near_axis(
     M_omni=M_omni,
     N_omni=N_omni,
 )
+
 fam.append(eq)
-fam.save(fname + ".h5")
+fam.save(str(OUTPUT_DIR / (fname + ".h5")))
 print("equlibrium error: {:.2e}".format(eq_error(eq)))
 
-# re-solve with NAE constraints
 constraints = get_NAE_constraints(eq, qsc, order=1)
 eq, result = eq.solve(
     objective="force",
@@ -77,13 +149,26 @@ eq, result = eq.solve(
     verbose=3,
     copy=True,
 )
+
 fam.append(eq)
-fam.save(fname + ".h5")
+fam.save(str(OUTPUT_DIR / (fname + ".h5")))
 print("equlibrium error: {:.2e}".format(eq_error(eq)))
 
-# optimize with increasing resolution
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# OPT
+#========================================================================================================================================
 for i in range(len(LM)):
     eq.change_resolution(L=LM[i], M=LM[i], L_grid=2 * LM[i], M_grid=2 * LM[i], sym=sym)
+
     M_booz = min(int(np.ceil(1.5 * LM[i])), 16)
     N_booz = min(int(np.ceil(1.5 * N)), 16)
     M_grid = int(np.ceil(1.5 * M_booz))
@@ -91,6 +176,7 @@ for i in range(len(LM)):
 
     grids = {}
     objs = {}
+
     for rho in surfaces:
         grids[rho] = LinearGrid(M=M_grid, N=N_grid, NFP=eq.NFP, sym=False, rho=rho)
         objs[rho] = Omnigenity(
@@ -104,10 +190,12 @@ for i in range(len(LM)):
     objective = ObjectiveFunction(
         (ForceBalance(weight=eq_weights[i]),) + tuple(objs.values())
     )
+
     constraints = get_NAE_constraints(eq, qsc, order=1) + (
         FixOmni(),
         StraightBmaxContour(),
     )
+
     eq, result = eq.solve(
         objective=objective,
         constraints=constraints,
@@ -119,11 +207,23 @@ for i in range(len(LM)):
         verbose=3,
         copy=True,
     )
+
     fam.append(eq)
-    fam.save(fname + ".h5")
+    fam.save(str(OUTPUT_DIR / (fname + ".h5")))
     print("equlibrium error: {:.2e}".format(eq_error(eq)))
 
-# re-solve with fixed boundary constraints
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# SAVES
+#========================================================================================================================================
 constraints = get_fixed_boundary_constraints(iota=False)
 eq, result = eq.solve(
     objective="force",
@@ -135,6 +235,7 @@ eq, result = eq.solve(
     verbose=3,
     copy=True,
 )
+
 fam.append(eq)
-fam.save(fname + ".h5")
+fam.save(str(OUTPUT_DIR / (fname + "_CHECK.h5")))
 print("equlibrium error: {:.2e}".format(eq_error(eq)))
