@@ -1,66 +1,325 @@
-# research/final/driver.py
+#==============================================================================================================
+# driver.py
+#==============================================================================================================
+#
+# Top-level controller for DESC/research/final.
+#
+# For one paper_id, this file:
+#   1. Loads the saved initial equilibrium from base.py
+#   2. Runs the base optimization
+#   3. Runs the FLO optimization
+#   4. Runs the FNO optimization
+#   5. Compares the final run summaries in a dedicated comparison function
+#   6. Saves comparison outputs
+#
+#==============================================================================================================
 
-
-
-
-
-
-
-
-
-
-
-#============== IMPORTS ========================================================================================
+from pathlib import Path
 import argparse
 import json
-from pathlib import Path
 
-from papers import compose_run_config, list_papers
-from src.run_case import run_case
+from .opt import run_optimization
 
-
-
-
-
-
-
-
+from .helper import (
+    get_paper_config,
+    load_saved_equilibrium,
+    make_output_dir,
+    save_json,
+    save_text,
+)
 
 
 
-#============== CLI ============================================================================================
+
+
+
+
+
+
+
+#==============================================================================================================
+# Comparison Helpers
+#==============================================================================================================
+
+def extract_result_value(
+        run_summary,
+        key,
+        default = None,
+    ):
+    """
+    Safely extract a value from a run summary result dictionary.
+    """
+
+    if not run_summary:
+        return default
+
+    result = run_summary.get("result", {})
+
+    if not isinstance(result, dict):
+        return default
+
+    return result.get(key, default)
+
+
+
+
+
+
+
+
+
+
+def compare_variant_results(
+        results,
+        output_dir,
+    ):
+    """
+    Compare base, FLO, and FNO optimization outputs.
+
+    This function owns the comparison logic previously described as:
+        9. Compare final objective costs and DESC-computed metrics
+        10. Write comparison table
+
+    Parameters
+    ----------
+    results : dict
+        Dictionary with keys "base", "FLO", and "FNO".
+
+    output_dir : str or pathlib.Path
+        Case-level output directory.
+
+    Returns
+    -------
+    dict
+        Comparison summary.
+    """
+
+    output_dir = make_output_dir(
+        output_dir = output_dir,
+    )
+
+    comparison = {}
+
+    for label in (
+            "base",
+            "FLO",
+            "FNO",
+        ):
+        run_summary = results.get(label, {})
+
+        comparison[label] = {
+            "success": bool(run_summary.get("success", False)),
+            "cost": extract_result_value(
+                run_summary = run_summary,
+                key = "cost",
+            ),
+            "optimality": extract_result_value(
+                run_summary = run_summary,
+                key = "optimality",
+            ),
+            "nit": extract_result_value(
+                run_summary = run_summary,
+                key = "nit",
+            ),
+            "nfev": extract_result_value(
+                run_summary = run_summary,
+                key = "nfev",
+            ),
+            "message": extract_result_value(
+                run_summary = run_summary,
+                key = "message",
+                default = run_summary.get("error", ""),
+            ),
+            "eq_path": run_summary.get("outputs", {}).get("eq_path"),
+            "summary_path": run_summary.get("outputs", {}).get("summary_path"),
+        }
+
+    save_json(
+        data = comparison,
+        path = output_dir / "comparison.json",
+    )
+
+    comparison_text = format_comparison_table(
+        comparison = comparison,
+    )
+
+    save_text(
+        text = comparison_text,
+        path = output_dir / "comparison.txt",
+    )
+
+    return comparison
+
+
+
+
+
+
+
+
+
+
+def format_comparison_table(
+        comparison,
+    ):
+    """
+    Format a compact comparison table for base, FLO, and FNO.
+    """
+
+    lines = []
+
+    lines.append("Optimization comparison")
+    lines.append("=" * 100)
+    lines.append(
+        f"{'variant':<12} {'success':<10} {'cost':<20} {'optimality':<20} {'nit':<10} {'nfev':<10}"
+    )
+    lines.append("-" * 100)
+
+    for label in (
+            "base",
+            "FLO",
+            "FNO",
+        ):
+        row = comparison.get(label, {})
+
+        lines.append(
+            f"{label:<12} "
+            f"{str(row.get('success')):<10} "
+            f"{str(row.get('cost')):<20} "
+            f"{str(row.get('optimality')):<20} "
+            f"{str(row.get('nit')):<10} "
+            f"{str(row.get('nfev')):<10}"
+        )
+
+    lines.append("=" * 100)
+
+    return "\n".join(lines)
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
+# Main Driver
+#==============================================================================================================
+
+def run_all_variants(
+        paper_id,
+        case_id = "case_000",
+        output_root = "research/final/outputs",
+    ):
+    """
+    Run base, FLO, and FNO optimizations for one saved paper equilibrium.
+
+    Parameters
+    ----------
+    paper_id : str
+        Key into base.PAPERS.
+
+    case_id : str
+        Case label used inside the output directory.
+
+    output_root : str or pathlib.Path
+        Root output directory.
+
+    Returns
+    -------
+    tuple
+        (results, comparison)
+    """
+
+    paper_config = get_paper_config(
+        paper_id = paper_id,
+    )
+
+    case_output_dir = make_output_dir(
+        output_dir = Path(output_root) / paper_id / case_id,
+    )
+
+    eq_initial = load_saved_equilibrium(
+        eq_path = paper_config["eq_path"],
+    )
+
+    results = {}
+
+    for variant in (
+            None,
+            "FLO",
+            "FNO",
+        ):
+        label = "base" if variant is None else variant
+
+        variant_output_dir = make_output_dir(
+            output_dir = case_output_dir / label,
+        )
+
+        eq_start = eq_initial.copy()
+
+        results[label] = run_optimization(
+            eq = eq_start,
+            paper_id = paper_id,
+            variant = variant,
+            output_dir = variant_output_dir,
+        )
+
+    save_json(
+        data = results,
+        path = case_output_dir / "all_run_summaries.json",
+    )
+
+    comparison = compare_variant_results(
+        results = results,
+        output_dir = case_output_dir,
+    )
+
+    return results, comparison
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
+# Command-Line Interface
+#==============================================================================================================
+
 def parse_args():
+    """
+    Parse command-line arguments.
+    """
+
     parser = argparse.ArgumentParser(
-        description = "Run a paper-configured DESC optimization from research/final/papers.py."
+        description = "Run base, FLO, and FNO optimizations for one DESC paper case.",
     )
 
     parser.add_argument(
         "--paper_id",
         type = str,
         required = True,
-        choices = list_papers(),
-        help = "Paper config key from papers.py.",
+        help = "Paper ID from base.PAPERS.",
     )
 
     parser.add_argument(
         "--case_id",
         type = str,
-        default = "base",
-        help = "Case key inside the selected paper config.",
+        default = "case_000",
+        help = "Case ID for output folder naming.",
     )
 
     parser.add_argument(
-        "--variant_id",
+        "--output_root",
         type = str,
-        default = "base",
-        choices = ["base", "flo", "fno"],
-        help = "Objective construction variant.",
-    )
-
-    parser.add_argument(
-        "--dry_run",
-        action = "store_true",
-        help = "Write resolved config but do not run DESC.",
+        default = "research/final/outputs",
+        help = "Root directory for outputs.",
     )
 
     return parser.parse_args()
@@ -74,35 +333,23 @@ def parse_args():
 
 
 
-
-#============== MAIN ===========================================================================================
 def main():
+    """
+    Command-line entry point.
+    """
+
     args = parse_args()
 
-    run_config = compose_run_config(
+    run_all_variants(
         paper_id = args.paper_id,
         case_id = args.case_id,
-        variant_id = args.variant_id,
+        output_root = args.output_root,
     )
 
-    run_dir = Path(run_config["run_dir"])
-    run_dir.mkdir(parents = True, exist_ok = True)
 
-    resolved_config_path = run_dir / "resolved_config.json"
-    with open(resolved_config_path, "w") as file:
-        json.dump(run_config, file, indent = 4)
 
-    if args.dry_run:
-        print(f"Wrote resolved config to {resolved_config_path}")
-        return
 
-    status = run_case(run_config = run_config)
 
-    status_path = run_dir / "status.json"
-    with open(status_path, "w") as file:
-        json.dump(status, file, indent = 4)
-
-    print(f"Finished run. Status saved to {status_path}")
 
 
 
