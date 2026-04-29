@@ -2,7 +2,7 @@
 # IMPORTS
 #==============================================================================================================
 
-import importlib.util
+import ast
 from pathlib import Path
 
 import desc.objectives as desc_objectives
@@ -24,6 +24,22 @@ CONSTRAINT_CLASS_ALIASES = {
         "FixBoundaryZ",
     ],
 
+    "FixAxisR": [
+        "FixAxisR",
+    ],
+
+    "FixAxisZ": [
+        "FixAxisZ",
+    ],
+
+    "FixModeR": [
+        "FixModeR",
+    ],
+
+    "FixModeZ": [
+        "FixModeZ",
+    ],
+
     "FixPressure": [
         "FixPressure",
     ],
@@ -36,12 +52,32 @@ CONSTRAINT_CLASS_ALIASES = {
         "FixPsi",
     ],
 
+    "FixCurrent": [
+        "FixCurrent",
+    ],
+
     "FixedBoundaryR": [
         "FixBoundaryR",
     ],
 
     "FixedBoundaryZ": [
         "FixBoundaryZ",
+    ],
+
+    "FixedAxisR": [
+        "FixAxisR",
+    ],
+
+    "FixedAxisZ": [
+        "FixAxisZ",
+    ],
+
+    "FixedModeR": [
+        "FixModeR",
+    ],
+
+    "FixedModeZ": [
+        "FixModeZ",
     ],
 
     "FixedPressure": [
@@ -54,10 +90,6 @@ CONSTRAINT_CLASS_ALIASES = {
 
     "FixedPsi": [
         "FixPsi",
-    ],
-
-    "FixCurrent": [
-        "FixCurrent",
     ],
 
     "FixedCurrent": [
@@ -82,6 +114,27 @@ USER_CONSTRAINT_CLASSES = {
 
 DEPRECATED_OR_UNAVAILABLE_CONSTRAINTS = {
     "LCFSBoundary",
+    "QuasisymmetryFluxFunction",
+}
+
+
+DESC_PUBLICATION_COMPATIBILITY_ALIASES = {
+    "FixedBoundaryR": "FixBoundaryR",
+    "FixedBoundaryZ": "FixBoundaryZ",
+    "FixedAxisR": "FixAxisR",
+    "FixedAxisZ": "FixAxisZ",
+    "FixedModeR": "FixModeR",
+    "FixedModeZ": "FixModeZ",
+    "FixedPressure": "FixPressure",
+    "FixedIota": "FixIota",
+    "FixedPsi": "FixPsi",
+    "FixedCurrent": "FixCurrent",
+}
+
+
+UNAVAILABLE_PUBLICATION_IMPORTS = {
+    "LCFSBoundary",
+    "QuasisymmetryFluxFunction",
 }
 
 
@@ -111,6 +164,78 @@ def get_desc_constraint_class(
         f"Could not find DESC constraint/objective class '{class_name}'. "
         f"Tried aliases: {possible_names}."
     )
+
+
+
+
+
+#==============================================================================================================
+# DESC PUBLICATION DRIVER COMPATIBILITY
+#==============================================================================================================
+
+class UnavailablePublicationConstraint:
+    """
+    Placeholder for old publication-driver classes that no longer exist in the
+    current DESC API.
+
+    This lets old publication files be parsed for helper functions without
+    silently using an incorrect replacement objective or constraint.
+    """
+
+    def __init__(
+            self,
+            *args,
+            **kwargs,
+        ):
+        class_name = self.__class__.__name__
+
+        raise ImportError(
+            f"This old publication driver tried to instantiate {class_name}, "
+            f"but {class_name} is not available in the current DESC API. "
+            "Define the modern equivalent directly in research/final configs instead."
+        )
+
+
+
+
+
+def install_desc_publication_compatibility_aliases():
+    """
+    Adds compatibility names to desc.objectives before parsing old publication
+    drivers.
+    """
+
+    for old_name, new_name in DESC_PUBLICATION_COMPATIBILITY_ALIASES.items():
+        if hasattr(desc_objectives, old_name):
+            continue
+
+        if not hasattr(desc_objectives, new_name):
+            continue
+
+        setattr(
+            desc_objectives,
+            old_name,
+            getattr(
+                desc_objectives,
+                new_name,
+            ),
+        )
+
+    for unavailable_name in UNAVAILABLE_PUBLICATION_IMPORTS:
+        if hasattr(desc_objectives, unavailable_name):
+            continue
+
+        unavailable_class = type(
+            unavailable_name,
+            (UnavailablePublicationConstraint,),
+            {},
+        )
+
+        setattr(
+            desc_objectives,
+            unavailable_name,
+            unavailable_class,
+        )
 
 
 
@@ -263,6 +388,103 @@ def resolve_constraint_kwargs(
 # PAPER OPTIMIZATION SUBSPACE
 #==============================================================================================================
 
+def load_publication_function_without_running_script(
+        source_file,
+        function_name,
+    ):
+    """
+    Loads one function from an old publication driver without executing the
+    driver's top-level script body.
+
+    This avoids running old lines like:
+        Equilibrium.load("data/initial.h5")
+        eq.surface.R_basis._create_idx()
+
+    Only imports, functions, classes, and safe constant assignments are kept.
+    """
+
+    source_text = source_file.read_text()
+    source_tree = ast.parse(
+        source_text,
+        filename = str(source_file),
+    )
+
+    kept_nodes = []
+
+    for node in source_tree.body:
+        if isinstance(
+            node,
+            (
+                ast.Import,
+                ast.ImportFrom,
+                ast.FunctionDef,
+                ast.ClassDef,
+            ),
+        ):
+            kept_nodes.append(node)
+            continue
+
+        if isinstance(node, ast.Assign) and is_safe_constant_assignment(node):
+            kept_nodes.append(node)
+            continue
+
+    filtered_tree = ast.Module(
+        body = kept_nodes,
+        type_ignores = [],
+    )
+
+    ast.fix_missing_locations(filtered_tree)
+
+    namespace = {
+        "__file__": str(source_file),
+        "__name__": f"{source_file.stem}_function_loader",
+    }
+
+    exec(
+        compile(
+            filtered_tree,
+            filename = str(source_file),
+            mode = "exec",
+        ),
+        namespace,
+    )
+
+    if function_name not in namespace:
+        raise AttributeError(
+            f"Could not find function '{function_name}' in {source_file}"
+        )
+
+    return namespace[function_name]
+
+
+
+
+
+def is_safe_constant_assignment(
+        node,
+    ):
+    """
+    Keeps harmless top-level constants from old publication drivers while
+    excluding script execution assignments such as:
+        eq = Equilibrium.load(...)
+        result = eq.optimize(...)
+    """
+
+    return isinstance(
+        node.value,
+        (
+            ast.Constant,
+            ast.Tuple,
+            ast.List,
+            ast.Dict,
+            ast.Set,
+        ),
+    )
+
+
+
+
+
 def get_paper_opt_subspace(
         eq,
         run_config,
@@ -276,22 +498,11 @@ def get_paper_opt_subspace(
             f"Could not find paper driver file: {source_file}"
         )
 
-    spec = importlib.util.spec_from_file_location(
-        "paper_driver",
-        source_file,
-    )
+    install_desc_publication_compatibility_aliases()
 
-    paper_driver = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(paper_driver)
-
-    if not hasattr(paper_driver, function_name):
-        raise AttributeError(
-            f"Could not find function '{function_name}' in {source_file}"
-        )
-
-    get_subspace = getattr(
-        paper_driver,
-        function_name,
+    get_subspace = load_publication_function_without_running_script(
+        source_file = source_file,
+        function_name = function_name,
     )
 
     return get_subspace(eq)

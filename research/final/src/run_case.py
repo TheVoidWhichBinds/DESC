@@ -1,11 +1,4 @@
-import copy
-
-from configs.global_config import RUNS_DIR
-from src.build_eq import build_initial_equilibrium
-from src.build_objectives import build_objective
-from src.build_constraints import build_constraints
-from src.build_optimizer import build_optimizer
-from src.save import save_run_config, save_equilibrium, save_pickle
+# research/final/src/run_case.py
 
 
 
@@ -16,34 +9,14 @@ from src.save import save_run_config, save_equilibrium, save_pickle
 
 
 
-#============== CONFIG MERGING ===================================================================================
-def merge_paper_with_variant(
-        paper_config,
-        variant_config,
-    ):
-    run_config = copy.deepcopy(paper_config)
 
-    run_config["variant"] = {
-        "variant_id": variant_config["variant_id"],
-        "description": variant_config.get("description", ""),
-    }
+#============== IMPORTS ========================================================================================
+import json
+import traceback
+from pathlib import Path
 
-    run_config["variant_objectives"] = copy.deepcopy(
-        variant_config.get("objective_additions", [])
-    )
-
-    run_config["variant_constraints"] = copy.deepcopy(
-        variant_config.get("constraint_additions", [])
-    )
-
-    run_config["variant_constraint_removals"] = copy.deepcopy(
-        variant_config.get("constraint_removals", [])
-    )
-
-    run_config["run_id"] = f"{run_config['paper_id']}/{variant_config['variant_id']}"
-
-    return run_config
-#==============================================================================================================
+from src.builders import build_constraint_function, build_objective_function
+from src.equilibria import load_equilibrium
 
 
 
@@ -54,160 +27,88 @@ def merge_paper_with_variant(
 
 
 
-#========== prepare_run_directory ================================================================================
-def prepare_run_directory(
-        run_config,
-    ):
-    paper_id = run_config["paper_id"]
-    variant_id = run_config["variant"]["variant_id"]
 
-    run_dir = RUNS_DIR / paper_id / variant_id
-    plot_dir = run_dir / "plots"
-
+#============== RUNNER =========================================================================================
+def run_case(run_config):
+    run_dir = Path(run_config["run_dir"])
     run_dir.mkdir(parents = True, exist_ok = True)
-    plot_dir.mkdir(parents = True, exist_ok = True)
 
-    run_config["paths"] = {
-        "run_dir": str(run_dir),
-        "plot_dir": str(plot_dir),
-        "run_config": str(run_dir / "run_config.json"),
-        "eq_initial": str(run_dir / "eq_initial.h5"),
-        "eq_final": str(run_dir / "eq_final.h5"),
-        "optimization_result": str(run_dir / "optimization_result.pkl"),
-        "metrics": str(run_dir / "metrics.json"),
-        "objective_history": str(run_dir / "objective_history.csv"),
-        "optimization_log": str(run_dir / "optimization_log.txt"),
+    status = {
+        "paper_id": run_config["paper_id"],
+        "case_id": run_config["case_id"],
+        "variant_id": run_config["variant_id"],
+        "success": False,
+        "equilibrium_loaded": False,
+        "continuation_returned": False,
+        "optimization_returned": False,
+        "skipped_objectives": [],
+        "skipped_constraints": [],
+        "message": None,
     }
 
-    return run_config
-#==============================================================================================================
+    try:
+        eq = load_equilibrium(run_config["equilibrium"])
+        status["equilibrium_loaded"] = True
 
+        solve_config = run_config.get("solve", {})
+        if solve_config.get("run_continuation", False):
+            continuation_kwargs = solve_config.get("continuation_kwargs", {})
+            eq = eq.solve_continuation_automatic(**continuation_kwargs)
+            status["continuation_returned"] = True
 
+        optimization_config = run_config["optimization"]
 
-
-
-
-
-
-
-
-#========== run_case =============================================================================================
-def run_case(
-        paper_config,
-        variant_config,
-        qs = None,
-        order = None,
-    ):
-    run_config = merge_paper_with_variant(
-        paper_config = paper_config,
-        variant_config = variant_config,
-    )
-
-    if qs is not None:
-        if qs not in run_config["paper_objectives"].get("allowed_qs", []):
-            raise ValueError(f"Invalid qs = {qs}")
-
-        run_config["paper_objectives"]["qs"] = qs
-
-    if order is not None:
-        if order not in run_config["paper_objectives"].get("allowed_order", []):
-            raise ValueError(f"Invalid order = {order}")
-
-        run_config["paper_objectives"]["order"] = order
-        run_config["perturb_options"]["order"] = order
-
-    run_config = prepare_run_directory(
-        run_config = run_config,
-    )
-
-    save_run_config(
-        run_config = run_config,
-        path = run_config["paths"]["run_config"],
-    )
-
-    eq_initial = build_initial_equilibrium(
-        run_config = run_config,
-    )
-
-    objective = build_objective(
-        eq = eq_initial,
-        run_config = run_config,
-    )
-
-    constraints = build_constraints(
-        eq = eq_initial,
-        run_config = run_config,
-    )
-
-    optimizer = build_optimizer(
-        run_config = run_config,
-    )
-
-    save_equilibrium(
-        eq = eq_initial,
-        path = run_config["paths"]["eq_initial"],
-    )
-
-    eq_final, result = run_optimization(
-        eq = eq_initial,
-        objective = objective,
-        constraints = constraints,
-        optimizer = optimizer,
-        run_config = run_config,
-    )
-
-    save_equilibrium(
-        eq = eq_final,
-        path = run_config["paths"]["eq_final"],
-    )
-
-    save_pickle(
-        obj = result,
-        path = run_config["paths"]["optimization_result"],
-    )
-
-    return eq_final, result, run_config
-#==============================================================================================================
-
-
-
-
-
-
-
-
-
-
-#========== run_optimization ======================================================================================
-def run_optimization(
-        eq,
-        objective,
-        constraints,
-        optimizer,
-        run_config,
-    ):
-    optimize_options = copy.deepcopy(run_config.get("optimize_options", {}))
-    perturb_options = copy.deepcopy(run_config.get("perturb_options", {}))
-    solve_options = copy.deepcopy(run_config.get("solve_options", {}))
-
-    if perturb_options.get("opt_subspace_from_paper_driver", False):
-        from src.build_constraints import get_paper_opt_subspace
-
-        perturb_options["opt_subspace"] = get_paper_opt_subspace(
+        objective, skipped_objectives = build_objective_function(
             eq = eq,
-            run_config = run_config,
+            objective_configs = optimization_config.get("objectives", []),
         )
 
-        perturb_options.pop("opt_subspace_from_paper_driver")
+        constraints, skipped_constraints = build_constraint_function(
+            eq = eq,
+            constraint_configs = optimization_config.get("constraints", []),
+        )
 
-    eq_final, result = eq.optimize(
-        objective = objective,
-        constraints = constraints,
-        optimizer = optimizer,
-        perturb_options = perturb_options,
-        solve_options = solve_options,
-        **optimize_options,
-    )
+        status["skipped_objectives"] = skipped_objectives
+        status["skipped_constraints"] = skipped_constraints
 
-    return eq_final, result
-#==============================================================================================================
+        optimizer = optimization_config.get("optimizer", "proximal-lsq-exact")
+        optimize_kwargs = optimization_config.get("optimize_kwargs", {})
+
+        if constraints is None:
+            eq, result = eq.optimize(
+                objective = objective,
+                optimizer = optimizer,
+                **optimize_kwargs,
+            )
+        else:
+            eq, result = eq.optimize(
+                objective = objective,
+                constraints = constraints,
+                optimizer = optimizer,
+                **optimize_kwargs,
+            )
+
+        status["optimization_returned"] = True
+        status["success"] = True
+        status["message"] = "success"
+
+        if run_config.get("outputs", {}).get("save_equilibrium", True):
+            eq.save(str(run_dir / "optimized.h5"))
+
+        result_path = run_dir / "optimizer_result.txt"
+        with open(result_path, "w") as file:
+            file.write(str(result))
+
+    except Exception as error:
+        status["success"] = False
+        status["message"] = f"{type(error).__name__}: {error}"
+
+        traceback_path = run_dir / "traceback.txt"
+        with open(traceback_path, "w") as file:
+            file.write(traceback.format_exc())
+
+    status_path = run_dir / "status.json"
+    with open(status_path, "w") as file:
+        json.dump(status, file, indent = 4)
+
+    return status

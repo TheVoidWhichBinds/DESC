@@ -1,35 +1,22 @@
+# research/final/driver.py
+
+
+
+
+
+
+
+
+
+
+
+#============== IMPORTS ========================================================================================
 import argparse
-import sys
+import json
 from pathlib import Path
 
-
-
-
-
-
-
-
-
-
-#============== PATH SETUP =======================================================================================
-PROJECT_ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(PROJECT_ROOT))
-#==============================================================================================================
-
-
-
-
-
-
-
-
-
-
-#============== IMPORTS ==========================================================================================
-from configs.papers.registry import get_paper_config
-from configs.variants import get_variant_config
+from papers import compose_run_config, list_papers
 from src.run_case import run_case
-#==============================================================================================================
 
 
 
@@ -40,42 +27,43 @@ from src.run_case import run_case
 
 
 
-#========== parse_args ===========================================================================================
+
+#============== CLI ============================================================================================
 def parse_args():
     parser = argparse.ArgumentParser(
-        description = "Run recreated literature DESC optimization with optional FLO/FNO overlay.",
+        description = "Run a paper-configured DESC optimization from research/final/papers.py."
     )
 
     parser.add_argument(
         "--paper_id",
+        type = str,
         required = True,
-        help = "Paper configuration ID.",
+        choices = list_papers(),
+        help = "Paper config key from papers.py.",
+    )
+
+    parser.add_argument(
+        "--case_id",
+        type = str,
+        default = "base",
+        help = "Case key inside the selected paper config.",
     )
 
     parser.add_argument(
         "--variant_id",
-        required = True,
-        choices = ["base", "FLO", "FNO"],
-        help = "Variant ID.",
+        type = str,
+        default = "base",
+        choices = ["base", "flo", "fno"],
+        help = "Objective construction variant.",
     )
 
     parser.add_argument(
-        "--qs",
-        default = None,
-        choices = ["B", "C", "T"],
-        help = "QS objective choice for paper runs.",
-    )
-
-    parser.add_argument(
-        "--order",
-        default = None,
-        type = int,
-        choices = [1, 2],
-        help = "Perturbation order.",
+        "--dry_run",
+        action = "store_true",
+        help = "Write resolved config but do not run DESC.",
     )
 
     return parser.parse_args()
-#==============================================================================================================
 
 
 
@@ -86,33 +74,35 @@ def parse_args():
 
 
 
-#========== main =================================================================================================
+
+#============== MAIN ===========================================================================================
 def main():
     args = parse_args()
 
-    paper_config = get_paper_config(
+    run_config = compose_run_config(
         paper_id = args.paper_id,
-    )
-
-    variant_config = get_variant_config(
+        case_id = args.case_id,
         variant_id = args.variant_id,
     )
 
-    eq_final, result, run_config = run_case(
-        paper_config = paper_config,
-        variant_config = variant_config,
-        qs = args.qs,
-        order = args.order,
-    )
+    run_dir = Path(run_config["run_dir"])
+    run_dir.mkdir(parents = True, exist_ok = True)
 
-    print(f"Finished run: {run_config['run_id']}")
-    print(f"Saved outputs to: {run_config['paths']['run_dir']}")
-#==============================================================================================================
+    resolved_config_path = run_dir / "resolved_config.json"
+    with open(resolved_config_path, "w") as file:
+        json.dump(run_config, file, indent = 4)
 
+    if args.dry_run:
+        print(f"Wrote resolved config to {resolved_config_path}")
+        return
 
+    status = run_case(run_config = run_config)
 
+    status_path = run_dir / "status.json"
+    with open(status_path, "w") as file:
+        json.dump(status, file, indent = 4)
 
-
+    print(f"Finished run. Status saved to {status_path}")
 
 
 
