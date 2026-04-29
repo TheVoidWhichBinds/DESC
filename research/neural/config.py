@@ -12,7 +12,7 @@
 
 #============== FEATURE / SWEEP CONFIG =========================================================================
 FEATURE_CONFIG = {
-    "resolution": (16, 16, 12),
+    "resolution": (14, 14, 14),
     "NFP": 4,
     "modes_R": [
         (0, 0),
@@ -29,8 +29,8 @@ FEATURE_CONFIG = {
         "N_R0": 1,
         "N_R10": 1,
         "N_Z10": 1,
-        "N_R11": 2,
-        "N_Z11": 2,
+        "N_R11": 1,
+        "N_Z11": 1,
         "N_R20": 2,
         "N_Z20": 2,
     },
@@ -43,8 +43,8 @@ FEATURE_CONFIG = {
         "modeR11": (-0.025, 0.025), # mild helical radial variation
         "modeZ11": (-0.025, 0.025), # actual helical vertical variation
 
-        "modeR20": (-0.025, 0.025), # very weak bean/triangular shaping
-        "modeZ20": (-0.008, 0.008), # weak vertical second harmonic
+        "modeR20": (-0.085, 0.0), # very weak bean/triangular shaping
+        "modeZ20": (-0.028, 0.0), # weak vertical second harmonic
     },
 }
 #==============================================================================================================
@@ -70,7 +70,7 @@ RUN_CONFIG = {
     "use_parallel": False,
     "nprocs": None,
     "chunksize": 1,
-    "continuation_check": False,
+    "continuation_check": True,
     "continuation_failure_fragment": "WARNING: Automatic continuation failed",
 }
 #==============================================================================================================

@@ -58,9 +58,9 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 #==================================
 #------------------------
 # Equilibrium resolution:
-L = 8
-M = 8
-N = 3
+L = 14
+M = 14
+N = 14
 eq_resolution = [L, M, N]
 #------------------------
 
@@ -85,7 +85,7 @@ surface_source_config = {
 }
 
 # Number of equilibria to test:
-N_eq = 4
+N_eq = 1
 #------------------------------
 
 #-----------------------
