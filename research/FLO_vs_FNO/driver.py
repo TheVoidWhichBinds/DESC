@@ -31,7 +31,7 @@ from .helper import (
     _write_surface_source_summary,
     build_eq_configs,
 )
-from .plotting import (
+from .plot import (
     save_all_solution_plots,
     save_initial_toroidal_cuts,
 )

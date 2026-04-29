@@ -856,3 +856,161 @@ def save_optimization_outputs(
         "eq_path": str(eq_path),
         "summary_path": str(summary_path),
     }
+
+
+
+
+
+
+#==============================================================================================================
+# Plotting Helpers
+#==============================================================================================================
+
+from pathlib import Path
+
+import pandas as pd
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
+# Output Path Helpers
+#==============================================================================================================
+
+def get_paper_outputs_dir(outputs_dir, paper_id):
+    return Path(outputs_dir) / paper_id
+
+
+
+
+
+def get_variant_outputs_dir(outputs_dir, paper_id, variant_id):
+    return get_paper_outputs_dir(
+        outputs_dir = outputs_dir,
+        paper_id = paper_id,
+    ) / variant_id
+
+
+
+
+
+def get_paper_plot_dir(outputs_dir, paper_id):
+    plot_dir = get_paper_outputs_dir(
+        outputs_dir = outputs_dir,
+        paper_id = paper_id,
+    ) / "plots"
+
+    plot_dir.mkdir(
+        parents = True,
+        exist_ok = True,
+    )
+
+    return plot_dir
+
+
+
+
+
+def get_existing_variant_dirs(outputs_dir, paper_id, variant_ids):
+    variant_dirs = {}
+
+    for variant_id in variant_ids:
+        variant_dir = get_variant_outputs_dir(
+            outputs_dir = outputs_dir,
+            paper_id = paper_id,
+            variant_id = variant_id,
+        )
+
+        if variant_dir.exists():
+            variant_dirs[variant_id] = variant_dir
+
+    return variant_dirs
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
+# Plot Data Loading Helpers
+#==============================================================================================================
+
+def load_objective_history(variant_dir):
+    variant_dir = Path(variant_dir)
+
+    possible_paths = (
+        variant_dir / "objective_history.csv",
+        variant_dir / "optimization_history.csv",
+        variant_dir / "history.csv",
+    )
+
+    for possible_path in possible_paths:
+        if possible_path.exists():
+            history = pd.read_csv(possible_path)
+
+            if "iteration" not in history.columns:
+                history = history.reset_index().rename(
+                    columns = {
+                        "index": "iteration",
+                    },
+                )
+
+            return history
+
+    return None
+
+
+
+
+
+def choose_objective_column(history):
+    preferred_columns = (
+        "objective",
+        "objective_value",
+        "total_objective",
+        "loss",
+        "cost",
+    )
+
+    for column in preferred_columns:
+        if column in history.columns:
+            return column
+
+    numeric_columns = list(history.select_dtypes(include = "number").columns)
+
+    if "iteration" in numeric_columns:
+        numeric_columns.remove("iteration")
+
+    if len(numeric_columns) == 0:
+        return None
+
+    return numeric_columns[-1]
+
+
+
+
+
+def load_comparison_text(variant_dir):
+    variant_dir = Path(variant_dir)
+
+    possible_paths = (
+        variant_dir / "comparison.txt",
+        variant_dir / "optimization_status.txt",
+        variant_dir / "status.txt",
+    )
+
+    for possible_path in possible_paths:
+        if possible_path.exists():
+            return possible_path.read_text()
+
+    return None

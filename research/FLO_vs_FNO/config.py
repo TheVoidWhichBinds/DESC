@@ -7,7 +7,7 @@ import jax.numpy as jnp
 from desc.grid import LinearGrid
 from desc.profiles import PowerSeriesProfile
 
-from .poly_constraints import (
+from .VFOs import (
     FLO_pressure_axis,
     FLO_pressure_shape,
     FLO_pressure_octic,

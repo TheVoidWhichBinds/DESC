@@ -8,13 +8,15 @@
 # Each paper entry contains:
 #   1. Paper metadata
 #   2. Path to a saved initial equilibrium object
-#   3. Optimization settings
-#   4. Base objectives
-#   5. Base constraints
-#   6. Plot settings
+#   3. Equilibrium information
+#   4. Optimization settings
+#   5. Base objectives
+#   6. Base constraints
 #
 # FLO and FNO objectives are intentionally NOT included here. They are defined in FLO.py and FNO.py,
 # using functions from VFOs.py, and are appended only when variant = "FLO" or variant = "FNO".
+#
+# Plotting is intentionally NOT included here. Plotting lives in plot.py.
 #
 #==============================================================================================================
 
@@ -40,7 +42,20 @@ PAPERS = {
             "notes": "DESC quasi-symmetry optimization paper.",
         },
 
-        "eq_path": "research/final/equilibria/dudt2022.h5",
+        "eq_path": "publications/dudt2022/data/initial.h5",
+
+        "equilibrium": {
+            "NFP": 2,
+            "helicity": (1, 2),
+            "L": None,
+            "M": None,
+            "N": None,
+            "sym": True,
+            "notes": (
+                "Initial equilibrium is loaded from the saved publication h5 file. "
+                "Resolution, pressure, current, and iota information should be read from the saved equilibrium."
+            ),
+        },
 
         "optimization": {
             "optimizer": "proximal-lsq-exact",
@@ -85,21 +100,6 @@ PAPERS = {
                 "kwargs": {},
             },
         ),
-
-        "plots": {
-            "figures": (
-                "objective_history",
-                "force_error",
-                "boundary",
-                "comparison_table",
-            ),
-
-            "kwargs": {
-                "figsize": (7, 5),
-                "dpi": 300,
-                "save_format": "png",
-            },
-        },
     },
 
 
@@ -121,6 +121,19 @@ PAPERS = {
 
         "eq_path": "research/final/equilibria/conlin2022.h5",
 
+        "equilibrium": {
+            "NFP": None,
+            "helicity": None,
+            "L": None,
+            "M": None,
+            "N": None,
+            "sym": None,
+            "notes": (
+                "Placeholder until the recreated Conlin 2022 initial equilibrium is saved. "
+                "Use the saved h5 file as source of truth for resolution and profiles."
+            ),
+        },
+
         "optimization": {
             "optimizer": "proximal-lsq-exact",
             "ftol": 1e-8,
@@ -157,21 +170,6 @@ PAPERS = {
                 "kwargs": {},
             },
         ),
-
-        "plots": {
-            "figures": (
-                "objective_history",
-                "force_error",
-                "boundary",
-                "comparison_table",
-            ),
-
-            "kwargs": {
-                "figsize": (7, 5),
-                "dpi": 300,
-                "save_format": "png",
-            },
-        },
     },
 
 
@@ -191,7 +189,21 @@ PAPERS = {
             "notes": "DESC paper involving continuation and nonlinear equilibrium solve methodology.",
         },
 
-        "eq_path": "research/final/equilibria/panici2023.h5",
+        "input_eq_path": "research/final/equilibria/panici2023/input/W7X_M16_N16_ansi_cpu1_f2_compute_branch",
+        "output_eq_path": "research/final/equilibria/panici2023/output/W7X_M16_N16_ansi_cpu1_f2_compute_branch_output.h5",
+
+        "equilibrium": {
+            "NFP": None,
+            "helicity": None,
+            "L": 16,
+            "M": 16,
+            "N": 16,
+            "sym": None,
+            "notes": (
+                "Placeholder until the recreated Panici 2023 initial equilibrium is saved. "
+                "Use the saved h5 file as source of truth for resolution and profiles."
+            ),
+        },
 
         "optimization": {
             "optimizer": "proximal-lsq-exact",
@@ -229,21 +241,6 @@ PAPERS = {
                 "kwargs": {},
             },
         ),
-
-        "plots": {
-            "figures": (
-                "objective_history",
-                "force_error",
-                "boundary",
-                "comparison_table",
-            ),
-
-            "kwargs": {
-                "figsize": (7, 5),
-                "dpi": 300,
-                "save_format": "png",
-            },
-        },
     },
 
 
@@ -265,6 +262,19 @@ PAPERS = {
 
         "eq_path": "research/final/equilibria/dudt2024.h5",
 
+        "equilibrium": {
+            "NFP": None,
+            "helicity": None,
+            "L": None,
+            "M": None,
+            "N": None,
+            "sym": None,
+            "notes": (
+                "Placeholder until the recreated Dudt 2024 initial equilibrium is saved. "
+                "Use the saved h5 file as source of truth for resolution, profiles, and added physics targets."
+            ),
+        },
+
         "optimization": {
             "optimizer": "proximal-lsq-exact",
             "ftol": 1e-8,
@@ -301,21 +311,6 @@ PAPERS = {
                 "kwargs": {},
             },
         ),
-
-        "plots": {
-            "figures": (
-                "objective_history",
-                "force_error",
-                "boundary",
-                "comparison_table",
-            ),
-
-            "kwargs": {
-                "figsize": (7, 5),
-                "dpi": 300,
-                "save_format": "png",
-            },
-        },
     },
 
 
@@ -337,6 +332,19 @@ PAPERS = {
 
         "eq_path": "research/final/equilibria/conlin2024constraints.h5",
 
+        "equilibrium": {
+            "NFP": None,
+            "helicity": None,
+            "L": None,
+            "M": None,
+            "N": None,
+            "sym": None,
+            "notes": (
+                "Placeholder until the recreated Conlin 2024 constraints equilibrium is saved. "
+                "Use the saved h5 file as source of truth for resolution, profiles, and constraints."
+            ),
+        },
+
         "optimization": {
             "optimizer": "proximal-lsq-exact",
             "ftol": 1e-8,
@@ -373,20 +381,13 @@ PAPERS = {
                 "kwargs": {},
             },
         ),
-
-        "plots": {
-            "figures": (
-                "objective_history",
-                "force_error",
-                "boundary",
-                "comparison_table",
-            ),
-
-            "kwargs": {
-                "figsize": (7, 5),
-                "dpi": 300,
-                "save_format": "png",
-            },
-        },
     },
 }
+
+
+
+
+
+
+
+

@@ -35,3 +35,6 @@ uv.lock
 .env
 .venv
 jax-caches/
+
+# Downloaded runs from papers
+research/final/external_data/
