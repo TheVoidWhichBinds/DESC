@@ -70,7 +70,7 @@ RUN_CONFIG = {
     "use_parallel": False,
     "nprocs": None,
     "chunksize": 1,
-    "continuation_check": True,
+    "continuation_check": False,
     "continuation_failure_fragment": "WARNING: Automatic continuation failed",
 }
 #==============================================================================================================

@@ -58,9 +58,9 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 #==================================
 #------------------------
 # Equilibrium resolution:
-L = 14
-M = 14
-N = 14
+L = 12
+M = 12
+N = 12
 eq_resolution = [L, M, N]
 #------------------------
 
@@ -85,14 +85,14 @@ surface_source_config = {
 }
 
 # Number of equilibria to test:
-N_eq = 1
+N_eq = 4
 #------------------------------
 
 #-----------------------
 # Initializing pressure:
-p_axis_init = 1.0e4
+p_axis_init = 1.0e5
 pressure_init = PowerSeriesProfile(
-    [p_axis_init, -2.0E4, 1.0E4],
+    [p_axis_init, -2.0E5, 1.0E5],
     sym = True,
 )
 #-----------------------
@@ -134,9 +134,9 @@ EQ_INPUT_CONFIG = {
 #============== OPTIMIZATION INPUTS ================================================================================================================
 #===========================================
 # Bounds shared by FLO / FNO objective sets:
-FLO_pressure_axis_bounds = (1e4, 1e7)
+FLO_pressure_axis_bounds = (1e5, 1e7)
 FLO_pressure_shape_bounds = (-1.3, 1.8)
-FNO_pressure_axis_bounds = (1e4, 1e7)
+FNO_pressure_axis_bounds = (1e5, 1e7)
 iota_bounds = iota_between_rationals(iota_axis = iota_axis_init)
 barrier_weights = 1e5
 #===========================================
@@ -448,7 +448,7 @@ OPT_CONFIG = {
 #============== DRIVER INPUTS ======================================================================================================================
 DRIVER_CONFIG = {
     "config_path": __file__,
-    "execution_mode": "local",   # "auto", "local", or "cluster"
-    "cluster_max_workers": 1,
+    "execution_mode": "cluster",   # "auto", "local", or "cluster"
+    "cluster_max_workers": 2,
 }
 #===================================================================================================================================================
