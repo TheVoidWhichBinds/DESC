@@ -13,7 +13,6 @@ tests/benchmarks/.benchmarks/
 .spyproject/
 *.egg-info
 *.gif
-*.h5
 *.ini
 *.mat
 *.out
