@@ -4,11 +4,11 @@
 # Shared helper functions for DESC/research/final.
 #
 # This file owns:
-#   1. Variant registry access
-#   2. FixPressure removal for FLO/FNO runs
+#   1. FNO config access
+#   2. FixPressure removal for FNO runs
 #   3. Initial-equilibrium injection through kwargs["thing"]
-#   4. DESC custom objective/constraint construction
-#   5. Optimizer patching for recreation-file variant runs
+#   4. DESC custom objective construction
+#   5. Optimizer patching for recreation-file FNO runs
 #   6. Recreation-file output path patching
 #
 #==============================================================================================================
@@ -39,35 +39,20 @@ from desc.objectives import (
 
 
 #==============================================================================================================
-# Variant Helpers
+# FNO Helpers
 #==============================================================================================================
 
-def get_variant_config(
-        variant,
-    ):
+def get_fno_config():
     """
-    Return the variant configuration.
+    Return the FNO configuration.
     """
 
-    if variant == "FLO":
-        try:
-            from .FLO import FLO_CONFIG
-        except ImportError:
-            from FLO import FLO_CONFIG
+    try:
+        from .FNO import FNO_CONFIG
+    except ImportError:
+        from FNO import FNO_CONFIG
 
-        return deepcopy(FLO_CONFIG)
-
-    if variant == "FNO":
-        try:
-            from .FNO import FNO_CONFIG
-        except ImportError:
-            from FNO import FNO_CONFIG
-
-        return deepcopy(FNO_CONFIG)
-
-    raise ValueError(
-        f"Unknown variant '{variant}'. Valid variants are: 'FLO', 'FNO'."
-    )
+    return deepcopy(FNO_CONFIG)
 
 
 
@@ -82,7 +67,7 @@ def get_variant_config(
 
 
 #==============================================================================================================
-# DESC Custom Objective / Constraint Builders
+# DESC Custom Objective Builders
 #==============================================================================================================
 
 def user_function_kind(
@@ -118,7 +103,7 @@ def build_user_objective(
         eq,
     ):
     """
-    Build a DESC custom objective from a FLO/FNO config dictionary.
+    Build a DESC custom objective from an FNO config dictionary.
     """
 
     kwargs = dict(config.get("kwargs", {}))
@@ -173,9 +158,6 @@ def build_user_objective(
 FIXED_PRESSURE_CLASS_NAMES = {
     "FixPressure",
     "PressureFixed",
-    # "IotaFixed",
-    # "FixIota",
-    # "FixIotaProfile",
 }
 
 
@@ -286,24 +268,21 @@ def find_equilibrium_in_object(
 
 
 #==============================================================================================================
-# Variant Extension Builder
+# FNO Extension Builder
 #==============================================================================================================
 
-def build_variant_extension(
-        variant,
+def build_fno_extension(
         eq,
         eq_initial = None,
     ):
     """
-    Build FLO/FNO objective and constraint objects for the current equilibrium.
+    Build FNO objective and constraint objects for the current equilibrium.
     """
 
-    variant_config = get_variant_config(
-        variant = variant,
-    )
+    fno_config = get_fno_config()
 
-    objective_configs = tuple(variant_config["objectives"])
-    constraint_configs = tuple(variant_config["constraints"])
+    objective_configs = tuple(fno_config["objectives"])
+    constraint_configs = tuple(fno_config["constraints"])
 
     objectives = tuple(
         build_user_objective(
@@ -330,21 +309,21 @@ def build_variant_extension(
 
 
 
-def append_variant_objectives(
+def append_fno_objectives(
         objective,
-        variant_objectives,
+        fno_objectives,
     ):
     """
-    Append FLO/FNO objectives to an existing ObjectiveFunction.
+    Append FNO objectives to an existing ObjectiveFunction.
     """
 
-    if len(variant_objectives) == 0:
+    if len(fno_objectives) == 0:
         return objective
 
     existing_objectives = tuple(objective.objectives)
 
     return ObjectiveFunction(
-        objectives = existing_objectives + tuple(variant_objectives),
+        objectives = existing_objectives + tuple(fno_objectives),
     )
 
 
@@ -360,16 +339,14 @@ def append_variant_objectives(
 # Optimizer Patch
 #==============================================================================================================
 
-class VariantOptimizePatch:
+class FNOOptimizePatch:
     """
-    Patch Optimizer.optimize for one FLO/FNO recreation-file run.
+    Patch Optimizer.optimize for one FNO recreation-file run.
     """
 
     def __init__(
             self,
-            variant,
         ):
-        self.variant = variant
         self.original_optimize = None
         self.eq_initial = None
 
@@ -396,29 +373,28 @@ class VariantOptimizePatch:
             if self.eq_initial is None:
                 self.eq_initial = eq.copy()
 
-            variant_objectives, variant_constraints = build_variant_extension(
-                variant = self.variant,
+            fno_objectives, fno_constraints = build_fno_extension(
                 eq = eq,
                 eq_initial = self.eq_initial,
             )
 
-            objective_patched = append_variant_objectives(
+            objective_patched = append_fno_objectives(
                 objective = objective,
-                variant_objectives = variant_objectives,
+                fno_objectives = fno_objectives,
             )
 
             constraints_patched = (
                 remove_fixed_pressure_constraints_from_objects(
                     constraints = constraints,
                 )
-                + variant_constraints
+                + fno_constraints
             )
 
             print("")
             print("================================================================================================================")
-            print(f"Running with variant: {self.variant}")
-            print(f"Added objectives: {len(variant_objectives)}")
-            print(f"Added constraints: {len(variant_constraints)}")
+            print("Running with variant: FNO")
+            print(f"Added objectives: {len(fno_objectives)}")
+            print(f"Added constraints: {len(fno_constraints)}")
             print(f"Total constraints after fixed pressure removal: {len(constraints_patched)}")
             print("================================================================================================================")
             print("")
@@ -518,18 +494,14 @@ def get_output_dir_for_source(
         source_file,
     ):
     """
-    Return output/<case> for a recreation source file.
+    Return the directory containing the source file.
+
+    FNO output files are written beside the recreation file passed to --file.
     """
 
-    paper_dir = get_paper_dir_for_source(
-        source_file = source_file,
-    )
+    source_file = Path(source_file).resolve()
 
-    case_name = get_case_name_from_source(
-        source_file = source_file,
-    )
-
-    return paper_dir / "output" / case_name
+    return source_file.parent
 
 
 
@@ -541,21 +513,14 @@ def get_output_dir_for_source(
 
 def get_final_output_path_for_source(
         source_file,
-        variant,
     ):
     """
-    Return output/<case>/<case>_<variant>.h5.
+    Return <source-file-dir>/<source-file-stem>_FNO.h5.
     """
 
-    case_name = get_case_name_from_source(
-        source_file = source_file,
-    )
+    source_file = Path(source_file).resolve()
 
-    output_dir = get_output_dir_for_source(
-        source_file = source_file,
-    )
-
-    return output_dir / f"{case_name}_{variant}.h5"
+    return source_file.parent / f"{source_file.stem}_FNO.h5"
 
 
 
@@ -567,21 +532,14 @@ def get_final_output_path_for_source(
 
 def get_failure_output_path_for_source(
         source_file,
-        variant,
     ):
     """
-    Return output/<case>/<case>_<variant>_FAILURE.h5.
+    Return <source-file-dir>/<source-file-stem>_FNO_FAILURE.h5.
     """
 
-    case_name = get_case_name_from_source(
-        source_file = source_file,
-    )
+    source_file = Path(source_file).resolve()
 
-    output_dir = get_output_dir_for_source(
-        source_file = source_file,
-    )
-
-    return output_dir / f"{case_name}_{variant}_FAILURE.h5"
+    return source_file.parent / f"{source_file.stem}_FNO_FAILURE.h5"
 
 
 
@@ -656,7 +614,6 @@ if os.environ.get("VFO_FAILURE_PATH"):
 
 def make_temporary_recreation_runner(
         source_file,
-        variant,
     ):
     """
     Create a patched temporary copy of the target recreation source file.
@@ -673,7 +630,7 @@ def make_temporary_recreation_runner(
         source_text = source_text,
     )
 
-    runner_path = source_file.parent / f"_{source_file.stem}_{variant}_runner.py"
+    runner_path = source_file.parent / f"_{source_file.stem}_FNO_runner.py"
 
     runner_path.write_text(
         patched_text,
@@ -691,15 +648,44 @@ def make_temporary_recreation_runner(
 
 
 #==============================================================================================================
-# Recreation Variant Runners
+# Recreation Runners
 #==============================================================================================================
 
-def run_source_with_variant(
+def run_source_as_is(
         source_file,
-        variant,
     ):
     """
-    Run one recreation source file with one FLO/FNO variant.
+    Run one recreation source file exactly as written.
+    """
+
+    source_file = Path(source_file).resolve()
+
+    print("")
+    print("################################################################################################################")
+    print(f"Starting unmodified run for {source_file}")
+    print("################################################################################################################")
+    print("")
+
+    runpy.run_path(
+        path_name = str(source_file),
+        run_name = "__main__",
+    )
+
+    return None
+
+
+
+
+
+
+
+
+
+def run_source_with_fno(
+        source_file,
+    ):
+    """
+    Run one recreation source file with FNO enabled.
     """
 
     source_file = Path(source_file).resolve()
@@ -715,30 +701,25 @@ def run_source_with_variant(
 
     final_path = get_final_output_path_for_source(
         source_file = source_file,
-        variant = variant,
     )
 
     failure_path = get_failure_output_path_for_source(
         source_file = source_file,
-        variant = variant,
     )
 
     runner_path = make_temporary_recreation_runner(
         source_file = source_file,
-        variant = variant,
     )
 
     old_env = dict(os.environ)
 
-    os.environ["VFO_VARIANT"] = variant
+    os.environ["VFO_VARIANT"] = "FNO"
     os.environ["VFO_OUTPUT_DIR"] = str(output_dir)
     os.environ["VFO_FINAL_PATH"] = str(final_path)
     os.environ["VFO_FAILURE_PATH"] = str(failure_path)
 
     try:
-        with VariantOptimizePatch(
-                variant = variant,
-            ):
+        with FNOOptimizePatch():
             runpy.run_path(
                 path_name = str(runner_path),
                 run_name = "__main__",
@@ -753,7 +734,7 @@ def run_source_with_variant(
 
     if not final_path.exists():
         raise FileNotFoundError(
-            f"Expected final variant output was not created: {final_path}"
+            f"Expected final FNO output was not created: {final_path}"
         )
 
     return final_path
@@ -766,38 +747,51 @@ def run_source_with_variant(
 
 
 
-def run_variants_for_file(
+def run_file(
         source_file,
-        variants = ("FLO", "FNO"),
+        variant = False,
     ):
     """
-    Run all requested variants for one recreation source file.
+    Run one recreation source file.
+
+    If variant is False:
+        Run the source file exactly as-is.
+
+    If variant is True:
+        Run the source file with FNO objectives added and fixed pressure removed.
     """
 
     source_file = Path(source_file).resolve()
-    outputs = {}
 
-    for variant in variants:
+    if variant is False:
+        return run_source_as_is(
+            source_file = source_file,
+        )
+
+    if variant is True:
         print("")
         print("################################################################################################################")
-        print(f"Starting {variant} run for {source_file}")
+        print(f"Starting FNO run for {source_file}")
         print("################################################################################################################")
         print("")
 
         try:
-            outputs[variant] = run_source_with_variant(
+            output = run_source_with_fno(
                 source_file = source_file,
-                variant = variant,
             )
 
             print("")
-            print(f"{variant} saved to: {outputs[variant]}")
+            print(f"FNO saved to: {output}")
             print("")
+
+            return output
 
         except Exception:
             print("")
-            print(f"{variant} failed for {source_file}")
+            print(f"FNO failed for {source_file}")
             traceback.print_exc()
             raise
 
-    return outputs
+    raise ValueError(
+        "variant must be True or False."
+    )

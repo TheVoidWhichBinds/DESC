@@ -1,7 +1,10 @@
 # driver.py
 #==============================================================================================================
 #
-# Top-level CLI for rerunning DESC recreation files with FLO/FNO variants.
+# Top-level CLI for rerunning one DESC recreation file.
+#
+# If --variant = False, the file runs exactly as-is.
+# If --variant = True, the file runs with the FNO objective patch.
 #
 #==============================================================================================================
 
@@ -19,9 +22,46 @@ set_device("gpu")
 import argparse
 
 try:
-    from .helper import run_variants_for_file
+    from .helper import run_file
 except ImportError:
-    from helper import run_variants_for_file
+    from helper import run_file
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
+# Command-Line Helpers
+#==============================================================================================================
+
+def str_to_bool(
+        value,
+    ):
+    """
+    Convert command-line True/False strings to booleans.
+    """
+
+    if isinstance(value, bool):
+        return value
+
+    value = value.strip().lower()
+
+    if value in ("true", "t", "yes", "y", "1"):
+        return True
+
+    if value in ("false", "f", "no", "n", "0"):
+        return False
+
+    raise argparse.ArgumentTypeError(
+        "Expected True or False."
+    )
+
+
 
 
 
@@ -40,7 +80,7 @@ def parse_args():
     """
 
     parser = argparse.ArgumentParser(
-        description = "Run one DESC recreation file with FLO and FNO variants.",
+        description = "Run one DESC recreation file as-is or with the FNO variant.",
     )
 
     parser.add_argument(
@@ -51,11 +91,10 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--variants",
-        nargs = "+",
-        default = ["FLO", "FNO"],
-        choices = ["FLO", "FNO"],
-        help = "Variants to run.",
+        "--variant",
+        type = str_to_bool,
+        required = True,
+        help = "If True, run with FNO. If False, run the source file as-is.",
     )
 
     return parser.parse_args()
@@ -79,17 +118,19 @@ def main():
 
     args = parse_args()
 
-    outputs = run_variants_for_file(
+    output = run_file(
         source_file = args.file,
-        variants = tuple(args.variants),
+        variant = args.variant,
     )
 
     print("")
-    print("Completed variant runs:")
+    print("Completed run:")
     print("================================================================================================================")
 
-    for variant, path in outputs.items():
-        print(f"{variant}: {path}")
+    if output is None:
+        print("variant = False: source file ran as-is.")
+    else:
+        print(f"variant = True: {output}")
 
 
 

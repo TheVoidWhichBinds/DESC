@@ -3,22 +3,19 @@
 #
 # FNO variant configuration for DESC/research/final.
 #
-# FNO objectives are applied only when variant = "FNO".
-# They are not active during the base optimization.
+# FNO objectives are applied only when variant = True.
+# They are not active when variant = False.
 #
-# The actual functions live in VFOs.py.
+# The actual functions live in custom_funcs.py.
 #
 # Each objective config entry uses:
 #   "name"   : descriptive label
-#   "fun"    : function from VFOs.py
+#   "fun"    : function from custom_funcs.py
 #   "target" : target value for equality-style objectives, OR
 #   "bounds" : lower and upper bounds for bounded objectives
 #   "kwargs" : keyword arguments passed into the DESC objective wrapper
-# 
-# "thing" should be filled in by helper.py with the initial equilibrium object.
 #
-# "lower_rational" and "upper_rational" should be filled in by helper.py
-# from the paper-specific initial on-axis iota value.
+# "thing" should be filled in by helper.py with the active equilibrium object.
 #
 #==============================================================================================================
 
@@ -26,21 +23,17 @@ import jax.numpy as jnp
 
 try:
     from .custom_funcs import (
-        FNO_pressure_axis,
         FNO_pressure_edge,
         FNO_pressure_positive,
         FNO_pressure_monotonic,
         FNO_grad_pressure_edge,
-        # FNO_iota,
     )
 except ImportError:
     from custom_funcs import (
-        FNO_pressure_axis,
         FNO_pressure_edge,
         FNO_pressure_positive,
         FNO_pressure_monotonic,
         FNO_grad_pressure_edge,
-        # FNO_iota,
     )
 
 
@@ -58,14 +51,6 @@ except ImportError:
 
 FNO_CONFIG = {
     "objectives": (
-        {
-            "name": "FNO_pressure_axis",
-            "fun": FNO_pressure_axis,
-            "bounds": (1e4, 1e7),
-            "kwargs": {
-                "thing": None,
-            },
-        },
         {
             "name": "FNO_pressure_edge",
             "fun": FNO_pressure_edge,
@@ -98,14 +83,6 @@ FNO_CONFIG = {
                 "thing": None,
             },
         },
-        # {
-        #     "name": "FNO_iota",
-        #     "fun": FNO_iota,
-        #     "bounds": ("lower_rational", "upper_rational"),
-        #     "kwargs": {
-        #         "thing": None,
-        #     },
-        # },
     ),
 
     "constraints": (),
