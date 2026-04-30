@@ -64,7 +64,7 @@ def parse_args():
     parser.add_argument(
         "--optimizer",
         type = str,
-        default = "proximal-lsq-exact",
+        default = "lsq-exact",
         help = "DESC optimizer name.",
     )
 
