@@ -88,9 +88,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 # EQUILIBRIUM INPUTS
 #===========================================================
 
-L = 12
-M = 12
-N = 12
+L = 10
+M = 10
+N = 10
 eq_resolution = [
     L,
     M,
@@ -115,7 +115,7 @@ surface_source_config = {
 surface_pool = load_surface_pool(
     surface_source_config = surface_source_config,
     NFP = NFP,
-    N_eq = 1,
+    N_eq = 4,
 )
 
 surface_init = surface_pool[0]["surface_init"]
@@ -173,17 +173,13 @@ FLO_pressure_shape_bounds = (
     1.8,
 )
 
-# FNO_pressure_axis_bounds = (
-#     1e5,
-#     1e7,
-# )
-
 iota_bounds = iota_between_rationals(
     iota_axis = iota_axis_init,
 )
 
 optimizer = "lsq-exact"
 
+normalize = True
 barrier_weights = 1e5
 ftol = 1e-4
 xtol = 1e-6
@@ -222,18 +218,15 @@ opt_toggles_core = {
         "kwargs": {
             "weight": 1e1,
             "target": 0.0,
-            "normalize": True,
+            "normalize": normalize,
         },
     },
     "qs": {
-        "use": True,
+        "use": False,
         "kwargs": {
             "weight": 1e0,
-            "helicity": (
-                1,
-                NFP,
-            ),
-            "normalize": True,
+            "helicity": (1,NFP),
+            "normalize": normalize,
         },
     },
     "ballooning": {
@@ -241,22 +234,19 @@ opt_toggles_core = {
         "kwargs": {
             "weight": 1e0,
             "target": 0.0,
-            "normalize": True,
+            "normalize": normalize,
         },
     },
     "mercier": {
         "use": True,
         "kwargs": {
-            "bounds": (
-                0.05,
-                jnp.inf,
-            ),
+            "bounds": (0.05, jnp.inf),
             "weight": 1e0,
-            "normalize": True,
+            "normalize": normalize,
         },
     },
     "forcebalance_con": {
-        "use": True,
+        "use": False,
         "kwargs": {
             "target": 0.0,
         },
@@ -298,7 +288,7 @@ opt_toggles_FLO = {
             "fun": FLO_pressure_shape,
             "bounds": FLO_pressure_shape_bounds,
             "weight": barrier_weights,
-            "normalize": True,
+            "normalize": normalize,
         },
     },
     "FLO_iota_axis": {
@@ -308,7 +298,7 @@ opt_toggles_FLO = {
             "fun": FLO_iota_axis,
             "bounds": iota_bounds,
             "weight": barrier_weights,
-            "normalize": True,
+            "normalize": normalize,
         },
     },
     "FLO_iota_edge": {
@@ -318,7 +308,7 @@ opt_toggles_FLO = {
             "fun": FLO_iota_edge,
             "bounds": iota_bounds,
             "weight": barrier_weights,
-            "normalize": True,
+            "normalize": normalize,
         },
     },
     "FLO_pressure_axis": {
@@ -361,14 +351,14 @@ opt_toggles_FLO = {
             "target": 0.0,
         },
     },
-    # "FLO_iota_quadratic": {
-    #     "use": not iota_fxd,
-    #     "kwargs": {
-    #         "name": "FLO_iota_quadratic",
-    #         "fun": FLO_iota_quadratic,
-    #         "target": 0.0,
-    #     },
-    # },
+    "FLO_iota_quadratic": {
+        "use": not iota_fxd,
+        "kwargs": {
+            "name": "FLO_iota_quadratic",
+            "fun": FLO_iota_quadratic,
+            "target": 0.0,
+        },
+    },
 }
 
 #===================================================================================================================================================
@@ -395,7 +385,7 @@ opt_toggles_FNO = {
             "grid": data_grid,
             "target": 0.0,
             "weight": barrier_weights,
-            "normalize": True,
+            "normalize": normalize,
         },
     },
     "FNO_pressure_positive": {
@@ -409,7 +399,7 @@ opt_toggles_FNO = {
                 jnp.inf,
             ),
             "weight": barrier_weights,
-            "normalize": True,
+            "normalize": normalize,
         },
     },
     "FNO_pressure_monotonic": {
@@ -423,7 +413,7 @@ opt_toggles_FNO = {
                 0.0,
             ),
             "weight": barrier_weights,
-            "normalize": True,
+            "normalize": normalize,
         },
     },
     "FNO_pressure_axis": {
@@ -434,7 +424,7 @@ opt_toggles_FNO = {
             "grid": data_grid,
             "target": p_axis_init,
             "weight": barrier_weights,
-            "normalize": True,
+            "normalize": normalize,
         },
     },
     "FNO_grad_pressure_edge": {
@@ -445,20 +435,20 @@ opt_toggles_FNO = {
             "grid": data_grid,
             "target": 0.0,
             "weight": barrier_weights,
-            "normalize": True,
+            "normalize": normalize,
         },
     },
-    # "FNO_iota": {
-    #     "use": not iota_fxd,
-    #     "kwargs": {
-    #         "name": "FNO_iota",
-    #         "fun": FNO_iota,
-    #         "grid": data_grid,
-    #         "bounds": iota_bounds,
-    #         "weight": barrier_weights,
-    #         "normalize": True,
-    #     },
-    # },
+    "FNO_iota": {
+        "use": not iota_fxd,
+        "kwargs": {
+            "name": "FNO_iota",
+            "fun": FNO_iota,
+            "grid": data_grid,
+            "bounds": iota_bounds,
+            "weight": barrier_weights,
+            "normalize": normalize,
+        },
+    },
 }
 
 #===================================================================================================================================================
