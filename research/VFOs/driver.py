@@ -2,8 +2,11 @@
 #===================================================================================================================================================
 
 import argparse
+from pathlib import Path
 
 from desc import set_device
+
+set_device("gpu")
 
 try:
     from .eq import run_equilibrium
@@ -51,7 +54,7 @@ def parse_args():
     parser.add_argument(
         "--config",
         type = str,
-        default = "config.py",
+        default = str(Path(__file__).resolve().with_name("config.py")),
         help = "Path to config.py.",
     )
 
@@ -63,20 +66,9 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--device",
-        type = str,
-        default = "gpu",
-        choices = [
-            "cpu",
-            "gpu",
-        ],
-        help = "DESC device request.",
-    )
-
-    parser.add_argument(
         "--out-dir",
         type = str,
-        default = "outputs",
+        default = str(Path(__file__).resolve().with_name("outputs")),
         help = "Output directory.",
     )
 
@@ -109,8 +101,6 @@ def main():
     """
 
     args = parse_args()
-
-    set_device(args.device)
 
     config = load_config_module(
         config_path = args.config,
