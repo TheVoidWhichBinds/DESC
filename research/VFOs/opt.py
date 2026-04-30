@@ -132,12 +132,12 @@ CONSTRAINT_REGISTRY_CORE = {
 #===========================================================
 
 OBJECTIVE_REGISTRY_FLO = {
-    "FLO_pressure_axis": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
+    # "FLO_pressure_axis": {
+    #     "wrapper": LinearObjectiveFromUser,
+    #     "defaults": {
+    #         "thing": _eq,
+    #     },
+    # },
     "FLO_pressure_shape": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -198,12 +198,12 @@ CONSTRAINT_REGISTRY_FLO = {
             "thing": _eq,
         },
     },
-    "FLO_iota_quadratic": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
+    # "FLO_iota_quadratic": {
+    #     "wrapper": LinearObjectiveFromUser,
+    #     "defaults": {
+    #         "thing": _eq,
+    #     },
+    # },
 }
 
 #===================================================================================================================================================
@@ -222,12 +222,12 @@ CONSTRAINT_REGISTRY_FLO = {
 #===========================================================
 
 OBJECTIVE_REGISTRY_FNO = {
-    "FNO_pressure_axis": {
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
+    # "FNO_pressure_axis": {
+    #     "wrapper": ObjectiveFromUser,
+    #     "defaults": {
+    #         "thing": _eq,
+    #     },
+    # },
     "FNO_pressure_edge": {
         "wrapper": ObjectiveFromUser,
         "defaults": {
@@ -252,12 +252,12 @@ OBJECTIVE_REGISTRY_FNO = {
             "thing": _eq,
         },
     },
-    "FNO_iota": {
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
+    # "FNO_iota": {
+    #     "wrapper": ObjectiveFromUser,
+    #     "defaults": {
+    #         "thing": _eq,
+    #     },
+    # },
 }
 
 #===================================================================================================================================================

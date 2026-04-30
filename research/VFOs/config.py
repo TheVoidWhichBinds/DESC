@@ -173,10 +173,10 @@ FLO_pressure_shape_bounds = (
     1.8,
 )
 
-FNO_pressure_axis_bounds = (
-    1e5,
-    1e7,
-)
+# FNO_pressure_axis_bounds = (
+#     1e5,
+#     1e7,
+# )
 
 iota_bounds = iota_between_rationals(
     iota_axis = iota_axis_init,
@@ -192,7 +192,7 @@ max_nfev = 300
 x_scale = "auto"
 
 pressure_fxd = False
-iota_fxd = False
+iota_fxd = True
 
 data_grid = LinearGrid(
     L = 200,
@@ -290,16 +290,16 @@ opt_toggles_core = {
 #===========================================================
 
 opt_toggles_FLO = {
-    "FLO_pressure_axis": {
-        "use": not pressure_fxd,
-        "kwargs": {
-            "name": "FLO_pressure_axis",
-            "fun": FLO_pressure_axis,
-            "bounds": FLO_pressure_axis_bounds,
-            "weight": barrier_weights,
-            "normalize": True,
-        },
-    },
+    # "FLO_pressure_axis": {
+    #     "use": not pressure_fxd,
+    #     "kwargs": {
+    #         "name": "FLO_pressure_axis",
+    #         "fun": FLO_pressure_axis,
+    #         "bounds": FLO_pressure_axis_bounds,
+    #         "weight": barrier_weights,
+    #         "normalize": True,
+    #     },
+    # },
     "FLO_pressure_shape": {
         "use": not pressure_fxd,
         "kwargs": {
@@ -362,14 +362,14 @@ opt_toggles_FLO = {
             "target": 0.0,
         },
     },
-    "FLO_iota_quadratic": {
-        "use": not iota_fxd,
-        "kwargs": {
-            "name": "FLO_iota_quadratic",
-            "fun": FLO_iota_quadratic,
-            "target": 0.0,
-        },
-    },
+    # "FLO_iota_quadratic": {
+    #     "use": not iota_fxd,
+    #     "kwargs": {
+    #         "name": "FLO_iota_quadratic",
+    #         "fun": FLO_iota_quadratic,
+    #         "target": 0.0,
+    #     },
+    # },
 }
 
 #===================================================================================================================================================
@@ -388,17 +388,17 @@ opt_toggles_FLO = {
 #===========================================================
 
 opt_toggles_FNO = {
-    "FNO_pressure_axis": {
-        "use": not pressure_fxd,
-        "kwargs": {
-            "name": "FNO_pressure_axis",
-            "fun": FNO_pressure_axis,
-            "grid": data_grid,
-            "bounds": FNO_pressure_axis_bounds,
-            "weight": barrier_weights,
-            "normalize": True,
-        },
-    },
+    # "FNO_pressure_axis": {
+    #     "use": not pressure_fxd,
+    #     "kwargs": {
+    #         "name": "FNO_pressure_axis",
+    #         "fun": FNO_pressure_axis,
+    #         "grid": data_grid,
+    #         "bounds": FNO_pressure_axis_bounds,
+    #         "weight": barrier_weights,
+    #         "normalize": True,
+    #     },
+    # },
     "FNO_pressure_edge": {
         "use": not pressure_fxd,
         "kwargs": {
@@ -449,17 +449,17 @@ opt_toggles_FNO = {
             "normalize": True,
         },
     },
-    "FNO_iota": {
-        "use": not iota_fxd,
-        "kwargs": {
-            "name": "FNO_iota",
-            "fun": FNO_iota,
-            "grid": data_grid,
-            "bounds": iota_bounds,
-            "weight": barrier_weights,
-            "normalize": True,
-        },
-    },
+    # "FNO_iota": {
+    #     "use": not iota_fxd,
+    #     "kwargs": {
+    #         "name": "FNO_iota",
+    #         "fun": FNO_iota,
+    #         "grid": data_grid,
+    #         "bounds": iota_bounds,
+    #         "weight": barrier_weights,
+    #         "normalize": True,
+    #     },
+    # },
 }
 
 #===================================================================================================================================================
