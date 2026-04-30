@@ -31,16 +31,16 @@ try:
         FNO_pressure_positive,
         FNO_pressure_monotonic,
         FNO_grad_pressure_edge,
-        FNO_iota,
+        # FNO_iota,
     )
 except ImportError:
-    from research.lit_comp.custom_funcs import (
+    from custom_funcs import (
         FNO_pressure_axis,
         FNO_pressure_edge,
         FNO_pressure_positive,
         FNO_pressure_monotonic,
         FNO_grad_pressure_edge,
-        FNO_iota,
+        # FNO_iota,
     )
 
 
@@ -98,14 +98,14 @@ FNO_CONFIG = {
                 "thing": None,
             },
         },
-        {
-            "name": "FNO_iota",
-            "fun": FNO_iota,
-            "bounds": ("lower_rational", "upper_rational"),
-            "kwargs": {
-                "thing": None,
-            },
-        },
+        # {
+        #     "name": "FNO_iota",
+        #     "fun": FNO_iota,
+        #     "bounds": ("lower_rational", "upper_rational"),
+        #     "kwargs": {
+        #         "thing": None,
+        #     },
+        # },
     ),
 
     "constraints": (),

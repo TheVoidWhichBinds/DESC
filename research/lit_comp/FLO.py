@@ -35,22 +35,23 @@ try:
         FLO_pressure_DOF,
         FLO_pressure_edge,
         FLO_grad_pressure_edge,
-        FLO_iota_axis,
-        FLO_iota_edge,
-        FLO_iota_quadratic,
+        # FLO_iota_axis,
+        # FLO_iota_edge,
+        # FLO_iota_quadratic,
     )
 except ImportError:
-    from research.lit_comp.custom_funcs import (
+    from custom_funcs import (
         FLO_pressure_axis,
         FLO_pressure_shape,
         FLO_pressure_octic,
         FLO_pressure_DOF,
         FLO_pressure_edge,
         FLO_grad_pressure_edge,
-        FLO_iota_axis,
-        FLO_iota_edge,
-        FLO_iota_quadratic,
+        # FLO_iota_axis,
+        # FLO_iota_edge,
+        # FLO_iota_quadratic,
     )
+
 
 
 
@@ -83,22 +84,22 @@ FLO_CONFIG = {
                 "thing": None,
             },
         },
-        {
-            "name": "FLO_iota_axis",
-            "fun": FLO_iota_axis,
-            "bounds": ("lower_rational", "upper_rational"),
-            "kwargs": {
-                "thing": None,
-            },
-        },
-        {
-            "name": "FLO_iota_edge",
-            "fun": FLO_iota_edge,
-            "bounds": ("lower_rational", "upper_rational"),
-            "kwargs": {
-                "thing": None,
-            },
-        },
+        # {
+        #     "name": "FLO_iota_axis",
+        #     "fun": FLO_iota_axis,
+        #     "bounds": ("lower_rational", "upper_rational"),
+        #     "kwargs": {
+        #         "thing": None,
+        #     },
+        # },
+        # {
+        #     "name": "FLO_iota_edge",
+        #     "fun": FLO_iota_edge,
+        #     "bounds": ("lower_rational", "upper_rational"),
+        #     "kwargs": {
+        #         "thing": None,
+        #     },
+        # },
     ),
 
     "constraints": (
@@ -134,13 +135,13 @@ FLO_CONFIG = {
                 "thing": None,
             },
         },
-        {
-            "name": "FLO_iota_quadratic",
-            "fun": FLO_iota_quadratic,
-            "target": 0,
-            "kwargs": {
-                "thing": None,
-            },
-        },
+        # {
+        #     "name": "FLO_iota_quadratic",
+        #     "fun": FLO_iota_quadratic,
+        #     "target": 0,
+        #     "kwargs": {
+        #         "thing": None,
+        #     },
+        # },
     ),
 }
