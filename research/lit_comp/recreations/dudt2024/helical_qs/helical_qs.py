@@ -47,11 +47,8 @@ from qsc import Qsc
 #========================================================================================================================================
 # PATHS
 #========================================================================================================================================
-INPUT_DIR = Path(__file__).resolve().parent
-OUTPUT_DIR = INPUT_DIR.parent / "output"
-OUTPUT_DIR.mkdir(parents = True, exist_ok = True)
-
-INITIAL_PATH = INPUT_DIR / "helical_qs_initial.h5"
+OUTPUT_DIR = Path(__file__).resolve().parent
+INITIAL_PATH = OUTPUT_DIR / "helical_qs_initial.h5"
 
 
 
@@ -67,7 +64,7 @@ INITIAL_PATH = INPUT_DIR / "helical_qs_initial.h5"
 #========================================================================================================================================
 fname = "helical_qs"
 
-CHECK_PATH = OUTPUT_DIR / f"{fname}_CHECK.h5"
+FINAL_PATH = OUTPUT_DIR / f"{fname}_FXD.h5"
 FAILURE_PATH = OUTPUT_DIR / f"{fname}_FAILURE.h5"
 
 sym = True
@@ -124,13 +121,6 @@ def eq_error(eq):
 
 
 
-
-
-
-
-
-
-
 def load_initial_equilibrium(path):
     """Load the saved initial equilibrium."""
 
@@ -155,40 +145,11 @@ def load_initial_equilibrium(path):
 
 
 
-
-
-
-
-
-
-
 def save_family_to_path(fam, path):
     """Save the equilibrium family."""
 
     fam.save(str(path))
     print(f"saved: {path}")
-
-
-
-
-
-
-
-
-
-
-def save_equilibrium_to_path(eq, path):
-    """Save a single optimized equilibrium."""
-
-    eq.save(str(path))
-    print(f"saved: {path}")
-
-
-
-
-
-
-
 
 
 
@@ -203,13 +164,6 @@ def save_failure_checkpoint(fam, stage_message):
 
 
 
-
-
-
-
-
-
-
 def handle_signal(signum, frame):
     """Exit cleanly on catchable termination signals."""
 
@@ -217,13 +171,6 @@ def handle_signal(signum, frame):
     print(f"Received signal {signum}.")
     print(f"Latest completed stage should be saved at: {FAILURE_PATH}")
     sys.exit(128 + signum)
-
-
-
-
-
-
-
 
 
 
@@ -241,13 +188,6 @@ def make_omnigenous_field(eq):
     )
 
     return field
-
-
-
-
-
-
-
 
 
 
@@ -282,13 +222,6 @@ def make_omnigenity_objective(eq, field, rho, eta_weight):
     )
 
     return objective
-
-
-
-
-
-
-
 
 
 
@@ -461,13 +394,6 @@ try:
             verbose = 3,
         )
 
-        stage_path = OUTPUT_DIR / f"{fname}_{LM[i]}.h5"
-
-        save_equilibrium_to_path(
-            eq = eq,
-            path = stage_path,
-        )
-
         fam.append(eq)
 
         print("equilibrium error: {:.2e}".format(eq_error(eq)))
@@ -501,7 +427,7 @@ except Exception:
 #========================================================================================================================================
 save_family_to_path(
     fam = fam,
-    path = CHECK_PATH,
+    path = FINAL_PATH,
 )
 
 if FAILURE_PATH.exists():

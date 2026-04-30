@@ -5,6 +5,15 @@
 #
 #==============================================================================================================
 
+import os
+
+os.environ.setdefault("JAX_PLATFORMS", "gpu")
+os.environ.setdefault("JAX_PLATFORM_NAME", "gpu")
+os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
+
+from desc import set_device
+set_device("gpu")
+
 import argparse
 
 try:
