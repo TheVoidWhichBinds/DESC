@@ -1,9 +1,7 @@
 # Config.py
 #===================================================================================================================================================
 from pathlib import Path
-
 import jax.numpy as jnp
-
 from desc.grid import LinearGrid
 from desc.profiles import PowerSeriesProfile
 
@@ -41,7 +39,7 @@ from .helper import (
 
 
 #============== PATH / SOURCE CONFIG ================================================================================================================
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 #===================================================================================================================================================
 
 
@@ -75,7 +73,7 @@ surface_source_config = {
     "dataset_path": str(
         REPO_ROOT
         / "research"
-        / "neural"
+        / "surface_generator"
         / f"NFP_{NFP}"
         / "dataset.pkl"
     ),
@@ -111,12 +109,12 @@ iota_init = PowerSeriesProfile(
 #==========================
 # Grouping eq input config:
 EQ_INPUT_CONFIG = {
-    "NFP":                  NFP,
+    "NFP":                   NFP,
     "surface_source_config": surface_source_config,
-    "pressure_init":        pressure_init,
-    "iota_init":            iota_init,
-    "eq_resolution":        eq_resolution,
-    "N_eq":                 N_eq,
+    "pressure_init":         pressure_init,
+    "iota_init":             iota_init,
+    "eq_resolution":         eq_resolution,
+    "N_eq":                  N_eq,
 }
 #================================
 #===================================================================================================================================================
