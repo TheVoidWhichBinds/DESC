@@ -19,7 +19,8 @@ import inspect
 import os
 import runpy
 import traceback
-
+from pathlib import Path
+from desc.io import load
 
 from desc.optimize import Optimizer
 from desc.equilibrium import Equilibrium
@@ -28,6 +29,123 @@ from desc.objectives import (
     ObjectiveFromUser,
     LinearObjectiveFromUser,
 )
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
+# Shared comparison/plotting helpers:
+#==============================================================================================================
+
+def get_lit_comp_dir():
+    """
+    Returns the research/lit_comp directory.
+    """
+
+    return Path(__file__).resolve().parent
+
+
+
+
+
+def get_case_dir(
+        paper : str,
+        case : str,
+    ):
+    """
+    Returns the folder for a specific paper/case.
+    """
+
+    lit_comp_dir = get_lit_comp_dir()
+    case_dir = lit_comp_dir / "recreations" / paper / case
+
+    if not case_dir.exists():
+        raise FileNotFoundError(f"Case folder does not exist: {case_dir}")
+
+    return case_dir
+
+
+
+
+
+def find_h5_files(
+        case_dir : Path,
+    ):
+    """
+    Finds OG, CHECK, and FNO h5 files in the case folder.
+    """
+
+    suffixes = {
+        "OG": "_OG.h5",
+        "CHECK": "_CHECK.h5",
+        "FNO": "_FNO.h5",
+    }
+
+    files = {}
+
+    for label, suffix in suffixes.items():
+        matches = sorted(case_dir.glob(f"*{suffix}"))
+
+        if len(matches) == 0:
+            recursive_matches = sorted(case_dir.rglob(f"*{suffix}"))
+            matches = recursive_matches
+
+        if len(matches) == 0:
+            files[label] = None
+
+        elif len(matches) == 1:
+            files[label] = matches[0]
+
+        else:
+            raise RuntimeError(
+                f"Multiple files ending in {suffix} found in {case_dir}:\n"
+                + "\n".join(str(match) for match in matches)
+            )
+
+    return files
+
+
+
+
+
+def find_case_h5_files(
+        paper : str,
+        case : str,
+    ):
+    """
+    Finds OG, CHECK, and FNO h5 files for a paper/case.
+    """
+
+    case_dir = get_case_dir(
+        paper = paper,
+        case = case,
+    )
+
+    return find_h5_files(case_dir)
+
+
+
+
+
+def load_final_eq(
+        path : Path,
+    ):
+    """
+    Loads the final equilibrium from a DESC h5 file.
+    """
+
+    obj = load(str(path))
+
+    if hasattr(obj, "__getitem__"):
+        return obj[-1]
+
+    return obj
 
 
 
