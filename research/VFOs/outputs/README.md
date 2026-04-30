@@ -292,16 +292,6 @@ opt_toggles_core = {
 #===========================================================
 
 opt_toggles_FLO = {
-    # "FLO_pressure_axis": {
-    #     "use": not pressure_fxd,
-    #     "kwargs": {
-    #         "name": "FLO_pressure_axis",
-    #         "fun": FLO_pressure_axis,
-    #         "bounds": FLO_pressure_axis_bounds,
-    #         "weight": barrier_weights,
-    #         "normalize": True,
-    #     },
-    # },
     "FLO_pressure_shape": {
         "use": not pressure_fxd,
         "kwargs": {
@@ -330,6 +320,14 @@ opt_toggles_FLO = {
             "bounds": iota_bounds,
             "weight": barrier_weights,
             "normalize": True,
+        },
+    },
+    "FLO_pressure_axis": {
+        "use": not pressure_fxd,
+        "kwargs": {
+            "name": "FLO_pressure_axis",
+            "fun": FLO_pressure_axis,
+            "target": p_axis_init,
         },
     },
     "FLO_pressure_octic": {
@@ -390,17 +388,6 @@ opt_toggles_FLO = {
 #===========================================================
 
 opt_toggles_FNO = {
-    # "FNO_pressure_axis": {
-    #     "use": not pressure_fxd,
-    #     "kwargs": {
-    #         "name": "FNO_pressure_axis",
-    #         "fun": FNO_pressure_axis,
-    #         "grid": data_grid,
-    #         "bounds": FNO_pressure_axis_bounds,
-    #         "weight": barrier_weights,
-    #         "normalize": True,
-    #     },
-    # },
     "FNO_pressure_edge": {
         "use": not pressure_fxd,
         "kwargs": {
@@ -436,6 +423,17 @@ opt_toggles_FNO = {
                 -jnp.inf,
                 0.0,
             ),
+            "weight": barrier_weights,
+            "normalize": True,
+        },
+    },
+    "FNO_pressure_axis": {
+        "use": not pressure_fxd,
+        "kwargs": {
+            "name": "FNO_pressure_axis",
+            "fun": FNO_pressure_axis,
+            "grid": data_grid,
+            "target": p_axis_init,
             "weight": barrier_weights,
             "normalize": True,
         },

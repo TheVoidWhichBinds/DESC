@@ -132,12 +132,6 @@ CONSTRAINT_REGISTRY_CORE = {
 #===========================================================
 
 OBJECTIVE_REGISTRY_FLO = {
-    # "FLO_pressure_axis": {
-    #     "wrapper": LinearObjectiveFromUser,
-    #     "defaults": {
-    #         "thing": _eq,
-    #     },
-    # },
     "FLO_pressure_shape": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -174,6 +168,12 @@ OBJECTIVE_REGISTRY_FLO = {
 #===========================================================
 
 CONSTRAINT_REGISTRY_FLO = {
+    "FLO_pressure_axis": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
     "FLO_pressure_octic": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -222,12 +222,12 @@ CONSTRAINT_REGISTRY_FLO = {
 #===========================================================
 
 OBJECTIVE_REGISTRY_FNO = {
-    # "FNO_pressure_axis": {
-    #     "wrapper": ObjectiveFromUser,
-    #     "defaults": {
-    #         "thing": _eq,
-    #     },
-    # },
+    "FNO_pressure_axis": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
     "FNO_pressure_edge": {
         "wrapper": ObjectiveFromUser,
         "defaults": {
