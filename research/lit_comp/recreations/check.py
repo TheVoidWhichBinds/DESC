@@ -1,5 +1,5 @@
 # check.py
-"""Compare original and recreated DESC output files for any paper recreation."""
+"""Compare OG and recreated CHECK DESC output files for any paper recreation."""
 
 
 #========================================================================================================================================
@@ -8,7 +8,6 @@
 from argparse import ArgumentParser
 from pathlib import Path
 import csv
-import math
 import sys
 
 import numpy as np
@@ -27,8 +26,8 @@ from desc.io import load
 #========================================================================================================================================
 # SETTINGS
 #========================================================================================================================================
+ORIGINAL_SUFFIX = "_OG"
 CHECK_SUFFIX = "_CHECK"
-ORIGINAL_SUFFIX = "_output"
 
 SUMMARY_KEYS = [
     "value",
@@ -109,16 +108,16 @@ QUANTITY_CANDIDATES = [
 # PATH HELPERS
 #========================================================================================================================================
 def normalize_case_name(name):
-    """Normalize a passed filename/case stem by removing .h5, _CHECK, and _output."""
+    """Normalize a passed filename/case stem by removing .h5, _OG, and _CHECK."""
 
     path = Path(name)
     stem = path.stem
 
-    if stem.endswith(CHECK_SUFFIX):
-        stem = stem[: -len(CHECK_SUFFIX)]
-
     if stem.endswith(ORIGINAL_SUFFIX):
         stem = stem[: -len(ORIGINAL_SUFFIX)]
+
+    if stem.endswith(CHECK_SUFFIX):
+        stem = stem[: -len(CHECK_SUFFIX)]
 
     return stem
 
@@ -160,7 +159,7 @@ def get_output_dir(paper):
 
 
 def find_matching_files(output_dir, file_name):
-    """Find the original and CHECK files matching the requested case."""
+    """Find the OG and CHECK files matching the requested case."""
 
     case_name = normalize_case_name(file_name)
 
@@ -175,14 +174,15 @@ def find_matching_files(output_dir, file_name):
         if normalized != case_name:
             continue
 
-        if path.stem.endswith(CHECK_SUFFIX):
-            check_matches.append(path)
-        else:
+        if path.stem.endswith(ORIGINAL_SUFFIX):
             original_matches.append(path)
+
+        elif path.stem.endswith(CHECK_SUFFIX):
+            check_matches.append(path)
 
     if len(original_matches) == 0:
         raise FileNotFoundError(
-            "Could not find original file for case '{}' in {}".format(
+            "Could not find OG file for case '{}' in {}".format(
                 case_name,
                 output_dir,
             )
@@ -198,7 +198,7 @@ def find_matching_files(output_dir, file_name):
 
     if len(original_matches) > 1:
         raise RuntimeError(
-            "Found multiple original files for case '{}':\n{}".format(
+            "Found multiple OG files for case '{}':\n{}".format(
                 case_name,
                 "\n".join(str(path) for path in original_matches),
             )
@@ -344,7 +344,7 @@ def summarize_value(value):
         "value": np.nan,
         "max_abs": float(np.max(np.abs(flat))),
         "mean_abs": float(np.mean(np.abs(flat))),
-        "rms": float(np.sqrt(np.mean(flat**2))),
+        "rms": float(np.sqrt(np.mean(flat ** 2))),
         "min": float(np.min(flat)),
         "max": float(np.max(flat)),
         "size": int(flat.size),
@@ -360,7 +360,7 @@ def summarize_value(value):
 
 
 def relative_difference(original, check):
-    """Return relative difference using the original value as reference."""
+    """Return relative difference using the OG value as reference."""
 
     if not np.isfinite(original) or not np.isfinite(check):
         return np.nan
@@ -408,7 +408,7 @@ def format_float(value):
 # COMPARISON
 #========================================================================================================================================
 def compare_equilibria(eq_original, eq_check):
-    """Compare all supported DESC quantities between original and CHECK equilibria."""
+    """Compare all supported DESC quantities between OG and CHECK equilibria."""
 
     rows = []
 
@@ -485,7 +485,7 @@ def print_rows(rows):
         "{:<28} {:<14} {:>16} {:>16} {:>16} {:>16}".format(
             "quantity",
             "statistic",
-            "original",
+            "OG",
             "CHECK",
             "abs diff",
             "rel diff",
@@ -551,13 +551,13 @@ def parse_args():
     """Parse command-line arguments."""
 
     parser = ArgumentParser(
-        description = "Compare original and CHECK DESC output files for a paper recreation.",
+        description = "Compare OG and CHECK DESC output files for a paper recreation.",
     )
 
     parser.add_argument(
         "--paper",
         required = True,
-        help = "Paper recreation directory name, e.g. panici2023.",
+        help = "Paper recreation directory name, e.g. dudt2024.",
     )
 
     parser.add_argument(
@@ -610,7 +610,7 @@ def main():
     print("Case:")
     print(case_name)
     print("")
-    print("Original:")
+    print("OG:")
     print(original_file)
     print("")
     print("CHECK:")
@@ -627,7 +627,7 @@ def main():
     print_rows(rows)
 
     if args.save:
-        csv_path = output_dir / "{}_comparison.csv".format(case_name)
+        csv_path = output_dir / "{}_OG_vs_CHECK_comparison.csv".format(case_name)
 
         save_rows(
             rows = rows,
