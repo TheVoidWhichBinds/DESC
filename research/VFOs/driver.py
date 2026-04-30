@@ -1,7 +1,6 @@
 # driver.py
 #===================================================================================================================================================
 
-import argparse
 from pathlib import Path
 import os
 os.environ["JAX_PLATFORMS"] = "cuda,cpu"
@@ -42,53 +41,6 @@ except ImportError:
 
 
 #===========================================================
-# ARGUMENTS
-#===========================================================
-
-def parse_args():
-    """
-    Parse command-line arguments.
-    """
-
-    parser = argparse.ArgumentParser(
-        description = "Run one equilibrium solve, one FLO optimization, and one FNO optimization.",
-    )
-
-    parser.add_argument(
-        "--config",
-        type = str,
-        default = str(Path(__file__).resolve().with_name("config.py")),
-        help = "Path to config.py.",
-    )
-
-    parser.add_argument(
-        "--optimizer",
-        type = str,
-        default = "lsq-exact",
-        help = "DESC optimizer name.",
-    )
-
-    parser.add_argument(
-        "--out-dir",
-        type = str,
-        default = str(Path(__file__).resolve().with_name("outputs")),
-        help = "Output directory.",
-    )
-
-    return parser.parse_args()
-
-#===================================================================================================================================================
-
-
-
-
-
-
-
-
-
-
-#===========================================================
 # MAIN
 #===========================================================
 
@@ -103,19 +55,21 @@ def main():
         4. saves for all three results.
     """
 
-    args = parse_args()
+    config_path = Path(__file__).resolve().with_name("config.py")
+    out_dir_path = Path(__file__).resolve().with_name("outputs")
 
     config = load_config_module(
-        config_path = args.config,
+        config_path = config_path,
     )
 
     out_dir = prepare_run_directory(
-        out_dir = args.out_dir,
-        config_path = args.config,
+        out_dir = out_dir_path,
+        config_path = config_path,
     )
 
     eq_config = config.EQ_CONFIG
     opt_config = config.OPT_CONFIG
+    optimizer = opt_config["optimizer"]
 
     print("")
     print("#===========================================================")
@@ -151,7 +105,7 @@ def main():
     try:
         eq_FLO, result_FLO = run_optimization(
             eq_0 = eq_init,
-            optimizer = args.optimizer,
+            optimizer = optimizer,
             opt_config = opt_config,
             formulation = "FLO",
         )
@@ -178,7 +132,7 @@ def main():
     try:
         eq_FNO, result_FNO = run_optimization(
             eq_0 = eq_init,
-            optimizer = args.optimizer,
+            optimizer = optimizer,
             opt_config = opt_config,
             formulation = "FNO",
         )

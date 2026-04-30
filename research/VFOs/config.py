@@ -182,8 +182,9 @@ iota_bounds = iota_between_rationals(
     iota_axis = iota_axis_init,
 )
 
-barrier_weights = 1e5
+optimizer = "lsq-exact"
 
+barrier_weights = 1e5
 ftol = 1e-4
 xtol = 1e-6
 gtol = 1e-6
@@ -478,6 +479,7 @@ opt_toggles_FNO = {
 #===========================================================
 
 OPT_CONFIG = {
+    "optimizer":        optimizer,
     "ftol":             ftol,
     "xtol":             xtol,
     "gtol":             gtol,
