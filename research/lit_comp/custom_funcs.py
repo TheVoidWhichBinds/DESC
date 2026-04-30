@@ -23,38 +23,9 @@ import jax.numpy as jnp
 
 
 
-
-
 #==============================================================================================================
-# FIRM
+# FLO Objectives:
 #==============================================================================================================
-#
-# Objectives:
-#=============================
-#=============================
-#
-#
-# Constraints:
-#===============
-#================
-#
-#==============================================================================================================
-
-
-
-
-
-
-
-
-
-
-#==============================================================================================================
-# FLO
-#==============================================================================================================
-#
-# Objectives:
-#=============================
 
 def FLO_pressure_axis(
         params,
@@ -64,13 +35,6 @@ def FLO_pressure_axis(
     """
 
     return jnp.atleast_1d(params["p_l"][0])
-
-
-
-
-
-
-
 
 
 def FLO_pressure_shape(
@@ -100,18 +64,9 @@ def FLO_pressure_octic(
     """
     Limits the pressure profile to an 8th-order polynomial max.
     """
-
     c = params["p_l"]
     higher_orders = c[5:]
-
     return higher_orders
-
-
-
-
-
-
-
 
 
 def FLO_pressure_DOF(
@@ -121,18 +76,9 @@ def FLO_pressure_DOF(
     Constrains pressure coefficients so the pressure-shape degree of freedom
     stays on the smooth-profile relation.
     """
-
     c = params["p_l"]
     DOF_relation = c[3] + 3.45 * c[4]
-
     return jnp.atleast_1d(DOF_relation)
-
-
-
-
-
-
-
 
 
 def FLO_pressure_edge(
@@ -141,15 +87,7 @@ def FLO_pressure_edge(
     """
     Pressure on edge, rho = 1.
     """
-
     return jnp.atleast_1d(params["p_l"].sum())
-
-
-
-
-
-
-
 
 
 def FLO_grad_pressure_edge(
@@ -158,18 +96,9 @@ def FLO_grad_pressure_edge(
     """
     Pressure gradient on edge, rho = 1.
     """
-
     c = params["p_l"][1:]
     order = jnp.arange(1, len(c) + 1)
-
     return jnp.atleast_1d((order * c).sum())
-
-
-
-
-
-
-
 
 
 def FLO_iota_axis(
@@ -178,15 +107,7 @@ def FLO_iota_axis(
     """
     Allowable range of axis iota.
     """
-
     return jnp.atleast_1d(params["i_l"][0])
-
-
-
-
-
-
-
 
 
 def FLO_iota_edge(
@@ -195,15 +116,7 @@ def FLO_iota_edge(
     """
     Allowable range of edge iota.
     """
-
     return jnp.atleast_1d(params["i_l"].sum())
-
-
-
-
-
-
-
 
 
 def FLO_iota_quadratic(
@@ -212,10 +125,8 @@ def FLO_iota_quadratic(
     """
     Limits iota to a second-order polynomial.
     """
-
     c = params["i_l"]
     higher_orders = c[2:]
-
     return higher_orders
 
 
@@ -226,12 +137,10 @@ def FLO_iota_quadratic(
 
 
 
+
 #==============================================================================================================
-# FNO
+# FNO Objectives:
 #==============================================================================================================
-#
-# Objectives:
-#=============================
 
 def FNO_pressure_axis(
         grid,
@@ -240,17 +149,8 @@ def FNO_pressure_axis(
     """
     Range of values of pressure on-axis.
     """
-
     p = data["p"][0]
-
     return jnp.atleast_1d(p)
-
-
-
-
-
-
-
 
 
 def FNO_pressure_edge(
@@ -260,17 +160,8 @@ def FNO_pressure_edge(
     """
     Pressure is zero on edge.
     """
-
     p = data["p"][-1]
-
     return jnp.atleast_1d(p)
-
-
-
-
-
-
-
 
 
 def FNO_pressure_positive(
@@ -280,17 +171,8 @@ def FNO_pressure_positive(
     """
     Maintain positive pressure.
     """
-
     p = data["p"]
-
     return p
-
-
-
-
-
-
-
 
 
 def FNO_pressure_monotonic(
@@ -300,17 +182,8 @@ def FNO_pressure_monotonic(
     """
     Enforce monotonic pressure.
     """
-
     dp_dr = data["p_r"]
-
     return dp_dr
-
-
-
-
-
-
-
 
 
 def FNO_grad_pressure_edge(
@@ -320,17 +193,8 @@ def FNO_grad_pressure_edge(
     """
     Pressure gradient on edge equals zero.
     """
-
     dp_dr = data["p_r"][-1]
-
     return jnp.atleast_1d(dp_dr)
-
-
-
-
-
-
-
 
 
 def FNO_iota(
@@ -340,7 +204,5 @@ def FNO_iota(
     """
     Keeps iota from crossing rational surfaces.
     """
-
     iota = data["iota"]
-
     return iota

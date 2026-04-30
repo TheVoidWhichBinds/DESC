@@ -25,7 +25,7 @@
 import jax.numpy as jnp
 
 try:
-    from .VFOs import (
+    from .custom_funcs import (
         FNO_pressure_axis,
         FNO_pressure_edge,
         FNO_pressure_positive,
@@ -34,7 +34,7 @@ try:
         FNO_iota,
     )
 except ImportError:
-    from VFOs import (
+    from research.lit_comp.custom_funcs import (
         FNO_pressure_axis,
         FNO_pressure_edge,
         FNO_pressure_positive,

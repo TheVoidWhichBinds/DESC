@@ -28,7 +28,7 @@
 #==============================================================================================================
 
 try:
-    from .VFOs import (
+    from .custom_funcs import (
         FLO_pressure_axis,
         FLO_pressure_shape,
         FLO_pressure_octic,
@@ -40,7 +40,7 @@ try:
         FLO_iota_quadratic,
     )
 except ImportError:
-    from VFOs import (
+    from research.lit_comp.custom_funcs import (
         FLO_pressure_axis,
         FLO_pressure_shape,
         FLO_pressure_octic,
