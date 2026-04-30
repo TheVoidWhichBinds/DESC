@@ -1,31 +1,61 @@
-# Config.py
+# config.py
 #===================================================================================================================================================
+
 from pathlib import Path
+
 import jax.numpy as jnp
+
 from desc.grid import LinearGrid
 from desc.profiles import PowerSeriesProfile
 
-from .custom_funcs import (
-    FLO_pressure_axis,
-    FLO_pressure_shape,
-    FLO_pressure_octic,
-    FLO_pressure_DOF,
-    FLO_pressure_edge,
-    FLO_grad_pressure_edge,
-    FLO_iota_axis,
-    FLO_iota_edge,
-    FLO_iota_quadratic,
-    FNO_pressure_axis,
-    FNO_pressure_edge,
-    FNO_pressure_positive,
-    FNO_pressure_monotonic,
-    FNO_grad_pressure_edge,
-    FNO_iota,
-)
+try:
+    from .custom_funcs import (
+        FLO_pressure_axis,
+        FLO_pressure_shape,
+        FLO_pressure_octic,
+        FLO_pressure_DOF,
+        FLO_pressure_edge,
+        FLO_grad_pressure_edge,
+        FLO_iota_axis,
+        FLO_iota_edge,
+        FLO_iota_quadratic,
+        FNO_pressure_axis,
+        FNO_pressure_edge,
+        FNO_pressure_positive,
+        FNO_pressure_monotonic,
+        FNO_grad_pressure_edge,
+        FNO_iota,
+    )
 
-from .helper import (
-    iota_between_rationals,
-)
+    from .helper import (
+        iota_between_rationals,
+        load_surface_pool,
+    )
+
+except ImportError:
+    from custom_funcs import (
+        FLO_pressure_axis,
+        FLO_pressure_shape,
+        FLO_pressure_octic,
+        FLO_pressure_DOF,
+        FLO_pressure_edge,
+        FLO_grad_pressure_edge,
+        FLO_iota_axis,
+        FLO_iota_edge,
+        FLO_iota_quadratic,
+        FNO_pressure_axis,
+        FNO_pressure_edge,
+        FNO_pressure_positive,
+        FNO_pressure_monotonic,
+        FNO_grad_pressure_edge,
+        FNO_iota,
+    )
+
+    from helper import (
+        iota_between_rationals,
+        load_surface_pool,
+    )
+
 #===================================================================================================================================================
 
 
@@ -37,9 +67,12 @@ from .helper import (
 
 
 
+#===========================================================
+# PATH CONFIG
+#===========================================================
 
-#============== PATH / SOURCE CONFIG ================================================================================================================
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
 #===================================================================================================================================================
 
 
@@ -51,24 +84,21 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 
+#===========================================================
+# EQUILIBRIUM INPUTS
+#===========================================================
 
-#============== EQUILIBRIUM INPUTS ==================================================================================================================
-#==================================
-#------------------------
-# Equilibrium resolution:
 L = 12
 M = 12
 N = 12
-eq_resolution = [L, M, N]
-#------------------------
+eq_resolution = [
+    L,
+    M,
+    N,
+]
 
-#----------------------------------
-# Number of toroidal field periods:
 NFP = 4
-#----------------------------------
 
-#------------------------------------------
-# Surface source from research/neural/NFP_*:
 surface_source_config = {
     "dataset_path": str(
         REPO_ROOT
@@ -82,41 +112,42 @@ surface_source_config = {
     "shuffle_seed": 42,
 }
 
-# Number of equilibria to test:
-N_eq = 4
-#------------------------------
+surface_pool = load_surface_pool(
+    surface_source_config = surface_source_config,
+    NFP = NFP,
+    N_eq = 1,
+)
 
-#-----------------------
-# Initializing pressure:
+surface_init = surface_pool[0]["surface_init"]
+selected_point = surface_pool[0]["selected_point"]
+
 p_axis_init = 1.0e5
 pressure_init = PowerSeriesProfile(
-    [p_axis_init, -2.0E5, 1.0E5],
+    [
+        p_axis_init,
+        -2.0E5,
+        1.0E5,
+    ],
     sym = True,
 )
-#-----------------------
 
-#-------------------
-# Initializing iota:
 iota_axis_init = 0.51
 iota_init = PowerSeriesProfile(
-    [iota_axis_init, 0.14],
+    [
+        iota_axis_init,
+        0.14,
+    ],
     sym = True,
 )
-#-------------------
-#==================================
 
-
-#==========================
-# Grouping eq input config:
-EQ_INPUT_CONFIG = {
-    "NFP":                   NFP,
-    "surface_source_config": surface_source_config,
-    "pressure_init":         pressure_init,
-    "iota_init":             iota_init,
-    "eq_resolution":         eq_resolution,
-    "N_eq":                  N_eq,
+EQ_CONFIG = {
+    "NFP":           NFP,
+    "surface_init":  surface_init,
+    "pressure_init": pressure_init,
+    "iota_init":     iota_init,
+    "eq_resolution": eq_resolution,
 }
-#================================
+
 #===================================================================================================================================================
 
 
@@ -128,52 +159,63 @@ EQ_INPUT_CONFIG = {
 
 
 
+#===========================================================
+# OPTIMIZATION SCALARS
+#===========================================================
 
-#============== OPTIMIZATION INPUTS ================================================================================================================
-#===========================================
-# Bounds shared by FLO / FNO objective sets:
-FLO_pressure_axis_bounds = (1e5, 1e7)
-FLO_pressure_shape_bounds = (-1.3, 1.8)
-FNO_pressure_axis_bounds = (1e5, 1e7)
-iota_bounds = iota_between_rationals(iota_axis = iota_axis_init)
+FLO_pressure_axis_bounds = (
+    1e5,
+    1e7,
+)
+
+FLO_pressure_shape_bounds = (
+    -1.3,
+    1.8,
+)
+
+FNO_pressure_axis_bounds = (
+    1e5,
+    1e7,
+)
+
+iota_bounds = iota_between_rationals(
+    iota_axis = iota_axis_init,
+)
+
 barrier_weights = 1e5
-#===========================================
 
-
-
-
-#======================
-# Optimizer:
 ftol = 1e-4
 xtol = 1e-6
 gtol = 1e-6
 maxiter = 300
 max_nfev = 300
 x_scale = "auto"
-#======================
 
-
-
-
-#=====================
-# Toggle booleans left:
 pressure_fxd = False
 iota_fxd = False
-#=====================
 
-#=============================
-# Grid for data-based customs:
-data_grid = LinearGrid(L = 200, M = 0, N = 0)
-#============================================
+data_grid = LinearGrid(
+    L = 200,
+    M = 0,
+    N = 0,
+)
+
+#===================================================================================================================================================
 
 
 
 
-#==================
-# CORE OPT TOGGLES:
+
+
+
+
+
+
+#===========================================================
+# CORE OPT TOGGLES
+#===========================================================
+
 opt_toggles_core = {
-    # Objectives:
-    #====================
     "forcebalance_obj": {
         "use": True,
         "kwargs": {
@@ -186,7 +228,10 @@ opt_toggles_core = {
         "use": True,
         "kwargs": {
             "weight": 1e0,
-            "helicity": (1, NFP),
+            "helicity": (
+                1,
+                NFP,
+            ),
             "normalize": True,
         },
     },
@@ -201,16 +246,14 @@ opt_toggles_core = {
     "mercier": {
         "use": True,
         "kwargs": {
-            "bounds": (0.05, jnp.inf),
+            "bounds": (
+                0.05,
+                jnp.inf,
+            ),
             "weight": 1e0,
             "normalize": True,
         },
     },
-
-
-
-    # Constraints:
-    #=============
     "forcebalance_con": {
         "use": True,
         "kwargs": {
@@ -229,25 +272,24 @@ opt_toggles_core = {
         "use": True,
         "kwargs": {},
     },
-    "fix_boundary_R": {
-        "use": False,
-        "kwargs": {},
-    },
-    "fix_boundary_Z": {
-        "use": False,
-        "kwargs": {},
-    },
 }
-#==================
+
+#===================================================================================================================================================
 
 
 
 
-#=================
-# FLO OPT TOGGLES:
+
+
+
+
+
+
+#===========================================================
+# FLO OPT TOGGLES
+#===========================================================
+
 opt_toggles_FLO = {
-    # Objectives:
-    #============
     "FLO_pressure_axis": {
         "use": not pressure_fxd,
         "kwargs": {
@@ -288,9 +330,6 @@ opt_toggles_FLO = {
             "normalize": True,
         },
     },
-
-    # Constraints:
-    #=============
     "FLO_pressure_octic": {
         "use": not pressure_fxd,
         "kwargs": {
@@ -332,16 +371,23 @@ opt_toggles_FLO = {
         },
     },
 }
-#=================
+
+#===================================================================================================================================================
 
 
 
 
-#=================
-# FNO OPT TOGGLES:
+
+
+
+
+
+
+#===========================================================
+# FNO OPT TOGGLES
+#===========================================================
+
 opt_toggles_FNO = {
-    # Objectives:
-    #============
     "FNO_pressure_axis": {
         "use": not pressure_fxd,
         "kwargs": {
@@ -370,7 +416,10 @@ opt_toggles_FNO = {
             "name": "FNO_pressure_positive",
             "fun": FNO_pressure_positive,
             "grid": data_grid,
-            "bounds": (0.0, jnp.inf),
+            "bounds": (
+                0.0,
+                jnp.inf,
+            ),
             "weight": barrier_weights,
             "normalize": True,
         },
@@ -381,7 +430,10 @@ opt_toggles_FNO = {
             "name": "FNO_pressure_monotonic",
             "fun": FNO_pressure_monotonic,
             "grid": data_grid,
-            "bounds": (-jnp.inf, 0.0),
+            "bounds": (
+                -jnp.inf,
+                0.0,
+            ),
             "weight": barrier_weights,
             "normalize": True,
         },
@@ -408,29 +460,8 @@ opt_toggles_FNO = {
             "normalize": True,
         },
     },
-
-    # Constraints:
-    #=============
 }
-#=================
 
-
-
-
-#=====================
-# Grouping opt inputs:
-OPT_CONFIG = {
-    "ftol":             ftol,
-    "xtol":             xtol,
-    "gtol":             gtol,
-    "maxiter":          maxiter,
-    "max_nfev":         max_nfev,
-    "x_scale":          x_scale,
-    "opt_toggles_core": opt_toggles_core,
-    "opt_toggles_FLO":  opt_toggles_FLO,
-    "opt_toggles_FNO":  opt_toggles_FNO,
-}
-#=====================
 #===================================================================================================================================================
 
 
@@ -442,11 +473,40 @@ OPT_CONFIG = {
 
 
 
+#===========================================================
+# OPT CONFIG
+#===========================================================
 
-#============== DRIVER INPUTS ======================================================================================================================
+OPT_CONFIG = {
+    "ftol":             ftol,
+    "xtol":             xtol,
+    "gtol":             gtol,
+    "maxiter":          maxiter,
+    "max_nfev":         max_nfev,
+    "x_scale":          x_scale,
+    "opt_toggles_core": opt_toggles_core,
+    "opt_toggles_FLO":  opt_toggles_FLO,
+    "opt_toggles_FNO":  opt_toggles_FNO,
+}
+
+#===================================================================================================================================================
+
+
+
+
+
+
+
+
+
+
+#===========================================================
+# DRIVER CONFIG
+#===========================================================
+
 DRIVER_CONFIG = {
     "config_path": __file__,
-    "execution_mode": "cluster",   # "auto", "local", or "cluster"
-    "cluster_max_workers": 2,
+    "selected_point": selected_point,
 }
+
 #===================================================================================================================================================

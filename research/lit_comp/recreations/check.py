@@ -9,9 +9,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 import csv
 import sys
-
 import numpy as np
-
 from desc.io import load
 
 

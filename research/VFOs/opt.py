@@ -1,7 +1,6 @@
+# opt.py
+#===================================================================================================================================================
 
-import sys
-import numpy as np
-sys.path.append("/Users/macdaddi/DESC")
 from desc.objectives import (
     ObjectiveFunction,
     FixIota,
@@ -13,13 +12,21 @@ from desc.objectives import (
     BallooningStability,
     MercierStability,
     LinearObjectiveFromUser,
-)
-from .helper import (
-    _eq,
-    _merge_toggles,
-    _append_terms,
+    ObjectiveFromUser,
 )
 
+try:
+    from .helper import (
+        _eq,
+        _append_terms,
+    )
+except ImportError:
+    from helper import (
+        _eq,
+        _append_terms,
+    )
+
+#===================================================================================================================================================
 
 
 
@@ -29,12 +36,12 @@ from .helper import (
 
 
 
-#============== REGISTRIES ============================================================================================================================
-#========
-# Shared:
-#-------------------------
-OBJECTIVE_REGISTRY_BOTH = {
-        # Standard:
+
+#===========================================================
+# CORE OBJECTIVES
+#===========================================================
+
+OBJECTIVE_REGISTRY_CORE = {
     "forcebalance_obj": {
         "wrapper": ForceBalance,
         "defaults": {
@@ -66,13 +73,37 @@ OBJECTIVE_REGISTRY_BOTH = {
         },
     },
 }
-#---------------------
 
-#---------------------------
-CONSTRAINT_REGISTRY_BOTH = {
-        # Standard:
+#===================================================================================================================================================
+
+
+
+
+
+
+
+
+
+
+#===========================================================
+# CORE CONSTRAINTS
+#===========================================================
+
+CONSTRAINT_REGISTRY_CORE = {
     "forcebalance_con": {
         "wrapper": ForceBalance,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+    "fix_pressure": {
+        "wrapper": FixPressure,
+        "defaults": {
+            "eq": _eq,
+        },
+    },
+    "fix_iota": {
+        "wrapper": FixIota,
         "defaults": {
             "eq": _eq,
         },
@@ -84,130 +115,98 @@ CONSTRAINT_REGISTRY_BOTH = {
         },
     },
 }
-#---------------------
-#=====================
+
+#===================================================================================================================================================
 
 
 
 
-#================
-# Fixed profiles:
-#--------------------------
-OBJECTIVE_REGISTRY_FXD = {
-}
-#--------------------------
-
-#--------------------------
-CONSTRAINT_REGISTRY_FXD = {
-        # Standard:
-    "fix_iota": {
-        "wrapper": FixIota,
-        "defaults": {
-            "eq": _eq,
-        },
-    },
-    "fix_pressure": {
-        "wrapper": FixPressure,
-        "defaults": {
-            "eq": _eq,
-        },
-    },
-}
-#---------------------
-#=====================
 
 
 
 
-#=========================
-# Free profiles:
-#-------------------------
-OBJECTIVE_REGISTRY_FREE = {
-        # Custom:
-    "pressure_axis_range": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    }, 
-    "pressure_shape": {
+
+
+#===========================================================
+# FLO OBJECTIVES
+#===========================================================
+
+OBJECTIVE_REGISTRY_FLO = {
+    "FLO_pressure_axis": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "iota_axis_range": {
+    "FLO_pressure_shape": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "iota_edge_range": {
+    "FLO_iota_axis": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "FLO_iota_edge": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
 }
-#------------------------
 
-#---------------------------
-CONSTRAINT_REGISTRY_FREE = {
-        # Standard:
-    "fix_iota": {
-        "wrapper": FixIota,
-        "defaults": {
-            "eq": _eq,
-        },
-    },
+#===================================================================================================================================================
 
-        # Custom:
-    "pressure_octic": {
+
+
+
+
+
+
+
+
+
+#===========================================================
+# FLO CONSTRAINTS
+#===========================================================
+
+CONSTRAINT_REGISTRY_FLO = {
+    "FLO_pressure_octic": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "pressure_DOF": {
+    "FLO_pressure_DOF": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "pressure_edge": {
+    "FLO_pressure_edge": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "grad_pressure_edge": {
+    "FLO_grad_pressure_edge": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
-    "grad_iota_axis": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "iota_edge": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "iota_axis": {
+    "FLO_iota_quadratic": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
             "thing": _eq,
         },
     },
 }
-#------------------------
-#========================
-#==============================================================================================================================================================
+
+#===================================================================================================================================================
 
 
 
@@ -218,126 +217,219 @@ CONSTRAINT_REGISTRY_FREE = {
 
 
 
-#============== OPTIMIZER FUNCTION ============================================================================================================================
-def run_optimization(eq_0, optimizer, opt_config, FXD: bool):
+#===========================================================
+# FNO OBJECTIVES
+#===========================================================
+
+OBJECTIVE_REGISTRY_FNO = {
+    "FNO_pressure_axis": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "FNO_pressure_edge": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "FNO_pressure_positive": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "FNO_pressure_monotonic": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "FNO_grad_pressure_edge": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "FNO_iota": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+}
+
+#===================================================================================================================================================
+
+
+
+
+
+
+
+
+
+
+#===========================================================
+# FNO CONSTRAINTS
+#===========================================================
+
+CONSTRAINT_REGISTRY_FNO = {
+}
+
+#===================================================================================================================================================
+
+
+
+
+
+
+
+
+
+
+#===========================================================
+# OBJECTIVE / CONSTRAINT BUILDER
+#===========================================================
+
+def build_objective_and_constraints(
+        eq_0,
+        optimizer,
+        opt_config,
+        formulation,
+    ):
     """
-    Run optimization with objectives/constraints controlled by config dict.
-
-    FXD = True  -> fixed-pressure family
-    FXD = False -> constrained/optimized-pressure family
+    Build objective and constraint objects from config toggles.
     """
 
-    #=============================================
-    # Unpacking optimization configuration values:
+    context = {
+        "eq_0": eq_0,
+        "optimizer": optimizer,
+        "formulation": formulation,
+    }
+
+    objectives_list = []
+    constraints_list = []
+
+    _append_terms(
+        term_list = objectives_list,
+        toggle = opt_config["opt_toggles_core"],
+        registry = OBJECTIVE_REGISTRY_CORE,
+        context = context,
+        kind = "objective",
+    )
+
+    _append_terms(
+        term_list = constraints_list,
+        toggle = opt_config["opt_toggles_core"],
+        registry = CONSTRAINT_REGISTRY_CORE,
+        context = context,
+        kind = "constraint",
+    )
+
+    if formulation == "FLO":
+        _append_terms(
+            term_list = objectives_list,
+            toggle = opt_config["opt_toggles_FLO"],
+            registry = OBJECTIVE_REGISTRY_FLO,
+            context = context,
+            kind = "objective",
+        )
+
+        _append_terms(
+            term_list = constraints_list,
+            toggle = opt_config["opt_toggles_FLO"],
+            registry = CONSTRAINT_REGISTRY_FLO,
+            context = context,
+            kind = "constraint",
+        )
+
+    elif formulation == "FNO":
+        _append_terms(
+            term_list = objectives_list,
+            toggle = opt_config["opt_toggles_FNO"],
+            registry = OBJECTIVE_REGISTRY_FNO,
+            context = context,
+            kind = "objective",
+        )
+
+        _append_terms(
+            term_list = constraints_list,
+            toggle = opt_config["opt_toggles_FNO"],
+            registry = CONSTRAINT_REGISTRY_FNO,
+            context = context,
+            kind = "constraint",
+        )
+
+    else:
+        raise ValueError(
+            f"Unknown formulation '{formulation}'. Expected 'FLO' or 'FNO'."
+        )
+
+    objective = ObjectiveFunction(objectives_list)
+    constraints = tuple(constraints_list)
+
+    return objective, constraints
+
+#===================================================================================================================================================
+
+
+
+
+
+
+
+
+
+
+#===========================================================
+# OPTIMIZATION RUNNER
+#===========================================================
+
+def run_optimization(
+        eq_0,
+        optimizer,
+        opt_config,
+        formulation,
+    ):
+    """
+    Run one DESC optimization.
+
+    formulation = "FLO" runs core objectives/constraints plus FLO terms.
+    formulation = "FNO" runs core objectives/constraints plus FNO terms.
+    """
+
     ftol = opt_config["ftol"]
     xtol = opt_config["xtol"]
     gtol = opt_config["gtol"]
     maxiter = opt_config["maxiter"]
     max_nfev = opt_config["max_nfev"]
     x_scale = opt_config["x_scale"]
-    toggle_BOTH = opt_config["toggle_BOTH"]
-    toggle_FXD = opt_config["toggle_FXD"]
-    toggle_FREE = opt_config["toggle_FREE"]
-    toggle = _merge_toggles(
-        toggle_BOTH,
-        toggle_FXD if FXD else toggle_FREE,
-    )
-    #=====================================
 
-
-    #=========================================
-    # Runtime values available to config dict:
-    context = {
-        "eq_0": eq_0,
-        "FXD": FXD,
-        "optimizer": optimizer,
-    }
-    #=========================================
-
-
-    constraints_list = []
-    objectives_list = []
-
-    #-------------
-    _append_terms(
-        term_list=objectives_list,
-        toggle=toggle,
-        registry=OBJECTIVE_REGISTRY_BOTH,
-        context=context,
-        kind="objective",
+    objective, constraints = build_objective_and_constraints(
+        eq_0 = eq_0,
+        optimizer = optimizer,
+        opt_config = opt_config,
+        formulation = formulation,
     )
 
-    _append_terms(
-        term_list=constraints_list,
-        toggle=toggle,
-        registry=CONSTRAINT_REGISTRY_BOTH,
-        context=context,
-        kind="constraint",
-    )
-    #---------------------
-
-    #-----------------
-    if FXD:
-        _append_terms(
-            term_list=objectives_list,
-            toggle=toggle,
-            registry=OBJECTIVE_REGISTRY_FXD,
-            context=context,
-            kind="objective",
-        )
-
-        _append_terms(
-            term_list=constraints_list,
-            toggle=toggle,
-            registry=CONSTRAINT_REGISTRY_FXD,
-            context=context,
-            kind="constraint",
-        )
-    #-------------------------
-
-    #-----------------
-    else:
-        _append_terms(
-            term_list=objectives_list,
-            toggle=toggle,
-            registry=OBJECTIVE_REGISTRY_FREE,
-            context=context,
-            kind="objective",
-        )
-
-        _append_terms(
-            term_list=constraints_list,
-            toggle=toggle,
-            registry=CONSTRAINT_REGISTRY_FREE,
-            context=context,
-            kind="constraint",
-        )
-    #-------------------------
-
-    #---------------------------------------
-    # Finalizing optimization objects/setup:
-    constraints = tuple(constraints_list)
-    objectives = ObjectiveFunction(objectives_list)
-    #----------------------------------------------
-    #==============================================
-
-
-    #======================
-    # Running optimization:
-    eq_opt, opt_result = eq_0.optimize(
-        objective = objectives,
+    eq_opt, result = eq_0.optimize(
+        objective = objective,
         constraints = constraints,
         optimizer = optimizer,
         ftol = ftol,
         xtol = xtol,
         gtol = gtol,
         maxiter = maxiter,
-        options = {"max_nfev": max_nfev},
+        options = {
+            "max_nfev": max_nfev,
+        },
         x_scale = x_scale,
         copy = True,
         verbose = 3,
     )
-    #======================
 
-    return eq_opt, opt_result
-#==============================================================================================================================================================
+    return eq_opt, result
+
+#===================================================================================================================================================

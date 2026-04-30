@@ -9,18 +9,13 @@
 #==============================================================================================================
 
 import os
-
 os.environ["JAX_PLATFORMS"] = "cuda,cpu"
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
-
 if "JAX_PLATFORM_NAME" in os.environ:
     del os.environ["JAX_PLATFORM_NAME"]
-
 from desc import set_device
 set_device("gpu")
-
 import argparse
-
 try:
     from .helper import run_file
 except ImportError:
