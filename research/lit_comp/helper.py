@@ -457,48 +457,54 @@ class VariantOptimizePatch:
 # Recreation File Path Helpers
 #==============================================================================================================
 
-def find_input_dir(
-        source_file,
-    ):
-    """
-    Find the nearest parent directory named input.
-    """
-
-    source_file = Path(source_file).resolve()
-
-    for parent in source_file.parents:
-        if parent.name == "input":
-            return parent
-
-    raise ValueError(
-        f"Could not find an input directory above {source_file}."
-    )
-
-
-
-
-
-
-
-
-
 def get_case_name_from_source(
         source_file,
     ):
     """
     Return the case name for a source file.
 
-    Supports both:
-        input/helical_qs.py
-        input/helical_qs/helical_qs.py
+    Supports:
+        recreations/dudt2024/input/helical_qs/helical_qs.py
+        recreations/dudt2024/helical_qs/helical_qs.py
+        recreations/dudt2024/input/helical_qs.py
     """
 
-    source_file = Path(source_file)
+    source_file = Path(source_file).resolve()
 
-    if source_file.parent.name != "input":
-        return source_file.parent.name
+    if source_file.parent.name == "input":
+        return source_file.stem
 
-    return source_file.stem
+    return source_file.parent.name
+
+
+
+
+
+
+
+
+
+def get_paper_dir_for_source(
+        source_file,
+    ):
+    """
+    Return the paper directory for a recreation source file.
+
+    Supports:
+        recreations/dudt2024/input/helical_qs/helical_qs.py  -> recreations/dudt2024
+        recreations/dudt2024/helical_qs/helical_qs.py        -> recreations/dudt2024
+        recreations/dudt2024/input/helical_qs.py             -> recreations/dudt2024
+    """
+
+    source_file = Path(source_file).resolve()
+
+    if source_file.parent.name == "input":
+        return source_file.parent.parent
+
+    if source_file.parent.parent.name == "input":
+        return source_file.parent.parent.parent
+
+    return source_file.parent.parent
 
 
 
@@ -512,16 +518,12 @@ def get_output_dir_for_source(
         source_file,
     ):
     """
-    Return output/<case> for a source file inside input/<case>.
+    Return output/<case> for a recreation source file.
     """
 
-    source_file = Path(source_file).resolve()
-
-    input_dir = find_input_dir(
+    paper_dir = get_paper_dir_for_source(
         source_file = source_file,
     )
-
-    paper_dir = input_dir.parent
 
     case_name = get_case_name_from_source(
         source_file = source_file,
@@ -588,8 +590,6 @@ def get_failure_output_path_for_source(
 
 
 
-
-
 #==============================================================================================================
 # Recreation Source Patching
 #==============================================================================================================
@@ -598,7 +598,11 @@ def patch_recreation_source_text(
         source_text,
     ):
     """
-    Patch recreation source text so output paths can be overridden by this driver.
+    Patch recreation source text so final/failure output paths can be overridden by this driver.
+
+    Important:
+        Do not override OUTPUT_DIR, because recreation files often use OUTPUT_DIR
+        to locate local input files such as *_initial.h5.
     """
 
     patched = source_text
@@ -610,7 +614,7 @@ def patch_recreation_source_text(
             1,
         )
 
-    if "VFO_OUTPUT_DIR" in patched:
+    if "VFO_FINAL_PATH" in patched:
         return patched
 
     lines = patched.splitlines()
@@ -619,19 +623,11 @@ def patch_recreation_source_text(
     for line in lines:
         new_lines.append(line)
 
-        if line.lstrip().startswith("OUTPUT_DIR ="):
+        if line.lstrip().startswith("FINAL_PATH ="):
             new_lines.append(
                 """
-if os.environ.get("VFO_OUTPUT_DIR"):
-    OUTPUT_DIR = Path(os.environ["VFO_OUTPUT_DIR"])
-""".strip()
-            )
-
-        if line.lstrip().startswith("OUTPUT_DIR.mkdir"):
-            new_lines.append(
-                """
-if os.environ.get("VFO_OUTPUT_DIR"):
-    OUTPUT_DIR.mkdir(parents = True, exist_ok = True)
+if os.environ.get("VFO_FINAL_PATH"):
+    FINAL_PATH = Path(os.environ["VFO_FINAL_PATH"])
 """.strip()
             )
 
@@ -652,9 +648,6 @@ if os.environ.get("VFO_FAILURE_PATH"):
             )
 
     return "\n".join(new_lines) + "\n"
-
-
-
 
 
 

@@ -7,9 +7,11 @@
 
 import os
 
-os.environ.setdefault("JAX_PLATFORMS", "gpu")
-os.environ.setdefault("JAX_PLATFORM_NAME", "gpu")
-os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
+os.environ["JAX_PLATFORMS"] = "cuda,cpu"
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+
+if "JAX_PLATFORM_NAME" in os.environ:
+    del os.environ["JAX_PLATFORM_NAME"]
 
 from desc import set_device
 set_device("gpu")
@@ -20,8 +22,6 @@ try:
     from .helper import run_variants_for_file
 except ImportError:
     from helper import run_variants_for_file
-
-
 
 
 
