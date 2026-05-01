@@ -4,7 +4,7 @@
 from pathlib import Path
 
 import jax.numpy as jnp
-
+import os
 from desc.grid import LinearGrid
 from desc.profiles import PowerSeriesProfile
 
@@ -131,8 +131,15 @@ if init_mode == "generated_surface":
         N_eq = N_eq,
     )
 
-    surface_init = surface_pool[0]["surface_init"]
-    selected_point = surface_pool[0]["selected_point"]
+    surface_index = int(os.environ.get("SLURM_ARRAY_TASK_ID", 0))
+
+    if surface_index >= len(surface_pool):
+        raise IndexError(
+            f"surface_index={surface_index} but only {len(surface_pool)} surfaces were loaded."
+        )
+
+    surface_init = surface_pool[surface_index]["surface_init"]
+    selected_point = surface_pool[surface_index]["selected_point"]
 
 
 elif init_mode in [
