@@ -4,9 +4,9 @@
 #SBATCH --partition=l40s_courant
 #SBATCH --gres=gpu:1
 #SBATCH --array=0-7
-#SBATCH --time=03:00:00
+#SBATCH --time=00:45:00
 #SBATCH --cpus-per-task=2
-#SBATCH --mem=13000M
+#SBATCH --mem=15000M
 #SBATCH --output=slurm_logs/generated_surface_loop_%A_%a.out
 #SBATCH --error=slurm_logs/generated_surface_loop_%A_%a.err
 

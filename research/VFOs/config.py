@@ -97,11 +97,11 @@ pressure_init = PowerSeriesProfile(
 )
 
 
-iota_axis_init = 0.49
+iota_axis_init = 0.6
 iota_init = PowerSeriesProfile(
     [
         iota_axis_init,
-        0.0,
+        -0.09,
     ],
     sym = True,
 )
