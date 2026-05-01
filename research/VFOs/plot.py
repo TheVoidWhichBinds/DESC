@@ -213,6 +213,37 @@ def save_iota_plot(
 
 
 
+#========================================
+def save_initial_toroidal_cut(
+        out_dir,
+        eqs,
+        labels,
+        colors,
+    ):
+    if len(eqs) == 0:
+        return
+
+    fig, ax = plot_comparison(
+        eqs = [
+            eqs[0],
+        ],
+        labels = [
+            labels[0],
+        ],
+        color = [
+            colors[0],
+        ],
+    )
+
+    plt.title("Initial Equilibrium Toroidal Cross-Section")
+
+    save_path = os.path.join(out_dir, "initial_toroidal_cut.png")
+    plt.savefig(save_path, dpi = 200)
+    plt.close()
+#========================================
+
+
+
 
 #========================================
 def save_all_solution_plots(
@@ -223,6 +254,13 @@ def save_all_solution_plots(
     ):
     if len(eqs) == 0:
         return
+
+    save_initial_toroidal_cut(
+        out_dir = out_dir,
+        eqs = eqs,
+        labels = labels,
+        colors = colors,
+    )
 
     save_pressure_plot(
         out_dir = out_dir,
@@ -251,5 +289,4 @@ def save_all_solution_plots(
         labels = labels,
         colors = colors,
     )
-#========================================
 #===================================================================================================================================================

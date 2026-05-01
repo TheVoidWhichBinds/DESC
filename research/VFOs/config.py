@@ -75,30 +75,15 @@ eq_resolution = [
 
 NFP = 4
 
+#generated_surface OR input_equilibrium + name
+init_mode = "generated_surface"
+input_equilibrium_name = "my_initial_equilibrium"
 
-dataset_number = "001"
-N_eq = 1
 
-dataset_filename = f"dataset_{dataset_number}.pkl"
-surface_source_config = {
-    "dataset_path": str(
-        REPO_ROOT
-        / "research"
-        / "surface_generator"
-        / f"NFP_{NFP}"
-        / dataset_filename
-    ),
-    "selection_method": "all_nested",
-    "shuffle": True,
-    "shuffle_seed": 42,
+INITIALIZATION_CONFIG = {
+    "mode": init_mode,
+    "input_name": input_equilibrium_name,
 }
-surface_pool = load_surface_pool(
-    surface_source_config = surface_source_config,
-    NFP = NFP,
-    N_eq = N_eq,
-)
-surface_init = surface_pool[0]["surface_init"]
-selected_point = surface_pool[0]["selected_point"]
 
 
 p_axis_init = 1.0e5
@@ -111,6 +96,7 @@ pressure_init = PowerSeriesProfile(
     sym = True,
 )
 
+
 iota_axis_init = 0.49
 iota_init = PowerSeriesProfile(
     [
@@ -120,6 +106,47 @@ iota_init = PowerSeriesProfile(
     sym = True,
 )
 
+
+if init_mode == "generated_surface":
+    dataset_number = "001"
+    N_eq = 1
+
+    dataset_filename = f"dataset_{dataset_number}.pkl"
+    surface_source_config = {
+        "dataset_path": str(
+            REPO_ROOT
+            / "research"
+            / "surface_generator"
+            / f"NFP_{NFP}"
+            / dataset_filename
+        ),
+        "selection_method": "all_nested",
+        "shuffle": True,
+        "shuffle_seed": 42,
+    }
+
+    surface_pool = load_surface_pool(
+        surface_source_config = surface_source_config,
+        NFP = NFP,
+        N_eq = N_eq,
+    )
+
+    surface_init = surface_pool[0]["surface_init"]
+    selected_point = surface_pool[0]["selected_point"]
+
+
+elif init_mode in [
+        "input_equilibrium",
+        "input_surface",
+    ]:
+    surface_init = None
+    selected_point = None
+
+
+else:
+    raise ValueError(f"Unsupported initialization_mode: {init_mode}")
+
+
 EQ_CONFIG = {
     "NFP":           NFP,
     "surface_init":  surface_init,
@@ -127,7 +154,6 @@ EQ_CONFIG = {
     "iota_init":     iota_init,
     "eq_resolution": eq_resolution,
 }
-
 #===================================================================================================================================================
 
 

@@ -19,6 +19,103 @@ from desc.geometry import FourierRZToroidalSurface
 
 
 
+def load_initial_equilibrium_from_inputs(
+        config_path,
+        input_name,
+    ):
+    """
+    Load an initial DESC equilibrium from the local inputs folder.
+
+    Looks for:
+        inputs/<input_name>
+        inputs/<input_name>.h5
+
+    where inputs is in the same folder as config.py / driver.py.
+    """
+
+    config_path = Path(config_path).expanduser().resolve()
+    inputs_dir = config_path.parent / "inputs"
+
+    input_path = inputs_dir / input_name
+
+    if input_path.suffix == "":
+        input_path = input_path.with_suffix(".h5")
+
+    if not input_path.exists():
+        raise FileNotFoundError(f"Could not find input equilibrium: {input_path}")
+
+    return load_equilibrium_from_file(
+        filepath = input_path,
+    )
+
+
+
+
+
+def get_initial_equilibrium(
+        config,
+        config_path,
+    ):
+    """
+    Get the initial equilibrium according to config.INITIALIZATION_CONFIG.
+
+    Supported modes:
+        generated_surface:
+            current behavior. Build equilibrium from EQ_CONFIG.
+
+        input_equilibrium:
+            load inputs/<input_name>.h5 directly and use it as eq_init.
+
+        input_surface:
+            load inputs/<input_name>.h5, extract its surface, insert that
+            surface into EQ_CONFIG, then run the usual equilibrium solve.
+    """
+
+    from eq import run_equilibrium
+
+    initialization_config = getattr(
+        config,
+        "INITIALIZATION_CONFIG",
+        {
+            "mode": "generated_surface",
+        },
+    )
+
+    mode = initialization_config.get(
+        "mode",
+        "generated_surface",
+    )
+
+    if mode == "generated_surface":
+        return run_equilibrium(
+            eq_config = config.EQ_CONFIG,
+        )
+
+    if mode == "input_equilibrium":
+        return load_initial_equilibrium_from_inputs(
+            config_path = config_path,
+            input_name = initialization_config["input_name"],
+        )
+
+    if mode == "input_surface":
+        input_eq = load_initial_equilibrium_from_inputs(
+            config_path = config_path,
+            input_name = initialization_config["input_name"],
+        )
+
+        eq_config = dict(config.EQ_CONFIG)
+        eq_config["surface_init"] = input_eq.surface
+
+        return run_equilibrium(
+            eq_config = eq_config,
+        )
+
+    raise ValueError(f"Unsupported initialization mode: {mode}")
+
+
+
+
+
 
 
 #===========================================================

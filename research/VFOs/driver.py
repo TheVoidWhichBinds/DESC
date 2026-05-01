@@ -10,9 +10,9 @@ if "JAX_PLATFORM_NAME" in os.environ:
 from desc import set_device
 set_device("gpu")
 
-from eq import run_equilibrium
 from opt import run_optimization
 from helper import (
+    get_initial_equilibrium,
     load_config_module,
     prepare_run_directory,
     save_equilibrium,
@@ -59,7 +59,6 @@ def main():
         config_path = config_path,
     )
 
-    eq_config = config.EQ_CONFIG
     opt_config = config.OPT_CONFIG
     optimizer = opt_config["optimizer"]
 
@@ -70,8 +69,9 @@ def main():
     print("")
 
     try:
-        eq_init = run_equilibrium(
-            eq_config = eq_config,
+        eq_init = get_initial_equilibrium(
+            config = config,
+            config_path = config_path,
         )
 
         save_equilibrium(
