@@ -1,14 +1,13 @@
 # helper.py
 #===================================================================================================================================================
 
+from desc.io import load
 from pathlib import Path
 import importlib.util
 import pickle
 import re
 import traceback
-
 import numpy as np
-
 from desc.geometry import FourierRZToroidalSurface
 
 #===================================================================================================================================================
@@ -85,12 +84,16 @@ def load_config_module(
 
 
 
-def prepare_run_directory(
+def _next_numbered_run_directory(
         out_dir,
-        config_path,
     ):
     """
-    Create the output directory and save the active config.
+    Create the next numbered run directory inside out_dir.
+
+    Example:
+        outputs/001
+        outputs/002
+        outputs/003
     """
 
     out_dir = Path(out_dir).expanduser().resolve()
@@ -99,12 +102,53 @@ def prepare_run_directory(
         exist_ok = True,
     )
 
-    write_config_readme(
+    existing_numbers = []
+
+    for path in out_dir.iterdir():
+        if not path.is_dir():
+            continue
+
+        if not re.fullmatch(r"\d{3}", path.name):
+            continue
+
+        existing_numbers.append(int(path.name))
+
+    if len(existing_numbers) == 0:
+        next_number = 1
+
+    else:
+        next_number = max(existing_numbers) + 1
+
+    run_dir = out_dir / f"{next_number:03d}"
+    run_dir.mkdir(
+        parents = True,
+        exist_ok = False,
+    )
+
+    return run_dir
+
+
+
+
+
+def prepare_run_directory(
+        out_dir,
+        config_path,
+    ):
+    """
+    Create the next numbered output directory and save the active config.
+    """
+
+    run_dir = _next_numbered_run_directory(
         out_dir = out_dir,
+    )
+
+    write_config_readme(
+        out_dir = run_dir,
         config_path = config_path,
     )
 
-    return out_dir
+    return run_dir
 
 #===================================================================================================================================================
 
@@ -475,6 +519,80 @@ def _append_terms(
 #===========================================================
 # SAVE HELPERS
 #===========================================================
+def save_optimization_log(
+        result,
+        out_dir,
+        filename,
+    ):
+    """
+    Save post-optimization result information.
+
+    This does not capture the live terminal output. It saves whatever
+    information DESC returned in the optimization result object.
+    """
+
+    out_dir = Path(out_dir).expanduser().resolve()
+    out_dir.mkdir(
+        parents = True,
+        exist_ok = True,
+    )
+
+    save_path = out_dir / filename
+
+    with open(save_path, "w") as f:
+        f.write("# Optimization result\n")
+        f.write("#===========================================================\n\n")
+
+        if result is None:
+            f.write("Result object is None.\n")
+            return save_path
+
+        f.write("repr(result):\n")
+        f.write(str(result))
+        f.write("\n\n")
+
+        f.write("# Common result attributes\n")
+        f.write("#===========================================================\n\n")
+
+        common_attrs = [
+            "success",
+            "message",
+            "status",
+            "nit",
+            "nfev",
+            "njev",
+            "cost",
+            "optimality",
+            "constr_violation",
+            "execution_time",
+        ]
+
+        for attr in common_attrs:
+            if hasattr(result, attr):
+                f.write(f"{attr} = {getattr(result, attr)}\n")
+
+        f.write("\n\n")
+        f.write("# Full public attributes\n")
+        f.write("#===========================================================\n\n")
+
+        for attr in sorted(dir(result)):
+            if attr.startswith("_"):
+                continue
+
+            try:
+                value = getattr(result, attr)
+            except Exception:
+                continue
+
+            if callable(value):
+                continue
+
+            f.write(f"{attr} = {value}\n")
+
+    return save_path
+
+
+
 
 def save_equilibrium(
         eq,
@@ -557,5 +675,153 @@ def write_config_readme(
         f.write("```\n")
 
     return readme_path
+
+#===================================================================================================================================================
+
+
+
+
+
+
+
+
+#===========================================================
+# PLOT RUN HELPERS
+#===========================================================
+
+def load_equilibrium_from_file(
+        filepath,
+    ):
+    """
+    Load one equilibrium from a DESC .h5 file.
+    """
+
+    filepath = Path(filepath).expanduser().resolve()
+
+    if not filepath.exists():
+        raise FileNotFoundError(f"Could not find equilibrium file: {filepath}")
+
+    obj = load(str(filepath))
+
+    if isinstance(obj, (list, tuple)):
+        return obj[-1]
+
+    return obj
+
+
+
+
+
+def collect_equilibria_from_run_folder(
+        run_dir,
+    ):
+    """
+    Collect saved equilibria from one numbered output folder.
+    """
+
+    run_dir = Path(run_dir).expanduser().resolve()
+
+    file_configs = [
+        {
+            "filename": "eq_init.h5",
+            "label": "Initial",
+            "color": "green",
+        },
+        {
+            "filename": "opt_FLO.h5",
+            "label": "FLO",
+            "color": "purple",
+        },
+        {
+            "filename": "opt_FNO.h5",
+            "label": "FNO",
+            "color": "orange",
+        },
+    ]
+
+    eqs = []
+    labels = []
+    colors = []
+
+    for file_config in file_configs:
+        filepath = run_dir / file_config["filename"]
+
+        if not filepath.exists():
+            continue
+
+        eqs.append(
+            load_equilibrium_from_file(
+                filepath = filepath,
+            )
+        )
+
+        labels.append(file_config["label"])
+        colors.append(file_config["color"])
+
+    return eqs, labels, colors
+
+
+
+
+
+def save_plots_from_run_folder(
+        run_dir,
+    ):
+    """
+    Load saved equilibria from one output folder and save plots there.
+    """
+
+    from plot import save_all_solution_plots
+
+    run_dir = Path(run_dir).expanduser().resolve()
+
+    eqs, labels, colors = collect_equilibria_from_run_folder(
+        run_dir = run_dir,
+    )
+
+    if len(eqs) == 0:
+        print(f"No equilibrium files found in: {run_dir}")
+        return
+
+    save_all_solution_plots(
+        out_dir = run_dir,
+        eqs = eqs,
+        labels = labels,
+        colors = colors,
+    )
+
+    print(f"Saved plots to: {run_dir}")
+
+
+
+
+
+def save_plots_from_all_output_folders(
+        outputs_dir,
+    ):
+    """
+    Make plots for every numbered run folder in outputs_dir.
+    """
+
+    outputs_dir = Path(outputs_dir).expanduser().resolve()
+
+    if not outputs_dir.exists():
+        raise FileNotFoundError(f"Could not find outputs directory: {outputs_dir}")
+
+    run_dirs = [
+        path for path in outputs_dir.iterdir()
+        if path.is_dir() and re.fullmatch(r"\d{3}", path.name)
+    ]
+
+    run_dirs = sorted(run_dirs)
+
+    if len(run_dirs) == 0:
+        print(f"No numbered run folders found in: {outputs_dir}")
+        return
+
+    for run_dir in run_dirs:
+        save_plots_from_run_folder(
+            run_dir = run_dir,
+        )
 
 #===================================================================================================================================================

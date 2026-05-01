@@ -8,53 +8,28 @@ import jax.numpy as jnp
 from desc.grid import LinearGrid
 from desc.profiles import PowerSeriesProfile
 
-try:
-    from .custom_funcs import (
-        FLO_pressure_axis,
-        FLO_pressure_shape,
-        FLO_pressure_octic,
-        FLO_pressure_DOF,
-        FLO_pressure_edge,
-        FLO_grad_pressure_edge,
-        FLO_iota_axis,
-        FLO_iota_edge,
-        FLO_iota_quadratic,
-        FNO_pressure_axis,
-        FNO_pressure_edge,
-        FNO_pressure_positive,
-        FNO_pressure_monotonic,
-        FNO_grad_pressure_edge,
-        FNO_iota,
-    )
+from custom_funcs import (
+    FLO_pressure_axis,
+    FLO_pressure_shape,
+    FLO_pressure_octic,
+    FLO_pressure_DOF,
+    FLO_pressure_edge,
+    FLO_grad_pressure_edge,
+    FLO_iota_axis,
+    FLO_iota_edge,
+    FLO_iota_quadratic,
+    FNO_pressure_axis,
+    FNO_pressure_edge,
+    FNO_pressure_positive,
+    FNO_pressure_monotonic,
+    FNO_grad_pressure_edge,
+    FNO_iota,
+)
 
-    from .helper import (
-        iota_between_rationals,
-        load_surface_pool,
-    )
-
-except ImportError:
-    from custom_funcs import (
-        FLO_pressure_axis,
-        FLO_pressure_shape,
-        FLO_pressure_octic,
-        FLO_pressure_DOF,
-        FLO_pressure_edge,
-        FLO_grad_pressure_edge,
-        FLO_iota_axis,
-        FLO_iota_edge,
-        FLO_iota_quadratic,
-        FNO_pressure_axis,
-        FNO_pressure_edge,
-        FNO_pressure_positive,
-        FNO_pressure_monotonic,
-        FNO_grad_pressure_edge,
-        FNO_iota,
-    )
-
-    from helper import (
-        iota_between_rationals,
-        load_surface_pool,
-    )
+from helper import (
+    iota_between_rationals,
+    load_surface_pool,
+)
 
 #===================================================================================================================================================
 
@@ -97,29 +72,34 @@ eq_resolution = [
     N,
 ]
 
+
 NFP = 4
 
+
+dataset_number = "001"
+N_eq = 4
+
+dataset_filename = f"dataset_{dataset_number}.pkl"
 surface_source_config = {
     "dataset_path": str(
         REPO_ROOT
         / "research"
         / "surface_generator"
         / f"NFP_{NFP}"
-        / "dataset.pkl"
+        / dataset_filename
     ),
     "selection_method": "all_nested",
     "shuffle": True,
     "shuffle_seed": 42,
 }
-
 surface_pool = load_surface_pool(
     surface_source_config = surface_source_config,
     NFP = NFP,
-    N_eq = 4,
+    N_eq = N_eq,
 )
-
 surface_init = surface_pool[0]["surface_init"]
 selected_point = surface_pool[0]["selected_point"]
+
 
 p_axis_init = 1.0e5
 pressure_init = PowerSeriesProfile(
@@ -131,11 +111,11 @@ pressure_init = PowerSeriesProfile(
     sym = True,
 )
 
-iota_axis_init = 0.51
+iota_axis_init = 0.49
 iota_init = PowerSeriesProfile(
     [
         iota_axis_init,
-        0.14,
+        0.0,
     ],
     sym = True,
 )
@@ -164,8 +144,8 @@ EQ_CONFIG = {
 #===========================================================
 
 FLO_pressure_axis_bounds = (
-    1e5,
-    1e7,
+    0.99e5,
+    1e6,
 )
 
 FLO_pressure_shape_bounds = (
@@ -189,7 +169,7 @@ max_nfev = 300
 x_scale = "auto"
 
 pressure_fxd = False
-iota_fxd = True
+iota_fxd = False
 
 data_grid = LinearGrid(
     L = 200,
@@ -214,7 +194,7 @@ data_grid = LinearGrid(
 
 opt_toggles_core = {
     "forcebalance_obj": {
-        "use": True,
+        "use": False,
         "kwargs": {
             "weight": 1e1,
             "target": 0.0,
@@ -246,7 +226,7 @@ opt_toggles_core = {
         },
     },
     "forcebalance_con": {
-        "use": False,
+        "use": True,
         "kwargs": {
             "target": 0.0,
         },
@@ -281,6 +261,16 @@ opt_toggles_core = {
 #===========================================================
 
 opt_toggles_FLO = {
+    "FLO_pressure_axis": {
+        "use": not pressure_fxd,
+        "kwargs": {
+            "name": "FLO_pressure_axis",
+            "fun": FLO_pressure_axis,
+            "bounds": (p_axis_init, p_axis_init*100),
+            "weight": barrier_weights,
+            "normalize": normalize,
+        },
+    },
     "FLO_pressure_shape": {
         "use": not pressure_fxd,
         "kwargs": {
@@ -309,14 +299,6 @@ opt_toggles_FLO = {
             "bounds": iota_bounds,
             "weight": barrier_weights,
             "normalize": normalize,
-        },
-    },
-    "FLO_pressure_axis": {
-        "use": not pressure_fxd,
-        "kwargs": {
-            "name": "FLO_pressure_axis",
-            "fun": FLO_pressure_axis,
-            "target": p_axis_init,
         },
     },
     "FLO_pressure_octic": {
@@ -394,10 +376,7 @@ opt_toggles_FNO = {
             "name": "FNO_pressure_positive",
             "fun": FNO_pressure_positive,
             "grid": data_grid,
-            "bounds": (
-                0.0,
-                jnp.inf,
-            ),
+            "bounds": (0.0, jnp.inf),
             "weight": barrier_weights,
             "normalize": normalize,
         },
@@ -408,10 +387,7 @@ opt_toggles_FNO = {
             "name": "FNO_pressure_monotonic",
             "fun": FNO_pressure_monotonic,
             "grid": data_grid,
-            "bounds": (
-                -jnp.inf,
-                0.0,
-            ),
+            "bounds": (-jnp.inf, 0.0),
             "weight": barrier_weights,
             "normalize": normalize,
         },
@@ -422,7 +398,7 @@ opt_toggles_FNO = {
             "name": "FNO_pressure_axis",
             "fun": FNO_pressure_axis,
             "grid": data_grid,
-            "target": p_axis_init,
+            "bounds": (p_axis_init, p_axis_init*100),
             "weight": barrier_weights,
             "normalize": normalize,
         },

@@ -11,8 +11,6 @@ from .helper import (
     cond_generator,
     feature_generator,
     data_saver,
-    build_torch_dataset,
-    torch_data_saver,
     run_continuation_check,
 )
 
@@ -357,26 +355,11 @@ def main():
     data_save_path = data_saver(
         data = data,
         NFP = options["NFP"],
-        filename = DATA_CONFIG["dataset_filename"],
+        prefix = DATA_CONFIG["dataset_prefix"],
     )
-    #---------------------------------------------
 
-    #-----------------------------------------
-    # Build PyTorch-ready feature/target data:
-    torch_data = build_torch_dataset(
-        data = data,
-        target_key = DATA_CONFIG["target_key"],
-    )
-    #-----------------------------------------
-
-    #----------------------------------
-    # Save PyTorch-ready tensors to disk:
-    torch_save_path = torch_data_saver(
-        torch_data = torch_data,
-        NFP = options["NFP"],
-        filename = DATA_CONFIG["torch_dataset_filename"],
-    )
-    #----------------------------------------------------
+    print("Saved dataset to:", data_save_path)
+    #----------------------------------------
 #========================================================
 
 

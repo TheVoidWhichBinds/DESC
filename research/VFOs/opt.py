@@ -15,16 +15,10 @@ from desc.objectives import (
     ObjectiveFromUser,
 )
 
-try:
-    from .helper import (
-        _eq,
-        _append_terms,
-    )
-except ImportError:
-    from helper import (
-        _eq,
-        _append_terms,
-    )
+from helper import (
+    _eq,
+    _append_terms,
+)
 
 #===================================================================================================================================================
 
@@ -132,6 +126,12 @@ CONSTRAINT_REGISTRY_CORE = {
 #===========================================================
 
 OBJECTIVE_REGISTRY_FLO = {
+    "FLO_pressure_axis": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
     "FLO_pressure_shape": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -168,12 +168,6 @@ OBJECTIVE_REGISTRY_FLO = {
 #===========================================================
 
 CONSTRAINT_REGISTRY_FLO = {
-    "FLO_pressure_axis": {
-        "wrapper": LinearObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
     "FLO_pressure_octic": {
         "wrapper": LinearObjectiveFromUser,
         "defaults": {
@@ -198,12 +192,12 @@ CONSTRAINT_REGISTRY_FLO = {
             "thing": _eq,
         },
     },
-    # "FLO_iota_quadratic": {
-    #     "wrapper": LinearObjectiveFromUser,
-    #     "defaults": {
-    #         "thing": _eq,
-    #     },
-    # },
+    "FLO_iota_quadratic": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
 }
 
 #===================================================================================================================================================
@@ -252,12 +246,12 @@ OBJECTIVE_REGISTRY_FNO = {
             "thing": _eq,
         },
     },
-    # "FNO_iota": {
-    #     "wrapper": ObjectiveFromUser,
-    #     "defaults": {
-    #         "thing": _eq,
-    #     },
-    # },
+    "FNO_iota": {
+        "wrapper": ObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
 }
 
 #===================================================================================================================================================

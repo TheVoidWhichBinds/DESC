@@ -12,39 +12,51 @@
 
 #============== FEATURE / SWEEP CONFIG =========================================================================
 FEATURE_CONFIG = {
-    "resolution": (14, 14, 14),
+    "resolution": (16, 16, 16),
     "NFP": 4,
     "modes_R": [
         (0, 0),
         (1, 0),
         (1, 1),
         (2, 0),
+        (2, 1),
     ],
     "modes_Z": [
         (-1, 0),
         (-1, 1),
         (-2, 0),
+        (-2, 1),
     ],
     "counts": {
         "N_R0": 1,
         "N_R10": 1,
         "N_Z10": 1,
-        "N_R11": 1,
-        "N_Z11": 1,
+        "N_R11": 2,
+        "N_Z11": 2,
         "N_R20": 2,
-        "N_Z20": 2,
+        "N_Z20": 1,
+        "N_R21": 1,
+        "N_Z21": 1,
     },
     "ranges": {
-        "modeR00": (4.8, 6.2),  # major radius
+        "modeR00": (6.0, 6.2),
 
-        "modeR10": (-0.50, -0.42),  # radial minor size
-        "modeZ10": (0.42, 0.50),    # vertical minor size, less elongated on average
+        # main axisymmetric cross-section
+        # nearly fixed elliptical cross-section
+        "modeR10": (-0.5, -0.51),
+        "modeZ10": (0.49, 0.50),
 
-        "modeR11": (-0.025, 0.025), # mild helical radial variation
-        "modeZ11": (-0.025, 0.025), # actual helical vertical variation
+        # primary helical rotation / weak 3D deformation
+        "modeR11": (-0.025, 0.025),
+        "modeZ11": (-0.025, 0.025),
 
-        "modeR20": (-0.085, 0.0), # very weak bean/triangular shaping
-        "modeZ20": (-0.028, 0.0), # weak vertical second harmonic
+        # very small axisymmetric triangularity
+        "modeR20": (-0.004, 0.0),
+        "modeZ20": (-0.004, 0.0),
+
+        # weak helical second harmonic
+        "modeR21": (-0.025, 0.025),
+        "modeZ21": (-0.025, 0.025),
     },
 }
 #==============================================================================================================
@@ -55,9 +67,7 @@ FEATURE_CONFIG = {
 
 #============== DATA CONFIG ====================================================================================
 DATA_CONFIG = {
-    "target_key": "is_nested",
-    "dataset_filename": "dataset.pkl",
-    "torch_dataset_filename": "torch_dataset.pt",
+    "dataset_prefix": "dataset",
 }
 #==============================================================================================================
 

@@ -4,10 +4,10 @@ from itertools import product
 import os
 import numpy as np
 import pickle
-import torch
 import io
 import contextlib
 import warnings
+import re
 from desc.continuation import solve_continuation_automatic
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -16,11 +16,23 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 
-#=========================================================================================
-def run_continuation_check(eq, failure_fragment="WARNING: Automatic continuation failed"):
+
+
+
+
+
+#========
+# CONTINUATION CHECK
+#========
+
+def run_continuation_check(
+    eq,
+    failure_fragment = "WARNING: Automatic continuation failed",
+):
     """
     Runs DESC automatic continuation and returns only serializable status data.
     """
+
     result = {
         "enabled": True,
         "success": False,
@@ -34,13 +46,15 @@ def run_continuation_check(eq, failure_fragment="WARNING: Automatic continuation
     stderr_buffer = io.StringIO()
 
     try:
-        with warnings.catch_warnings(record=True) as caught_warnings:
+        with warnings.catch_warnings(record = True) as caught_warnings:
             warnings.simplefilter("always")
 
-            solved_eq = solve_continuation_automatic(
-                eq,
-                verbose = 2,
-            )
+            with contextlib.redirect_stdout(stdout_buffer):
+                with contextlib.redirect_stderr(stderr_buffer):
+                    solved_eq = solve_continuation_automatic(
+                        eq,
+                        verbose = 2,
+                    )
 
         output_text = "\n".join(
             [
@@ -60,19 +74,27 @@ def run_continuation_check(eq, failure_fragment="WARNING: Automatic continuation
         result["broke"] = True
         result["error"] = repr(e)
         result["message"] = "\n".join(
-            [stdout_buffer.getvalue(), stderr_buffer.getvalue()]
+            [
+                stdout_buffer.getvalue(),
+                stderr_buffer.getvalue(),
+            ]
         ).strip()
 
     return result
-#=========================================================================================
 
 
 
 
 
 
-#============== MAIN HELPERS ===================================================================================
-#==================
+
+
+
+
+#========
+# MAIN HELPERS
+#========
+
 def cond_generator(
     resolution: tuple,
     NFP: int,
@@ -86,6 +108,7 @@ def cond_generator(
     feature-vector combinations, while keeping the discrete
     structure fixed across the whole dataset.
     """
+
     for R_lmn, Z_lmn in product(
         R_lmn_options,
         Z_lmn_options,
@@ -98,14 +121,11 @@ def cond_generator(
             "R_lmn": R_lmn,
             "Z_lmn": Z_lmn,
         }
-#==================
 
 
 
 
 
-
-#==================
 def feature_generator(
     config: dict,
 ):
@@ -122,8 +142,11 @@ def feature_generator(
         - R_lmn
         - Z_lmn
     """
-    #------------------------
-    # Fixed quantities:
+
+    #------
+    # Fixed quantities
+    #------
+
     resolution = config["resolution"]
     NFP = config["NFP"]
     modes_R = config["modes_R"]
@@ -131,29 +154,39 @@ def feature_generator(
 
     counts = config["counts"]
     ranges = config["ranges"]
-    #------------------------
 
-    #-------------------
-    # R-FK coefficients:
+    #------
+    # R-Fourier coefficients
+    #------
+
     modeR00_vals = np.linspace(
         ranges["modeR00"][0],
         ranges["modeR00"][1],
         counts["N_R0"],
     )
+
     modeR10_vals = np.linspace(
         ranges["modeR10"][0],
         ranges["modeR10"][1],
         counts["N_R10"],
     )
+
+    modeR11_vals = np.linspace(
+        ranges["modeR11"][0],
+        ranges["modeR11"][1],
+        counts["N_R11"],
+    )
+
     modeR20_vals = np.linspace(
         ranges["modeR20"][0],
         ranges["modeR20"][1],
         counts["N_R20"],
     )
-    modeR11_vals = np.linspace(
-        ranges["modeR11"][0],
-        ranges["modeR11"][1],
-        counts["N_R11"],
+
+    modeR21_vals = np.linspace(
+        ranges["modeR21"][0],
+        ranges["modeR21"][1],
+        counts["N_R21"],
     )
 
     R_lmn_pool = [
@@ -162,30 +195,41 @@ def feature_generator(
             float(modeR10),
             float(modeR11),
             float(modeR20),
+            float(modeR21),
         ]
         for modeR00 in modeR00_vals
         for modeR10 in modeR10_vals
         for modeR11 in modeR11_vals
         for modeR20 in modeR20_vals
+        for modeR21 in modeR21_vals
     ]
-    #-------------------
 
-    #-------------------
-    # Z-FK coefficients:
+    #------
+    # Z-Fourier coefficients
+    #------
+
     modeZ10_vals = np.linspace(
         ranges["modeZ10"][0],
         ranges["modeZ10"][1],
         counts["N_Z10"],
     )
+
+    modeZ11_vals = np.linspace(
+        ranges["modeZ11"][0],
+        ranges["modeZ11"][1],
+        counts["N_Z11"],
+    )
+
     modeZ20_vals = np.linspace(
         ranges["modeZ20"][0],
         ranges["modeZ20"][1],
         counts["N_Z20"],
     )
-    modeZ11_vals = np.linspace(
-        ranges["modeZ11"][0],
-        ranges["modeZ11"][1],
-        counts["N_Z11"],
+
+    modeZ21_vals = np.linspace(
+        ranges["modeZ21"][0],
+        ranges["modeZ21"][1],
+        counts["N_Z21"],
     )
 
     Z_lmn_pool = [
@@ -193,12 +237,13 @@ def feature_generator(
             float(modeZ10),
             float(modeZ11),
             float(modeZ20),
+            float(modeZ21),
         ]
         for modeZ10 in modeZ10_vals
         for modeZ11 in modeZ11_vals
         for modeZ20 in modeZ20_vals
+        for modeZ21 in modeZ21_vals
     ]
-    #------------------------------
 
     return {
         "resolution": resolution,
@@ -208,8 +253,6 @@ def feature_generator(
         "R_lmn_options": R_lmn_pool,
         "Z_lmn_options": Z_lmn_pool,
     }
-#==================
-#==============================================================================================================
 
 
 
@@ -220,104 +263,105 @@ def feature_generator(
 
 
 
+#========
+# SAVE HELPERS
+#========
 
-#============== SAVE HELPERS ===================================================================================
-#==================
 def get_nfp_save_dir(
     NFP: int,
 ):
     """
     Returns the save directory for the given NFP, creating it if needed.
     """
-    save_dir = os.path.join(base_dir, f"NFP_{NFP}")
-    os.makedirs(save_dir, exist_ok = True)
+
+    save_dir = os.path.join(
+        base_dir,
+        f"NFP_{NFP}",
+    )
+
+    os.makedirs(
+        save_dir,
+        exist_ok = True,
+    )
+
     return save_dir
-#==================
 
 
 
 
 
+def get_next_dataset_filename(
+    NFP: int,
+    prefix: str = "dataset",
+    extension: str = ".pkl",
+):
+    """
+    Return the next numbered dataset filename for one NFP folder.
 
-#==================
+    Example:
+        dataset_001.pkl
+        dataset_002.pkl
+        dataset_003.pkl
+    """
+
+    save_dir = get_nfp_save_dir(
+        NFP = NFP,
+    )
+
+    existing_numbers = []
+
+    pattern = rf"^{re.escape(prefix)}_(\d{{3}}){re.escape(extension)}$"
+
+    for filename in os.listdir(save_dir):
+        match = re.fullmatch(
+            pattern,
+            filename,
+        )
+
+        if match is None:
+            continue
+
+        existing_numbers.append(
+            int(match.group(1))
+        )
+
+    if len(existing_numbers) == 0:
+        next_number = 1
+
+    else:
+        next_number = max(existing_numbers) + 1
+
+    return f"{prefix}_{next_number:03d}{extension}"
+
+
+
+
+
 def data_saver(
     data,
     NFP,
-    filename = "dataset.pkl",
+    prefix = "dataset",
 ):
     """
-    Save raw Python dataset to disk with pickle.
+    Save raw Python dataset to the next numbered pickle file.
     """
-    save_dir = get_nfp_save_dir(NFP = NFP)
-    save_path = os.path.join(save_dir, filename)
+
+    save_dir = get_nfp_save_dir(
+        NFP = NFP,
+    )
+
+    filename = get_next_dataset_filename(
+        NFP = NFP,
+        prefix = prefix,
+        extension = ".pkl",
+    )
+
+    save_path = os.path.join(
+        save_dir,
+        filename,
+    )
 
     with open(save_path, "wb") as f:
         pickle.dump(data, f)
 
     return save_path
-#==================
-
-
-
-
-
-
-#==================
-def build_torch_dataset(
-    data,
-    target_key: str,
-):
-    """
-    Build PyTorch-ready tensors for binary classification.
-
-    X contains continuous numeric features only.
-    y contains one binary target column.
-    """
-    X_rows = []
-    y_rows = []
-
-    for point in data:
-        feat = point["features"]
-        lab = point["labels"]
-
-        x = []
-        x.extend([float(v) for v in feat["R_lmn"]])
-        x.extend([float(v) for v in feat["Z_lmn"]])
-
-        y = [float(lab[target_key])]
-
-        X_rows.append(x)
-        y_rows.append(y)
-
-    X = torch.tensor(X_rows, dtype = torch.float32)
-    y = torch.tensor(y_rows, dtype = torch.float32)
-
-    return {
-        "X": X,
-        "y": y,
-        "target_key": target_key,
-    }
-#==================
-
-
-
-
-
-
-#==================
-def torch_data_saver(
-    torch_data,
-    NFP,
-    filename = "torch_dataset.pt",
-):
-    """
-    Save PyTorch-ready dataset to disk.
-    """
-    save_dir = get_nfp_save_dir(NFP = NFP)
-    save_path = os.path.join(save_dir, filename)
-
-    torch.save(torch_data, save_path)
-
-    return save_path
-#==================
-#==============================================================================================================

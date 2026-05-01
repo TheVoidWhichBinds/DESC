@@ -10,24 +10,16 @@ if "JAX_PLATFORM_NAME" in os.environ:
 from desc import set_device
 set_device("gpu")
 
-try:
-    from .eq import run_equilibrium
-    from .opt import run_optimization
-    from .helper import (
-        load_config_module,
-        prepare_run_directory,
-        save_equilibrium,
-        save_failure_trace,
-    )
-except ImportError:
-    from eq import run_equilibrium
-    from opt import run_optimization
-    from helper import (
-        load_config_module,
-        prepare_run_directory,
-        save_equilibrium,
-        save_failure_trace,
-    )
+from eq import run_equilibrium
+from opt import run_optimization
+from helper import (
+    load_config_module,
+    prepare_run_directory,
+    save_equilibrium,
+    save_failure_trace,
+    save_optimization_log,
+    save_plots_from_run_folder,
+)
 
 #===================================================================================================================================================
 
@@ -116,6 +108,12 @@ def main():
             filename = "opt_FLO.h5",
         )
 
+        save_optimization_log(
+            result = result_FLO,
+            out_dir = out_dir,
+            filename = "FLO_OPT_LOG.txt",
+        )
+
     except Exception as error:
         save_failure_trace(
             out_dir = out_dir,
@@ -143,6 +141,12 @@ def main():
             filename = "opt_FNO.h5",
         )
 
+        save_optimization_log(
+            result = result_FNO,
+            out_dir = out_dir,
+            filename = "FNO_OPT_LOG.txt",
+        )
+
     except Exception as error:
         save_failure_trace(
             out_dir = out_dir,
@@ -150,12 +154,26 @@ def main():
             error = error,
         )
 
+
+
+    print("")
+    print("#===========================================================")
+    print("# PLOTS")
+    print("#===========================================================")
+    print("")
+
+
+    save_plots_from_run_folder(run_dir = out_dir,)
+
+    
     print("")
     print("#===========================================================")
     print("# COMPLETE")
     print("#===========================================================")
     print("")
     print(f"Saved outputs to: {out_dir}")
+
+
 
 
 

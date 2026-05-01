@@ -2,7 +2,6 @@
 
 #===================================================================================================================================================
 import os
-
 import matplotlib.pyplot as plt
 import numpy as np
 from desc.grid import LinearGrid
@@ -12,35 +11,6 @@ from desc.plotting import plot_comparison
 
 
 
-
-
-
-
-
-
-
-#============== INITIAL PLOTS ======================================================================================================================
-#========================================
-def save_initial_toroidal_cuts(
-        out_dir,
-        eq_raw,
-        eq_init,
-    ):
-    """
-    Save toroidal cross-sections for the initial equilibrium solve.
-    """
-    plt.title("Toroidal Cross-Sections of Initial Equilibrium")
-    fig, ax = plot_comparison(
-        eqs = [eq_raw, eq_init],
-        labels = ["Raw Eq", "Continuation Eq"],
-        color = ["green", "blue"],
-    )
-
-    save_path = os.path.join(out_dir, "initial_toroidal_cuts.png")
-    plt.savefig(save_path, dpi = 200)
-    plt.close()
-#========================================
-#===================================================================================================================================================
 
 
 
