@@ -1,3 +1,4 @@
+```python
 # config.py
 #===================================================================================================================================================
 
@@ -77,7 +78,7 @@ NFP = 4
 
 
 dataset_number = "001"
-N_eq = 1
+N_eq = 4
 
 dataset_filename = f"dataset_{dataset_number}.pkl"
 surface_source_config = {
@@ -157,11 +158,11 @@ iota_bounds = iota_between_rationals(
     iota_axis = iota_axis_init,
 )
 
-optimizer = "proximal-lsq-exact"
+optimizer = "lsq-exact"
 
 normalize = True
 barrier_weights = 1e5
-ftol = 1e-3
+ftol = 1e-4
 xtol = 1e-6
 gtol = 1e-6
 maxiter = 300
@@ -172,10 +173,11 @@ pressure_fxd = False
 iota_fxd = False
 
 data_grid = LinearGrid(
-    L = 24,
+    L = 200,
     M = 0,
     N = 0,
 )
+
 #===================================================================================================================================================
 
 
@@ -193,7 +195,7 @@ data_grid = LinearGrid(
 
 opt_toggles_core = {
     "forcebalance_obj": {
-        "use": True,
+        "use": False,
         "kwargs": {
             "weight": 1e1,
             "target": 0.0,
@@ -475,3 +477,4 @@ DRIVER_CONFIG = {
 }
 
 #===================================================================================================================================================
+```
