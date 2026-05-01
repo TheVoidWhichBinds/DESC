@@ -6,6 +6,8 @@ from desc.objectives import (
     FixIota,
     FixPsi,
     FixPressure,
+    FixBoundaryR,
+    FixBoundaryZ,
     ForceBalance,
     AspectRatio,
     QuasisymmetryBoozer,
@@ -107,6 +109,18 @@ CONSTRAINT_REGISTRY_CORE = {
         "defaults": {
             "eq": _eq,
         },
+    },
+    "fix_surfaceR": {
+        "wrapper": FixBoundaryR,
+        "defaults": {
+            "eq": _eq,
+        }
+    },
+    "fix_surfaceZ": {
+        "wrapper": FixBoundaryZ,
+        "defaults": {
+            "eq": _eq,
+        }
     },
 }
 

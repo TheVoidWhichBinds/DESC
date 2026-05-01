@@ -77,8 +77,8 @@ eq_resolution = [
 NFP = 4
 
 #generated_surface OR input_equilibrium + name
-init_mode = "generated_surface"
-input_equilibrium_name = "my_initial_equilibrium"
+init_mode = "input_equilibrium"
+input_equilibrium_name = "helical_qs_initial"
 
 
 INITIALIZATION_CONFIG = {
@@ -106,6 +106,9 @@ iota_init = PowerSeriesProfile(
     ],
     sym = True,
 )
+
+
+
 
 
 if init_mode == "generated_surface":
@@ -204,6 +207,7 @@ x_scale = "auto"
 
 pressure_fxd = False
 iota_fxd = False
+surface_fxd = True
 
 data_grid = LinearGrid(
     L = 24,
@@ -235,7 +239,7 @@ opt_toggles_core = {
         },
     },
     "qs": {
-        "use": False,
+        "use": True,
         "kwargs": {
             "weight": 1e0,
             "helicity": (1,NFP),
@@ -274,6 +278,14 @@ opt_toggles_core = {
     },
     "fix_psi": {
         "use": True,
+        "kwargs": {},
+    },
+    "fix_surfaceR": {
+        "use": surface_fxd,
+        "kwargs": {},
+    },
+    "fix_surfaceZ": {
+        "use": surface_fxd,
         "kwargs": {},
     },
 }

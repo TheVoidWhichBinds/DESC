@@ -201,18 +201,18 @@ FNO_OBJECTIVE_REGISTRY = {
             "thing": _eq,
         },
     },
-    "FNO_pressure_positive": {
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
-    "FNO_pressure_monotonic": {
-        "wrapper": ObjectiveFromUser,
-        "defaults": {
-            "thing": _eq,
-        },
-    },
+    # "FNO_pressure_positive": {
+    #     "wrapper": ObjectiveFromUser,
+    #     "defaults": {
+    #         "thing": _eq,
+    #     },
+    # },
+    # "FNO_pressure_monotonic": {
+    #     "wrapper": ObjectiveFromUser,
+    #     "defaults": {
+    #         "thing": _eq,
+    #     },
+    # },
     "FNO_grad_pressure_edge": {
         "wrapper": ObjectiveFromUser,
         "defaults": {
@@ -227,7 +227,26 @@ FNO_OBJECTIVE_REGISTRY = {
     },
 }
 
-FNO_CONSTRAINT_REGISTRY = {}
+FNO_CONSTRAINT_REGISTRY = {
+    "FLO_pressure_octic": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "FLO_pressure_DOF": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+    "FLO_iota_quadratic": {
+        "wrapper": LinearObjectiveFromUser,
+        "defaults": {
+            "thing": _eq,
+        },
+    },
+}
 #===========================
 #===================================================================================================================================================
 
