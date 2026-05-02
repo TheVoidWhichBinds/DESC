@@ -1,10 +1,10 @@
 # driver.py
 #==============================================================================================================
 #
-# Top-level CLI for rerunning one DESC recreation file.
+# Top-level CLI for rerunning one DESC paper recreation file.
 #
-# If --variant = False, the file runs exactly as-is.
-# If --variant = True, the file runs with the FNO objective patch.
+# If --free = False, the file runs exactly as-is.
+# If --free = True, the file runs with the FREE pressure-profile patch.
 #
 #==============================================================================================================
 
@@ -13,9 +13,12 @@ os.environ["JAX_PLATFORMS"] = "cuda,cpu"
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 if "JAX_PLATFORM_NAME" in os.environ:
     del os.environ["JAX_PLATFORM_NAME"]
+
 from desc import set_device
 set_device("gpu")
+
 import argparse
+
 try:
     from .helper import run_file
 except ImportError:
@@ -75,21 +78,21 @@ def parse_args():
     """
 
     parser = argparse.ArgumentParser(
-        description = "Run one DESC recreation file as-is or with the FNO variant.",
+        description = "Run one DESC paper recreation file as-is or with the FREE variant.",
     )
 
     parser.add_argument(
         "--file",
         type = str,
         required = True,
-        help = "Path to the recreation .py file to rerun.",
+        help = "Path to the paper recreation .py file to rerun.",
     )
 
     parser.add_argument(
-        "--variant",
+        "--free",
         type = str_to_bool,
         required = True,
-        help = "If True, run with FNO. If False, run the source file as-is.",
+        help = "If True, run with FREE. If False, run the source file as-is.",
     )
 
     return parser.parse_args()
@@ -115,7 +118,7 @@ def main():
 
     output = run_file(
         source_file = args.file,
-        variant = args.variant,
+        free = args.free,
     )
 
     print("")
@@ -123,9 +126,9 @@ def main():
     print("================================================================================================================")
 
     if output is None:
-        print("variant = False: source file ran as-is.")
+        print("free = False: source file ran as-is.")
     else:
-        print(f"variant = True: {output}")
+        print(f"free = True: {output}")
 
 
 

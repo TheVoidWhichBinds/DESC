@@ -1,7 +1,7 @@
 # helical_qs.py
 """Quasi-symmetry with helical contours.
 
-Modernized for current DESC APIs.
+Modernized for current DESC APIs, while preserving the original script flow.
 """
 
 
@@ -9,7 +9,6 @@ Modernized for current DESC APIs.
 # IMPORTS
 #========================================================================================================================================
 from pathlib import Path
-import os
 import signal
 import sys
 import traceback
@@ -19,9 +18,10 @@ set_device("gpu")
 
 import numpy as np
 
+from qsc import Qsc
+
 from desc.equilibrium import EquilibriaFamily, Equilibrium
 from desc.grid import LinearGrid, QuadratureGrid
-from desc.io import load
 from desc.magnetic_fields import OmnigenousField
 from desc.objectives import (
     CurrentDensity,
@@ -29,11 +29,12 @@ from desc.objectives import (
     FixOmniMap,
     ObjectiveFunction,
     Omnigenity,
+)
+from desc.objectives.utils import (
+    get_fixed_boundary_constraints,
     get_NAE_constraints,
 )
 from desc.optimize import Optimizer
-
-from qsc import Qsc
 
 
 
@@ -48,7 +49,6 @@ from qsc import Qsc
 # PATHS
 #========================================================================================================================================
 OUTPUT_DIR = Path(__file__).resolve().parent
-INITIAL_PATH = OUTPUT_DIR / "helical_qs_initial.h5"
 
 
 
@@ -83,6 +83,7 @@ N_omni = 0
 well_weight = 2
 eq_weights = [1e0, 2e0, 4e0]
 
+aspect_ratio = 20
 surfaces = [0.2, 0.4, 0.6, 0.8, 1.0]
 
 assert len(LM) == len(eq_weights)
@@ -121,28 +122,6 @@ def eq_error(eq):
 
 
 
-def load_initial_equilibrium(path):
-    """Load the saved initial equilibrium."""
-
-    obj = load(str(path))
-
-    if isinstance(obj, EquilibriaFamily):
-        eq = obj[-1]
-
-    elif isinstance(obj, Equilibrium):
-        eq = obj
-
-    else:
-        raise TypeError(
-            "Expected Equilibrium or EquilibriaFamily from "
-            f"{path}, got {type(obj)}."
-        )
-
-    fam = EquilibriaFamily()
-    fam.append(eq)
-
-    return fam, eq
-
 
 
 def save_family_to_path(fam, path):
@@ -153,14 +132,19 @@ def save_family_to_path(fam, path):
 
 
 
+
+
 def save_failure_checkpoint(fam, stage_message):
     """Save the latest completed stage as the failure-mode checkpoint."""
 
     print(stage_message)
+
     save_family_to_path(
         fam = fam,
         path = FAILURE_PATH,
     )
+
+
 
 
 
@@ -170,7 +154,10 @@ def handle_signal(signum, frame):
     print("")
     print(f"Received signal {signum}.")
     print(f"Latest completed stage should be saved at: {FAILURE_PATH}")
+
     sys.exit(128 + signum)
+
+
 
 
 
@@ -191,16 +178,18 @@ def make_omnigenous_field(eq):
 
 
 
-def make_omnigenity_objective(eq, field, rho, eta_weight):
-    """Create a modern DESC omnigenity objective on a single flux surface."""
 
-    M_booz = min(int(np.ceil(1.5 * eq.M)), 16)
-    N_booz = min(int(np.ceil(1.5 * eq.N)), 16)
+
+def make_omnigenity_objective(eq, field, rho, M_booz, N_booz):
+    """Create a modern DESC omnigenity objective on one flux surface."""
+
+    M_grid = int(np.ceil(1.5 * M_booz))
+    N_grid = int(np.ceil(1.5 * N_booz))
 
     eq_grid = LinearGrid(
         rho = rho,
-        M = int(np.ceil(1.5 * M_booz)),
-        N = int(np.ceil(1.5 * N_booz)),
+        M = M_grid,
+        N = N_grid,
         NFP = eq.NFP,
         sym = False,
     )
@@ -218,15 +207,17 @@ def make_omnigenity_objective(eq, field, rho, eta_weight):
         field = field,
         eq_grid = eq_grid,
         field_grid = field_grid,
-        eta_weight = eta_weight,
+        eta_weight = well_weight,
     )
 
     return objective
 
 
 
+
+
 def make_omnigenity_constraints(eq, field, qsc):
-    """Create constraints for modern omnigenity optimization."""
+    """Create modern replacements for old FixOmni and StraightBmaxContour."""
 
     omni_map_indices = np.where(field.x_basis.modes[:, 1] == 0)[0]
 
@@ -260,23 +251,6 @@ def make_omnigenity_constraints(eq, field, qsc):
 #========================================================================================================================================
 signal.signal(signal.SIGTERM, handle_signal)
 signal.signal(signal.SIGINT, handle_signal)
-
-
-
-
-
-
-
-
-
-
-#========================================================================================================================================
-# INITIAL EQUILIBRIUM
-#========================================================================================================================================
-fam, eq = load_initial_equilibrium(INITIAL_PATH)
-
-print("loaded initial equilibrium:", INITIAL_PATH)
-print("equilibrium error: {:.2e}".format(eq_error(eq)))
 
 
 
@@ -324,7 +298,41 @@ qsc = Qsc(
     order = "r1",
 )
 
-field = make_omnigenous_field(eq)
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# INITIAL NAE EQUILIBRIUM
+#========================================================================================================================================
+fam = EquilibriaFamily()
+
+eq = Equilibrium.from_near_axis(
+    qsc,
+    r = 1 / aspect_ratio,
+    L = LM[0],
+    M = LM[0],
+    N = N,
+    L_well = L_well,
+    M_well = M_well,
+    L_omni = L_omni,
+    M_omni = M_omni,
+    N_omni = N_omni,
+)
+
+fam.append(eq)
+
+save_failure_checkpoint(
+    fam = fam,
+    stage_message = "Created initial near-axis equilibrium.",
+)
+
+print("equilibrium error: {:.2e}".format(eq_error(eq)))
 
 
 
@@ -336,7 +344,45 @@ field = make_omnigenous_field(eq)
 
 
 #========================================================================================================================================
-# OPT
+# RE-SOLVE WITH NAE CONSTRAINTS
+#========================================================================================================================================
+constraints = get_NAE_constraints(
+    eq,
+    qsc,
+    order = 1,
+)
+
+eq, result = eq.solve(
+    objective = "vacuum",
+    constraints = constraints,
+    ftol = 1e-2,
+    xtol = 1e-6,
+    gtol = 1e-6,
+    maxiter = 200,
+    verbose = 3,
+    copy = True,
+)
+
+fam.append(eq)
+
+save_failure_checkpoint(
+    fam = fam,
+    stage_message = "Completed NAE-constrained vacuum solve.",
+)
+
+print("equilibrium error: {:.2e}".format(eq_error(eq)))
+
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# OPTIMIZE WITH INCREASING RESOLUTION
 #========================================================================================================================================
 try:
     for i in range(len(LM)):
@@ -356,6 +402,11 @@ try:
             sym = sym,
         )
 
+        M_booz = min(int(np.ceil(1.5 * LM[i])), 16)
+        N_booz = min(int(np.ceil(1.5 * N)), 16)
+
+        field = make_omnigenous_field(eq)
+
         objectives = [
             CurrentDensity(
                 eq = eq,
@@ -369,7 +420,8 @@ try:
                     eq = eq,
                     field = field,
                     rho = rho,
-                    eta_weight = well_weight,
+                    M_booz = M_booz,
+                    N_booz = N_booz,
                 )
             )
 
@@ -396,22 +448,60 @@ try:
 
         fam.append(eq)
 
-        print("equilibrium error: {:.2e}".format(eq_error(eq)))
-
         save_failure_checkpoint(
             fam = fam,
             stage_message = (
-                f"Completed stage {i + 1}/{len(LM)}. "
+                f"Completed resolution stage {i + 1}/{len(LM)}. "
                 f"Saving failure checkpoint in case a later stage fails."
             ),
         )
+
+        print("equilibrium error: {:.2e}".format(eq_error(eq)))
 
 except Exception:
     print("")
     print("Optimization failed with an exception.")
     print(f"Latest completed stage is saved at: {FAILURE_PATH}")
+
     traceback.print_exc()
+
     raise
+
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# RE-SOLVE WITH FIXED BOUNDARY CONSTRAINTS
+#========================================================================================================================================
+constraints = get_fixed_boundary_constraints(
+    iota = False,
+)
+
+eq, result = eq.solve(
+    objective = "vacuum",
+    constraints = constraints,
+    ftol = 1e-2,
+    xtol = 1e-6,
+    gtol = 1e-6,
+    maxiter = 200,
+    verbose = 3,
+    copy = True,
+)
+
+fam.append(eq)
+
+save_failure_checkpoint(
+    fam = fam,
+    stage_message = "Completed final fixed-boundary vacuum solve.",
+)
+
+print("equilibrium error: {:.2e}".format(eq_error(eq)))
 
 
 

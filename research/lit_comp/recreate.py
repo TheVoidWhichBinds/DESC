@@ -1,5 +1,5 @@
-# check.py
-"""Compare OG and recreated CHECK DESC output files for any paper recreation."""
+# recreate.py
+"""Compare OG and recreated FXD DESC output files for any paper recreation."""
 
 
 #========================================================================================================================================
@@ -9,7 +9,7 @@ from argparse import ArgumentParser
 
 from helper import (
     compare_all,
-    find_matching_check_files,
+    find_matching_fxd_files,
     get_case_dir,
     load_latest_equilibrium,
     print_comparison_rows,
@@ -32,13 +32,13 @@ def parse_args():
     """Parse command-line arguments."""
 
     parser = ArgumentParser(
-        description = "Compare OG and CHECK DESC output files for a paper recreation.",
+        description = "Compare OG and FXD DESC output files for a paper recreation.",
     )
 
     parser.add_argument(
         "--paper",
         required = True,
-        help = "Paper recreation directory name, e.g. dudt2024.",
+        help = "Paper directory name, e.g. dudt2024.",
     )
 
     parser.add_argument(
@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument(
         "--save",
         action = "store_true",
-        help = "Save comparison CSV in the paper output directory.",
+        help = "Save comparison CSV in the case directory.",
     )
 
     return parser.parse_args()
@@ -82,14 +82,14 @@ def main():
             "Case directory does not exist: {}".format(case_dir)
         )
 
-    original_file, check_file, case_name = find_matching_check_files(
+    original_file, fxd_file, case_name = find_matching_fxd_files(
         case_dir = case_dir,
         file_name = args.file,
     )
 
     print("")
     print("================================================================")
-    print("DESC recreation check")
+    print("DESC recreation comparison")
     print("================================================================")
     print("Paper:")
     print(args.paper)
@@ -100,22 +100,22 @@ def main():
     print("OG:")
     print(original_file)
     print("")
-    print("CHECK:")
-    print(check_file)
+    print("FXD:")
+    print(fxd_file)
 
     eq_original = load_latest_equilibrium(
         path = original_file,
     )
 
-    eq_check = load_latest_equilibrium(
-        path = check_file,
+    eq_fxd = load_latest_equilibrium(
+        path = fxd_file,
     )
 
     rows = compare_all(
         paper = args.paper,
         case_name = case_name,
         eq_original = eq_original,
-        eq_check = eq_check,
+        eq_check = eq_fxd,
     )
 
     print_comparison_rows(
@@ -123,7 +123,7 @@ def main():
     )
 
     if args.save:
-        csv_path = case_dir / "{}_OG_vs_CHECK_comparison.csv".format(case_name)
+        csv_path = case_dir / "{}_OG_vs_FXD_comparison.csv".format(case_name)
 
         save_comparison_rows(
             rows = rows,

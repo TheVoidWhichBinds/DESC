@@ -1,27 +1,30 @@
 # helper.py
 #==============================================================================================================
 #
-# Shared helper functions for DESC/research/final.
+# Shared helper functions for DESC/research/lit_comp.
 #
 # This file owns:
-#   1. FNO config access
-#   2. FixPressure removal for FNO runs
+#   1. FREE config access
+#   2. FixPressure removal for FREE runs
 #   3. Initial-equilibrium injection through kwargs["thing"]
 #   4. DESC custom objective construction
-#   5. Optimizer patching for recreation-file FNO runs
+#   5. Optimizer patching for recreation-file FREE runs
 #   6. Recreation-file output path patching
+#   7. Case-objective comparison helpers
 #
 #==============================================================================================================
 
 from copy import deepcopy
 from pathlib import Path
+import csv
 import inspect
 import os
 import runpy
 import traceback
-from pathlib import Path
-from desc.io import load
 
+import numpy as np
+
+from desc.io import load
 from desc.optimize import Optimizer
 from desc.equilibrium import Equilibrium
 from desc.objectives import (
@@ -37,26 +40,15 @@ from desc.objectives import (
 
 
 
+
+
 #========================================================================================================================================
-# Check / comparison settings:
+# Check / comparison settings
 #========================================================================================================================================
-
-import csv
-from pathlib import Path
-
-import numpy as np
-
-from desc.io import load
-
-
-
-
-
-
-
 
 ORIGINAL_SUFFIX = "_OG"
-CHECK_SUFFIX = "_CHECK"
+FXD_SUFFIX = "_FXD"
+FREE_SUFFIX = "_FREE"
 
 SUMMARY_KEYS = [
     "value",
@@ -134,22 +126,62 @@ QUANTITY_CANDIDATES = [
 
 
 #========================================================================================================================================
-# Check path helpers:
+# Path helpers
 #========================================================================================================================================
+
+def get_lit_comp_dir():
+    """
+    Returns the research/lit_comp directory.
+    """
+
+    return Path(__file__).resolve().parent
+
+
+
+
+
+def get_papers_dir():
+    """
+    Return the papers directory containing paper recreation cases.
+    """
+
+    return get_lit_comp_dir() / "papers"
+
+
+
+
+
+def get_case_dir(
+        paper,
+        case,
+    ):
+    """
+    Return the paper case directory.
+    """
+
+    return get_papers_dir() / paper / case
+
+
+
+
 
 def normalize_case_name(
         name,
     ):
-    """Normalize a passed filename/case stem by removing .h5, _OG, and _CHECK."""
+    """
+    Normalize a passed filename/case stem by removing .h5, _OG, _FXD, and _FREE.
+    """
 
     path = Path(name)
     stem = path.stem
 
-    if stem.endswith(ORIGINAL_SUFFIX):
-        stem = stem[: -len(ORIGINAL_SUFFIX)]
-
-    if stem.endswith(CHECK_SUFFIX):
-        stem = stem[: -len(CHECK_SUFFIX)]
+    for suffix in (
+        ORIGINAL_SUFFIX,
+        FXD_SUFFIX,
+        FREE_SUFFIX,
+    ):
+        if stem.endswith(suffix):
+            stem = stem[: -len(suffix)]
 
     return stem
 
@@ -157,31 +189,13 @@ def normalize_case_name(
 
 
 
-def get_recreations_dir():
-    """Return the recreations directory containing this helper module."""
-
-    return Path(__file__).resolve().parent / "recreations"
-
-
-
-
-
-def get_output_dir(
-        paper,
-    ):
-    """Return the output directory for a paper recreation."""
-
-    return get_recreations_dir() / paper / "output"
-
-
-
-
-
-def find_matching_check_files(
+def find_matching_fxd_files(
         case_dir,
         file_name,
     ):
-    """Find the OG and CHECK files matching the requested case."""
+    """
+    Find the OG and FXD files matching the requested case.
+    """
 
     case_name = normalize_case_name(
         name = file_name,
@@ -190,7 +204,7 @@ def find_matching_check_files(
     h5_files = sorted(case_dir.glob("*.h5"))
 
     original_matches = []
-    check_matches = []
+    fxd_matches = []
 
     for path in h5_files:
         normalized = normalize_case_name(
@@ -203,8 +217,8 @@ def find_matching_check_files(
         if path.stem.endswith(ORIGINAL_SUFFIX):
             original_matches.append(path)
 
-        elif path.stem.endswith(CHECK_SUFFIX):
-            check_matches.append(path)
+        elif path.stem.endswith(FXD_SUFFIX):
+            fxd_matches.append(path)
 
     if len(original_matches) == 0:
         raise FileNotFoundError(
@@ -214,9 +228,9 @@ def find_matching_check_files(
             )
         )
 
-    if len(check_matches) == 0:
+    if len(fxd_matches) == 0:
         raise FileNotFoundError(
-            "Could not find CHECK file for case '{}' in {}".format(
+            "Could not find FXD file for case '{}' in {}".format(
                 case_name,
                 case_dir,
             )
@@ -230,15 +244,75 @@ def find_matching_check_files(
             )
         )
 
-    if len(check_matches) > 1:
+    if len(fxd_matches) > 1:
         raise RuntimeError(
-            "Found multiple CHECK files for case '{}':\n{}".format(
+            "Found multiple FXD files for case '{}':\n{}".format(
                 case_name,
-                "\n".join(str(path) for path in check_matches),
+                "\n".join(str(path) for path in fxd_matches),
             )
         )
 
-    return original_matches[0], check_matches[0], case_name
+    return original_matches[0], fxd_matches[0], case_name
+
+
+
+
+
+def find_h5_files(
+        case_dir : Path,
+    ):
+    """
+    Finds OG, FXD, and FREE h5 files in the case folder.
+    """
+
+    suffixes = {
+        "OG": "_OG.h5",
+        "FXD": "_FXD.h5",
+        "FREE": "_FREE.h5",
+    }
+
+    files = {}
+
+    for label, suffix in suffixes.items():
+        matches = sorted(case_dir.glob(f"*{suffix}"))
+
+        if len(matches) == 0:
+            matches = sorted(case_dir.rglob(f"*{suffix}"))
+
+        if len(matches) == 0:
+            files[label] = None
+
+        elif len(matches) == 1:
+            files[label] = matches[0]
+
+        else:
+            raise RuntimeError(
+                f"Multiple files ending in {suffix} found in {case_dir}:\n"
+                + "\n".join(str(match) for match in matches)
+            )
+
+    return files
+
+
+
+
+
+def find_case_h5_files(
+        paper : str,
+        case : str,
+    ):
+    """
+    Finds OG, FXD, and FREE h5 files for a paper/case.
+    """
+
+    case_dir = get_case_dir(
+        paper = paper,
+        case = case,
+    )
+
+    return find_h5_files(
+        case_dir = case_dir,
+    )
 
 
 
@@ -250,26 +324,43 @@ def find_matching_check_files(
 
 
 #========================================================================================================================================
-# DESC load helpers:
+# DESC load helpers
 #========================================================================================================================================
 
 def load_latest_equilibrium(
         path,
     ):
-    """Load a DESC output file and return the final equilibrium."""
+    """
+    Load a DESC output file and return the final equilibrium.
+    """
 
     obj = load(str(path))
 
     if hasattr(obj, "equilibria"):
         return obj.equilibria[-1]
 
+    if isinstance(obj, (list, tuple)):
+        return obj[-1]
+
     if hasattr(obj, "__getitem__") and not hasattr(obj, "compute"):
         return obj[-1]
 
-    if isinstance(obj, list) or isinstance(obj, tuple):
-        return obj[-1]
-
     return obj
+
+
+
+
+
+def load_final_eq(
+        path : Path,
+    ):
+    """
+    Loads the final equilibrium from a DESC h5 file.
+    """
+
+    return load_latest_equilibrium(
+        path = path,
+    )
 
 
 
@@ -279,7 +370,9 @@ def safe_compute(
         eq,
         quantity,
     ):
-    """Compute a DESC quantity if available."""
+    """
+    Compute a DESC quantity if available.
+    """
 
     try:
         data = eq.compute(quantity)
@@ -308,13 +401,15 @@ def safe_compute(
 
 
 #========================================================================================================================================
-# Numeric comparison helpers:
+# Numeric comparison helpers
 #========================================================================================================================================
 
 def to_numeric_array(
         value,
     ):
-    """Convert a DESC compute output to a finite numeric numpy array."""
+    """
+    Convert a DESC compute output to a finite numeric numpy array.
+    """
 
     if isinstance(value, dict):
         return None
@@ -348,7 +443,9 @@ def to_numeric_array(
 def summarize_value(
         value,
     ):
-    """Summarize scalar or array-valued DESC output."""
+    """
+    Summarize scalar or array-valued DESC output.
+    """
 
     array = to_numeric_array(
         value = value,
@@ -390,7 +487,9 @@ def relative_difference(
         original,
         check,
     ):
-    """Return relative difference using the OG value as reference."""
+    """
+    Return relative difference using the OG value as reference.
+    """
 
     if not np.isfinite(original) or not np.isfinite(check):
         return np.nan
@@ -406,7 +505,9 @@ def relative_difference(
 def format_float(
         value,
     ):
-    """Format floats for terminal output."""
+    """
+    Format floats for terminal output.
+    """
 
     if value is None:
         return ""
@@ -427,19 +528,68 @@ def format_float(
 
 
 
+def flatten_values(
+        values,
+    ):
+    """
+    Converts objective output to a flat numpy array.
+    """
+
+    values = np.asarray(values)
+
+    return values.reshape(-1)
+
+
+
+
+
+def summarize_values(
+        values,
+    ):
+    """
+    Computes scalar summaries of an objective vector.
+    """
+
+    values = flatten_values(
+        values = values,
+    )
+
+    if values.size == 0:
+        return {
+            "size": 0,
+            "l2": np.nan,
+            "max_abs": np.nan,
+            "mean_abs": np.nan,
+            "rms": np.nan,
+        }
+
+    return {
+        "size": int(values.size),
+        "l2": float(np.linalg.norm(values)),
+        "max_abs": float(np.max(np.abs(values))),
+        "mean_abs": float(np.mean(np.abs(values))),
+        "rms": float(np.sqrt(np.mean(values ** 2))),
+    }
+
+
+
+
+
 
 
 
 
 
 #========================================================================================================================================
-# Objective evaluation helpers:
+# Objective evaluation helpers
 #========================================================================================================================================
 
 def normalize_things(
         thing,
     ):
-    """Convert a single optimizable or tuple/list of optimizables into a tuple."""
+    """
+    Convert a single optimizable or tuple/list of optimizables into a tuple.
+    """
 
     if isinstance(thing, tuple):
         return thing
@@ -457,7 +607,9 @@ def build_objective_safely(
         objective,
         thing,
     ):
-    """Build a DESC objective while tolerating small API differences."""
+    """
+    Build a DESC objective while tolerating small API differences.
+    """
 
     things = normalize_things(
         thing = thing,
@@ -516,7 +668,9 @@ def collect_possible_xs(
         objective,
         thing,
     ):
-    """Collect possible objective input vectors for different DESC objective APIs."""
+    """
+    Collect possible objective input vectors for different DESC objective APIs.
+    """
 
     things = normalize_things(
         thing = thing,
@@ -592,7 +746,14 @@ def evaluate_objective_safely(
         objective,
         thing,
     ):
-    """Evaluate an objective vector, preferring unscaled output when available."""
+    """
+    Evaluate an objective vector, preferring unscaled output when available.
+
+    The input thing may be:
+        eq
+    or:
+        (eq, field)
+    """
 
     things = normalize_things(
         thing = thing,
@@ -622,32 +783,42 @@ def evaluate_objective_safely(
 
         for xs in possible_xs:
             try:
-                return compute(*xs)
+                return flatten_values(
+                    values = compute(*xs),
+                )
 
             except Exception:
                 pass
 
         try:
-            return compute(thing)
+            return flatten_values(
+                values = compute(thing),
+            )
 
         except Exception:
             pass
 
         try:
-            return compute(*things)
+            return flatten_values(
+                values = compute(*things),
+            )
 
         except Exception:
             pass
 
         if len(things) == 1:
             try:
-                return compute(things[0])
+                return flatten_values(
+                    values = compute(things[0]),
+                )
 
             except Exception:
                 pass
 
         try:
-            return compute()
+            return flatten_values(
+                values = compute(),
+            )
 
         except Exception:
             pass
@@ -664,13 +835,15 @@ def evaluate_objective_safely(
 
 
 #========================================================================================================================================
-# Case-specific objective constructors:
+# Case-specific objective constructors
 #========================================================================================================================================
 
 def make_dudt2024_helical_qs_field(
         eq,
     ):
-    """Recreate the OmnigenousField used by dudt2024/helical_qs.py."""
+    """
+    Recreate the OmnigenousField used by dudt2024/helical_qs.py.
+    """
 
     from desc.magnetic_fields import OmnigenousField
 
@@ -696,7 +869,9 @@ def make_dudt2024_helical_qs_omnigenity_objective(
         rho,
         eta_weight,
     ):
-    """Recreate one Omnigenity objective from dudt2024/helical_qs.py."""
+    """
+    Recreate one Omnigenity objective from dudt2024/helical_qs.py.
+    """
 
     from desc.grid import LinearGrid
     from desc.objectives import Omnigenity
@@ -737,7 +912,9 @@ def make_dudt2024_helical_qs_omnigenity_objective(
 def dudt2024_helical_qs_objectives(
         eq,
     ):
-    """Return the actual case objectives used by dudt2024/helical_qs.py."""
+    """
+    Return the actual case objectives used by dudt2024/helical_qs.py.
+    """
 
     from desc.objectives import CurrentDensity
 
@@ -789,7 +966,9 @@ def get_case_objectives(
         case_name,
         eq,
     ):
-    """Return case-specific objective specs if this paper/case has them."""
+    """
+    Return case-specific objective specs if this paper/case has them.
+    """
 
     if paper == "dudt2024" and case_name == "helical_qs":
         return dudt2024_helical_qs_objectives(
@@ -808,7 +987,7 @@ def get_case_objectives(
 
 
 #========================================================================================================================================
-# Comparison helpers:
+# Comparison helpers
 #========================================================================================================================================
 
 def compare_summaries(
@@ -817,7 +996,9 @@ def compare_summaries(
         original_summary,
         check_summary,
     ):
-    """Create comparison rows from two summary dictionaries."""
+    """
+    Create comparison rows from two summary dictionaries.
+    """
 
     rows = []
 
@@ -858,7 +1039,9 @@ def compare_equilibria(
         eq_original,
         eq_check,
     ):
-    """Compare all supported DESC quantities between OG and CHECK equilibria."""
+    """
+    Compare supported DESC quantities between OG and FXD equilibria.
+    """
 
     rows = []
 
@@ -920,7 +1103,9 @@ def compare_case_objectives(
         eq_original,
         eq_check,
     ):
-    """Compare case-specific optimization objectives between OG and CHECK equilibria."""
+    """
+    Compare case-specific optimization objectives between OG and FXD equilibria.
+    """
 
     rows = []
 
@@ -1025,7 +1210,12 @@ def compare_all(
         eq_original,
         eq_check,
     ):
-    """Compare DESC quantities and case-specific objectives."""
+    """
+    Compare DESC quantities and case-specific objectives.
+
+    This is used by recreate.py for OG vs FXD recreation checks.
+    compare.py only writes the case-objective CSV.
+    """
 
     rows = []
 
@@ -1051,19 +1241,125 @@ def compare_all(
 
 
 
+def compare_objective_set(
+        files : dict,
+        objective_getter,
+    ):
+    """
+    Compares one set of objectives across OG, FXD, and FREE files.
+    """
+
+    rows = []
+
+    for file_label, path in files.items():
+        if path is None:
+            rows.append(
+                {
+                    "file_label": file_label,
+                    "file": "MISSING",
+                    "objective": "N/A",
+                    "size": "",
+                    "l2": "",
+                    "max_abs": "",
+                    "mean_abs": "",
+                    "rms": "",
+                    "status": "missing file",
+                }
+            )
+
+            continue
+
+        try:
+            eq = load_final_eq(
+                path = path,
+            )
+
+            objective_specs = objective_getter(eq)
+
+            if len(objective_specs) == 0:
+                rows.append(
+                    {
+                        "file_label": file_label,
+                        "file": path.name,
+                        "objective": "NO_OBJECTIVES_DEFINED",
+                        "size": "",
+                        "l2": "",
+                        "max_abs": "",
+                        "mean_abs": "",
+                        "rms": "",
+                        "status": "no objectives defined",
+                    }
+                )
+
+            for spec in objective_specs:
+                objective = spec["objective"](eq) if callable(spec["objective"]) else spec["objective"]
+                thing = spec.get("thing", eq)
+
+                if callable(thing):
+                    thing = thing(eq)
+
+                values = evaluate_objective_safely(
+                    objective = objective,
+                    thing = thing,
+                )
+
+                summary = summarize_values(
+                    values = values,
+                )
+
+                rows.append(
+                    {
+                        "file_label": file_label,
+                        "file": path.name,
+                        "objective": spec["name"],
+                        "size": summary["size"],
+                        "l2": summary["l2"],
+                        "max_abs": summary["max_abs"],
+                        "mean_abs": summary["mean_abs"],
+                        "rms": summary["rms"],
+                        "status": "ok",
+                    }
+                )
+
+        except Exception as error:
+            rows.append(
+                {
+                    "file_label": file_label,
+                    "file": path.name,
+                    "objective": "ERROR",
+                    "size": "",
+                    "l2": "",
+                    "max_abs": "",
+                    "mean_abs": "",
+                    "rms": "",
+                    "status": repr(error),
+                }
+            )
+
+            print(f"\nFailed while evaluating {file_label}: {path}")
+            traceback.print_exc()
+
+    return rows
+
+
+
+
+
 
 
 
 
 
 #========================================================================================================================================
-# Output helpers:
+# Output helpers
 #========================================================================================================================================
 
 def print_comparison_rows(
         rows,
     ):
-    """Print comparison rows to terminal."""
+    """
+    Print comparison rows to terminal.
+    """
 
     if len(rows) == 0:
         print("")
@@ -1080,7 +1376,7 @@ def print_comparison_rows(
             "quantity",
             "statistic",
             "OG",
-            "CHECK",
+            "FXD",
             "abs diff",
             "rel diff",
         )
@@ -1108,7 +1404,9 @@ def save_comparison_rows(
         rows,
         path,
     ):
-    """Save comparison rows to CSV."""
+    """
+    Save comparison rows to CSV.
+    """
 
     with open(path, "w", newline = "") as stream:
         writer = csv.DictWriter(
@@ -1133,484 +1431,6 @@ def save_comparison_rows(
 
 
 
-
-
-
-
-#==============================================================================================================
-# Objective comparison helpers:
-#==============================================================================================================
-
-import csv
-import traceback
-
-import numpy as np
-
-
-
-
-
-
-
-
-def flatten_values(
-        values,
-    ):
-    """
-    Converts objective output to a flat numpy array.
-    """
-
-    values = np.asarray(values)
-
-    return values.reshape(-1)
-
-
-
-
-
-def summarize_values(
-        values,
-    ):
-    """
-    Computes scalar summaries of an objective vector.
-    """
-
-    values = flatten_values(values)
-
-    if values.size == 0:
-        return {
-            "size": 0,
-            "l2": np.nan,
-            "max_abs": np.nan,
-            "mean_abs": np.nan,
-            "rms": np.nan,
-        }
-
-    return {
-        "size": int(values.size),
-        "l2": float(np.linalg.norm(values)),
-        "max_abs": float(np.max(np.abs(values))),
-        "mean_abs": float(np.mean(np.abs(values))),
-        "rms": float(np.sqrt(np.mean(values ** 2))),
-    }
-
-
-
-
-
-def normalize_things(
-        thing,
-    ):
-    """
-    Converts a single DESC optimizable or tuple/list of optimizables into a tuple.
-    """
-
-    if isinstance(thing, tuple):
-        return thing
-
-    if isinstance(thing, list):
-        return tuple(thing)
-
-    return (thing,)
-
-
-
-
-
-def build_objective_safely(
-        objective,
-        thing,
-    ):
-    """
-    Builds a DESC objective while tolerating small API differences.
-    """
-
-    things = normalize_things(
-        thing = thing,
-    )
-
-    if len(things) == 1:
-        try:
-            objective.build(
-                eq = things[0],
-                verbose = 0,
-            )
-
-            return
-
-        except TypeError:
-            pass
-
-    try:
-        objective.build(
-            verbose = 0,
-        )
-
-        return
-
-    except TypeError:
-        pass
-
-    try:
-        objective.build()
-
-        return
-
-    except TypeError:
-        pass
-
-    try:
-        objective.build(
-            thing = thing,
-            verbose = 0,
-        )
-
-        return
-
-    except TypeError:
-        pass
-
-    objective.build(
-        thing = thing,
-    )
-
-
-
-
-
-def collect_possible_xs(
-        objective,
-        thing,
-    ):
-    """
-    Collects possible objective input vectors for different DESC objective APIs.
-    """
-
-    things = normalize_things(
-        thing = thing,
-    )
-
-    possible_xs = []
-
-    if hasattr(objective, "x"):
-        try:
-            possible_xs.append((objective.x(thing),))
-
-        except Exception:
-            pass
-
-        try:
-            possible_xs.append((objective.x(*things),))
-
-        except Exception:
-            pass
-
-        if len(things) == 1:
-            try:
-                possible_xs.append((objective.x(things[0]),))
-
-            except Exception:
-                pass
-
-    if hasattr(objective, "xs"):
-        try:
-            xs = objective.xs(thing)
-
-            if isinstance(xs, tuple):
-                possible_xs.append(xs)
-
-            else:
-                possible_xs.append((xs,))
-
-        except Exception:
-            pass
-
-        try:
-            xs = objective.xs(*things)
-
-            if isinstance(xs, tuple):
-                possible_xs.append(xs)
-
-            else:
-                possible_xs.append((xs,))
-
-        except Exception:
-            pass
-
-        if len(things) == 1:
-            try:
-                xs = objective.xs(things[0])
-
-                if isinstance(xs, tuple):
-                    possible_xs.append(xs)
-
-                else:
-                    possible_xs.append((xs,))
-
-            except Exception:
-                pass
-
-    return possible_xs
-
-
-
-
-
-def evaluate_objective_safely(
-        objective,
-        thing,
-    ):
-    """
-    Evaluates an objective vector, preferring unnormalized/unscaled output when available.
-
-    The input thing may be:
-        eq
-    or:
-        (eq, field)
-
-    This is needed because Omnigenity is built on the equilibrium-field pair.
-    """
-
-    things = normalize_things(
-        thing = thing,
-    )
-
-    build_objective_safely(
-        objective = objective,
-        thing = thing,
-    )
-
-    possible_xs = collect_possible_xs(
-        objective = objective,
-        thing = thing,
-    )
-
-    possible_compute_names = [
-        "compute_unscaled",
-        "compute_unscaled_error",
-        "compute",
-    ]
-
-    for compute_name in possible_compute_names:
-        if not hasattr(objective, compute_name):
-            continue
-
-        compute = getattr(objective, compute_name)
-
-        for xs in possible_xs:
-            try:
-                return flatten_values(compute(*xs))
-
-            except Exception:
-                pass
-
-        try:
-            return flatten_values(compute(thing))
-
-        except Exception:
-            pass
-
-        try:
-            return flatten_values(compute(*things))
-
-        except Exception:
-            pass
-
-        if len(things) == 1:
-            try:
-                return flatten_values(compute(things[0]))
-
-            except Exception:
-                pass
-
-        try:
-            return flatten_values(compute())
-
-        except Exception:
-            pass
-
-    raise RuntimeError(f"Could not evaluate objective: {objective}")
-
-
-
-
-
-def default_desc_objectives(
-        eq,
-    ):
-    """
-    Returns the general DESC objectives to compare for every paper/case.
-
-    This uses DESC's default force-balance equilibrium objective.
-    """
-
-    from desc.objectives import get_equilibrium_objective
-
-    return [
-        {
-            "name": "DESC ForceBalance objective",
-            "objective": get_equilibrium_objective(
-                eq = eq,
-                mode = "force",
-            ),
-            "thing": eq,
-        },
-    ]
-
-
-
-
-
-
-
-
-
-
-#==============================================================================================================
-# Case-specific objective constructors:
-#==============================================================================================================
-
-def make_dudt2024_helical_qs_field(
-        eq,
-    ):
-    """
-    Recreates the OmnigenousField used by dudt2024/helical_qs.py.
-    """
-
-    from desc.magnetic_fields import OmnigenousField
-
-    field = OmnigenousField(
-        L_B = 4,
-        M_B = 8,
-        L_x = 0,
-        M_x = 0,
-        N_x = 0,
-        NFP = eq.NFP,
-        helicity = (1, eq.NFP),
-    )
-
-    return field
-
-
-
-
-
-def make_dudt2024_helical_qs_omnigenity_objective(
-        eq,
-        field,
-        rho,
-        eta_weight,
-    ):
-    """
-    Recreates one Omnigenity objective from dudt2024/helical_qs.py.
-    """
-
-    from desc.grid import LinearGrid
-    from desc.objectives import Omnigenity
-
-    M_booz = min(int(np.ceil(1.5 * eq.M)), 16)
-    N_booz = min(int(np.ceil(1.5 * eq.N)), 16)
-
-    eq_grid = LinearGrid(
-        rho = rho,
-        M = int(np.ceil(1.5 * M_booz)),
-        N = int(np.ceil(1.5 * N_booz)),
-        NFP = eq.NFP,
-        sym = False,
-    )
-
-    field_grid = LinearGrid(
-        rho = rho,
-        theta = 2 * M_booz,
-        zeta = 2 * N_booz,
-        NFP = field.NFP,
-        sym = False,
-    )
-
-    objective = Omnigenity(
-        eq = eq,
-        field = field,
-        eq_grid = eq_grid,
-        field_grid = field_grid,
-        eta_weight = eta_weight,
-    )
-
-    return objective
-
-
-
-
-
-def dudt2024_helical_qs_objectives(
-        eq,
-    ):
-    """
-    Returns the actual optimization objectives used by dudt2024/helical_qs.py.
-
-    Final-stage comparison uses the final-stage CurrentDensity weight:
-        eq_weights[-1] = 4e0
-
-    The Omnigenity objectives are evaluated on:
-        rho = 0.2, 0.4, 0.6, 0.8, 1.0
-
-    with:
-        eta_weight = 2
-    """
-
-    from desc.objectives import CurrentDensity
-
-    field = make_dudt2024_helical_qs_field(
-        eq = eq,
-    )
-
-    surfaces = [
-        0.2,
-        0.4,
-        0.6,
-        0.8,
-        1.0,
-    ]
-
-    objective_specs = [
-        {
-            "name": "helical_qs CurrentDensity",
-            "objective": CurrentDensity(
-                eq = eq,
-                weight = 4e0,
-            ),
-            "thing": eq,
-        },
-    ]
-
-    for rho in surfaces:
-        objective_specs.append(
-            {
-                "name": f"helical_qs Omnigenity rho={rho}",
-                "objective": make_dudt2024_helical_qs_omnigenity_objective(
-                    eq = eq,
-                    field = field,
-                    rho = rho,
-                    eta_weight = 2,
-                ),
-                "thing": (eq, field),
-            }
-        )
-
-    return objective_specs
-
-
-
-
-
-
-
-
-
-
-#==============================================================================================================
-# Table creation:
-#==============================================================================================================
-
 def write_table_csv(
         rows : list,
         path,
@@ -1620,9 +1440,9 @@ def write_table_csv(
 
     Output format:
 
-        objective, metric, OG, CHECK, FNO
-        ForceBalance, l2, ...
-        ForceBalance, max_abs, ...
+        objective, metric, OG, FXD, FREE
+        CurrentDensity, l2, ...
+        CurrentDensity, max_abs, ...
         ...
     """
 
@@ -1703,6 +1523,7 @@ def write_table_csv(
 
 
 
+
 def write_table_markdown(
         rows : list,
         path,
@@ -1730,238 +1551,26 @@ def write_table_markdown(
 
 
 
-def compare_objective_set(
-        files : dict,
-        objective_getter,
-    ):
+
+
+
+
+
+#========================================================================================================================================
+# FREE Helpers
+#========================================================================================================================================
+
+def get_free_config():
     """
-    Compares one set of objectives across OG, CHECK, and FNO files.
-    """
-
-    rows = []
-
-    for file_label, path in files.items():
-        if path is None:
-            rows.append(
-                {
-                    "file_label": file_label,
-                    "file": "MISSING",
-                    "objective": "N/A",
-                    "size": "",
-                    "l2": "",
-                    "max_abs": "",
-                    "mean_abs": "",
-                    "rms": "",
-                    "status": "missing file",
-                }
-            )
-
-            continue
-
-        try:
-            eq = load_final_eq(path)
-            objective_specs = objective_getter(eq)
-
-            if len(objective_specs) == 0:
-                rows.append(
-                    {
-                        "file_label": file_label,
-                        "file": path.name,
-                        "objective": "NO_OBJECTIVES_DEFINED",
-                        "size": "",
-                        "l2": "",
-                        "max_abs": "",
-                        "mean_abs": "",
-                        "rms": "",
-                        "status": "no objectives defined",
-                    }
-                )
-
-            for spec in objective_specs:
-                objective = spec["objective"](eq) if callable(spec["objective"]) else spec["objective"]
-                thing = spec.get("thing", eq)
-
-                if callable(thing):
-                    thing = thing(eq)
-
-                values = evaluate_objective_safely(
-                    objective = objective,
-                    thing = thing,
-                )
-
-                summary = summarize_values(values)
-
-                rows.append(
-                    {
-                        "file_label": file_label,
-                        "file": path.name,
-                        "objective": spec["name"],
-                        "size": summary["size"],
-                        "l2": summary["l2"],
-                        "max_abs": summary["max_abs"],
-                        "mean_abs": summary["mean_abs"],
-                        "rms": summary["rms"],
-                        "status": "ok",
-                    }
-                )
-
-        except Exception as error:
-            rows.append(
-                {
-                    "file_label": file_label,
-                    "file": path.name,
-                    "objective": "ERROR",
-                    "size": "",
-                    "l2": "",
-                    "max_abs": "",
-                    "mean_abs": "",
-                    "rms": "",
-                    "status": repr(error),
-                }
-            )
-
-            print(f"\nFailed while evaluating {file_label}: {path}")
-            traceback.print_exc()
-
-    return rows
-
-
-
-
-
-
-
-
-
-
-
-
-#==============================================================================================================
-# Shared comparison/plotting helpers:
-#==============================================================================================================
-
-def get_lit_comp_dir():
-    """
-    Returns the research/lit_comp directory.
-    """
-
-    return Path(__file__).resolve().parent
-
-
-
-
-
-def get_case_dir(
-        paper,
-        case,
-    ):
-    """Return the recreation case directory."""
-
-    return Path(__file__).resolve().parent / "recreations" / paper / case
-
-
-
-
-
-def find_h5_files(
-        case_dir : Path,
-    ):
-    """
-    Finds OG, CHECK, and FNO h5 files in the case folder.
-    """
-
-    suffixes = {
-        "OG": "_OG.h5",
-        "CHECK": "_CHECK.h5",
-        "FNO": "_FNO.h5",
-    }
-
-    files = {}
-
-    for label, suffix in suffixes.items():
-        matches = sorted(case_dir.glob(f"*{suffix}"))
-
-        if len(matches) == 0:
-            recursive_matches = sorted(case_dir.rglob(f"*{suffix}"))
-            matches = recursive_matches
-
-        if len(matches) == 0:
-            files[label] = None
-
-        elif len(matches) == 1:
-            files[label] = matches[0]
-
-        else:
-            raise RuntimeError(
-                f"Multiple files ending in {suffix} found in {case_dir}:\n"
-                + "\n".join(str(match) for match in matches)
-            )
-
-    return files
-
-
-
-
-
-def find_case_h5_files(
-        paper : str,
-        case : str,
-    ):
-    """
-    Finds OG, CHECK, and FNO h5 files for a paper/case.
-    """
-
-    case_dir = get_case_dir(
-        paper = paper,
-        case = case,
-    )
-
-    return find_h5_files(case_dir)
-
-
-
-
-
-def load_final_eq(
-        path : Path,
-    ):
-    """
-    Loads the final equilibrium from a DESC h5 file.
-    """
-
-    obj = load(str(path))
-
-    if hasattr(obj, "__getitem__"):
-        return obj[-1]
-
-    return obj
-
-
-
-
-
-
-
-
-
-
-#==============================================================================================================
-# FNO Helpers
-#==============================================================================================================
-
-def get_fno_config():
-    """
-    Return the FNO configuration.
+    Return the FREE configuration.
     """
 
     try:
-        from .FNO import FNO_CONFIG
+        from .wrappers import FREE_CONFIG
     except ImportError:
-        from FNO import FNO_CONFIG
+        from research.lit_comp.wrappers import FREE_CONFIG
 
-    return deepcopy(FNO_CONFIG)
-
-
+    return deepcopy(FREE_CONFIG)
 
 
 
@@ -1972,10 +1581,9 @@ def get_fno_config():
 
 
 
-
-#==============================================================================================================
+#========================================================================================================================================
 # DESC Custom Objective Builders
-#==============================================================================================================
+#========================================================================================================================================
 
 def user_function_kind(
         fun,
@@ -2001,6 +1609,41 @@ def user_function_kind(
 
 
 
+def get_pressure_axis_target(
+        eq_initial,
+    ):
+    """
+    Extract pressure on-axis from the initial equilibrium immediately before optimization.
+    """
+
+    if hasattr(eq_initial, "params_dict"):
+        params = eq_initial.params_dict
+
+        if "p_l" in params:
+            return float(params["p_l"][0])
+
+    try:
+        from desc.grid import LinearGrid
+
+        grid = LinearGrid(
+            rho = 0.0,
+            M = 0,
+            N = 0,
+            NFP = eq_initial.NFP,
+        )
+
+        data = eq_initial.compute(
+            "p",
+            grid = grid,
+        )
+
+        return float(np.asarray(data["p"]).reshape(-1)[0])
+
+    except Exception as error:
+        raise RuntimeError(
+            "Could not extract pressure-axis target from initial equilibrium."
+        ) from error
+
 
 
 
@@ -2010,7 +1653,13 @@ def build_user_objective(
         eq,
     ):
     """
-    Build a DESC custom objective from an FNO config dictionary.
+    Build a DESC custom objective from a FREE config dictionary.
+
+    Any config with wrapper = "linear" is built with LinearObjectiveFromUser.
+    Any config with wrapper = "nonlinear" is built with ObjectiveFromUser.
+    If wrapper is omitted, the function signature decides:
+        (params)     -> LinearObjectiveFromUser
+        (grid, data) -> ObjectiveFromUser
     """
 
     kwargs = dict(config.get("kwargs", {}))
@@ -2058,14 +1707,15 @@ def build_user_objective(
 
 
 
-#==============================================================================================================
+#========================================================================================================================================
 # Constraint Removal Helpers
-#==============================================================================================================
+#========================================================================================================================================
 
 FIXED_PRESSURE_CLASS_NAMES = {
     "FixPressure",
     "PressureFixed",
 }
+
 
 
 
@@ -2104,10 +1754,6 @@ def is_fixed_pressure_constraint(
 
 
 
-
-
-
-
 def remove_fixed_pressure_constraints_from_objects(
         constraints,
     ):
@@ -2140,9 +1786,9 @@ def remove_fixed_pressure_constraints_from_objects(
 
 
 
-#==============================================================================================================
+#========================================================================================================================================
 # Equilibrium Helpers
-#==============================================================================================================
+#========================================================================================================================================
 
 def find_equilibrium_in_object(
         obj,
@@ -2174,22 +1820,39 @@ def find_equilibrium_in_object(
 
 
 
-#==============================================================================================================
-# FNO Extension Builder
-#==============================================================================================================
+#========================================================================================================================================
+# FREE Extension Builder
+#========================================================================================================================================
 
-def build_fno_extension(
+def build_free_extension(
         eq,
         eq_initial = None,
     ):
     """
-    Build FNO objective and constraint objects for the current equilibrium.
+    Build FREE objective and constraint objects for the current equilibrium.
     """
 
-    fno_config = get_fno_config()
+    free_config = get_free_config()
 
-    objective_configs = tuple(fno_config["objectives"])
-    constraint_configs = tuple(fno_config["constraints"])
+    objective_configs = tuple(free_config["objectives"])
+    constraint_configs = tuple(free_config["constraints"])
+
+    if eq_initial is None:
+        eq_initial = eq.copy()
+
+    pressure_axis_target = get_pressure_axis_target(
+        eq_initial = eq_initial,
+    )
+
+    patched_constraint_configs = []
+
+    for config in constraint_configs:
+        config = deepcopy(config)
+
+        if config.get("name") == "FREE_pressure_axis":
+            config["target"] = pressure_axis_target
+
+        patched_constraint_configs.append(config)
 
     objectives = tuple(
         build_user_objective(
@@ -2204,7 +1867,7 @@ def build_fno_extension(
             config = config,
             eq = eq,
         )
-        for config in constraint_configs
+        for config in patched_constraint_configs
     )
 
     return objectives, constraints
@@ -2213,24 +1876,21 @@ def build_fno_extension(
 
 
 
-
-
-
-def append_fno_objectives(
+def append_free_objectives(
         objective,
-        fno_objectives,
+        free_objectives,
     ):
     """
-    Append FNO objectives to an existing ObjectiveFunction.
+    Append FREE objectives to an existing ObjectiveFunction.
     """
 
-    if len(fno_objectives) == 0:
+    if len(free_objectives) == 0:
         return objective
 
     existing_objectives = tuple(objective.objectives)
 
     return ObjectiveFunction(
-        objectives = existing_objectives + tuple(fno_objectives),
+        objectives = existing_objectives + tuple(free_objectives),
     )
 
 
@@ -2242,13 +1902,13 @@ def append_fno_objectives(
 
 
 
-#==============================================================================================================
+#========================================================================================================================================
 # Optimizer Patch
-#==============================================================================================================
+#========================================================================================================================================
 
-class FNOOptimizePatch:
+class FREEOptimizePatch:
     """
-    Patch Optimizer.optimize for one FNO recreation-file run.
+    Patch Optimizer.optimize for one FREE paper recreation-file run.
     """
 
     def __init__(
@@ -2280,28 +1940,28 @@ class FNOOptimizePatch:
             if self.eq_initial is None:
                 self.eq_initial = eq.copy()
 
-            fno_objectives, fno_constraints = build_fno_extension(
+            free_objectives, free_constraints = build_free_extension(
                 eq = eq,
                 eq_initial = self.eq_initial,
             )
 
-            objective_patched = append_fno_objectives(
+            objective_patched = append_free_objectives(
                 objective = objective,
-                fno_objectives = fno_objectives,
+                free_objectives = free_objectives,
             )
 
             constraints_patched = (
                 remove_fixed_pressure_constraints_from_objects(
                     constraints = constraints,
                 )
-                + fno_constraints
+                + free_constraints
             )
 
             print("")
             print("================================================================================================================")
-            print("Running with variant: FNO")
-            print(f"Added objectives: {len(fno_objectives)}")
-            print(f"Added constraints: {len(fno_constraints)}")
+            print("Running with variant: FREE")
+            print(f"Added objectives: {len(free_objectives)}")
+            print(f"Added constraints: {len(free_constraints)}")
             print(f"Total constraints after fixed pressure removal: {len(constraints_patched)}")
             print("================================================================================================================")
             print("")
@@ -2336,9 +1996,47 @@ class FNOOptimizePatch:
 
 
 
-#==============================================================================================================
+#========================================================================================================================================
 # Recreation File Path Helpers
-#==============================================================================================================
+#========================================================================================================================================
+
+def resolve_source_file(
+        source_file,
+    ):
+    """
+    Resolve a source file path.
+
+    Supports either:
+        research/lit_comp/papers/dudt2024/helical_qs/helical_qs.py
+    or, from DESC:
+        dudt2024/helical_qs/helical_qs.py
+    """
+
+    source_file = Path(source_file)
+
+    candidates = []
+
+    if source_file.is_absolute():
+        candidates.append(source_file)
+
+    else:
+        candidates.append(Path.cwd() / source_file)
+        candidates.append(get_papers_dir() / source_file)
+
+    for candidate in candidates:
+        candidate = candidate.resolve()
+
+        if candidate.exists():
+            return candidate
+
+    raise FileNotFoundError(
+        "Could not find source file. Tried:\n"
+        + "\n".join(str(candidate.resolve()) for candidate in candidates)
+    )
+
+
+
+
 
 def get_case_name_from_source(
         source_file,
@@ -2347,9 +2045,9 @@ def get_case_name_from_source(
     Return the case name for a source file.
 
     Supports:
-        recreations/dudt2024/input/helical_qs/helical_qs.py
-        recreations/dudt2024/helical_qs/helical_qs.py
-        recreations/dudt2024/input/helical_qs.py
+        papers/dudt2024/input/helical_qs/helical_qs.py
+        papers/dudt2024/helical_qs/helical_qs.py
+        papers/dudt2024/input/helical_qs.py
     """
 
     source_file = Path(source_file).resolve()
@@ -2363,10 +2061,6 @@ def get_case_name_from_source(
 
 
 
-
-
-
-
 def get_paper_dir_for_source(
         source_file,
     ):
@@ -2374,9 +2068,9 @@ def get_paper_dir_for_source(
     Return the paper directory for a recreation source file.
 
     Supports:
-        recreations/dudt2024/input/helical_qs/helical_qs.py  -> recreations/dudt2024
-        recreations/dudt2024/helical_qs/helical_qs.py        -> recreations/dudt2024
-        recreations/dudt2024/input/helical_qs.py             -> recreations/dudt2024
+        papers/dudt2024/input/helical_qs/helical_qs.py  -> papers/dudt2024
+        papers/dudt2024/helical_qs/helical_qs.py        -> papers/dudt2024
+        papers/dudt2024/input/helical_qs.py             -> papers/dudt2024
     """
 
     source_file = Path(source_file).resolve()
@@ -2393,17 +2087,13 @@ def get_paper_dir_for_source(
 
 
 
-
-
-
-
 def get_output_dir_for_source(
         source_file,
     ):
     """
     Return the directory containing the source file.
 
-    FNO output files are written beside the recreation file passed to --file.
+    FREE output files are written beside the recreation file passed to --file.
     """
 
     source_file = Path(source_file).resolve()
@@ -2414,24 +2104,16 @@ def get_output_dir_for_source(
 
 
 
-
-
-
-
 def get_final_output_path_for_source(
         source_file,
     ):
     """
-    Return <source-file-dir>/<source-file-stem>_FNO.h5.
+    Return <source-file-dir>/<source-file-stem>_FREE.h5.
     """
 
     source_file = Path(source_file).resolve()
 
-    return source_file.parent / f"{source_file.stem}_FNO.h5"
-
-
-
-
+    return source_file.parent / f"{source_file.stem}_FREE.h5"
 
 
 
@@ -2441,12 +2123,12 @@ def get_failure_output_path_for_source(
         source_file,
     ):
     """
-    Return <source-file-dir>/<source-file-stem>_FNO_FAILURE.h5.
+    Return <source-file-dir>/<source-file-stem>_FREE_FAILURE.h5.
     """
 
     source_file = Path(source_file).resolve()
 
-    return source_file.parent / f"{source_file.stem}_FNO_FAILURE.h5"
+    return source_file.parent / f"{source_file.stem}_FREE_FAILURE.h5"
 
 
 
@@ -2455,9 +2137,11 @@ def get_failure_output_path_for_source(
 
 
 
-#==============================================================================================================
+
+
+#========================================================================================================================================
 # Recreation Source Patching
-#==============================================================================================================
+#========================================================================================================================================
 
 def patch_recreation_source_text(
         source_text,
@@ -2496,6 +2180,14 @@ if os.environ.get("VFO_FINAL_PATH"):
 """.strip()
             )
 
+        if line.lstrip().startswith("FXD_PATH ="):
+            new_lines.append(
+                """
+if os.environ.get("VFO_FINAL_PATH"):
+    FXD_PATH = Path(os.environ["VFO_FINAL_PATH"])
+""".strip()
+            )
+
         if line.lstrip().startswith("CHECK_PATH ="):
             new_lines.append(
                 """
@@ -2513,7 +2205,6 @@ if os.environ.get("VFO_FAILURE_PATH"):
             )
 
     return "\n".join(new_lines) + "\n"
-
 
 
 
@@ -2537,7 +2228,7 @@ def make_temporary_recreation_runner(
         source_text = source_text,
     )
 
-    runner_path = source_file.parent / f"_{source_file.stem}_FNO_runner.py"
+    runner_path = source_file.parent / f"_{source_file.stem}_FREE_runner.py"
 
     runner_path.write_text(
         patched_text,
@@ -2554,9 +2245,9 @@ def make_temporary_recreation_runner(
 
 
 
-#==============================================================================================================
+#========================================================================================================================================
 # Recreation Runners
-#==============================================================================================================
+#========================================================================================================================================
 
 def run_source_as_is(
         source_file,
@@ -2565,7 +2256,9 @@ def run_source_as_is(
     Run one recreation source file exactly as written.
     """
 
-    source_file = Path(source_file).resolve()
+    source_file = resolve_source_file(
+        source_file = source_file,
+    )
 
     print("")
     print("################################################################################################################")
@@ -2584,18 +2277,16 @@ def run_source_as_is(
 
 
 
-
-
-
-
-def run_source_with_fno(
+def run_source_with_free(
         source_file,
     ):
     """
-    Run one recreation source file with FNO enabled.
+    Run one paper recreation source file with FREE enabled.
     """
 
-    source_file = Path(source_file).resolve()
+    source_file = resolve_source_file(
+        source_file = source_file,
+    )
 
     output_dir = get_output_dir_for_source(
         source_file = source_file,
@@ -2620,13 +2311,13 @@ def run_source_with_fno(
 
     old_env = dict(os.environ)
 
-    os.environ["VFO_VARIANT"] = "FNO"
+    os.environ["VFO_VARIANT"] = "FREE"
     os.environ["VFO_OUTPUT_DIR"] = str(output_dir)
     os.environ["VFO_FINAL_PATH"] = str(final_path)
     os.environ["VFO_FAILURE_PATH"] = str(failure_path)
 
     try:
-        with FNOOptimizePatch():
+        with FREEOptimizePatch():
             runpy.run_path(
                 path_name = str(runner_path),
                 run_name = "__main__",
@@ -2641,7 +2332,7 @@ def run_source_with_fno(
 
     if not final_path.exists():
         raise FileNotFoundError(
-            f"Expected final FNO output was not created: {final_path}"
+            f"Expected final FREE output was not created: {final_path}"
         )
 
     return final_path
@@ -2650,55 +2341,53 @@ def run_source_with_fno(
 
 
 
-
-
-
-
 def run_file(
         source_file,
-        variant = False,
+        free = False,
     ):
     """
     Run one recreation source file.
 
-    If variant is False:
+    If free is False:
         Run the source file exactly as-is.
 
-    If variant is True:
-        Run the source file with FNO objectives added and fixed pressure removed.
+    If free is True:
+        Run the source file with FREE objectives added and fixed pressure removed.
     """
 
-    source_file = Path(source_file).resolve()
+    source_file = resolve_source_file(
+        source_file = source_file,
+    )
 
-    if variant is False:
+    if free is False:
         return run_source_as_is(
             source_file = source_file,
         )
 
-    if variant is True:
+    if free is True:
         print("")
         print("################################################################################################################")
-        print(f"Starting FNO run for {source_file}")
+        print(f"Starting FREE run for {source_file}")
         print("################################################################################################################")
         print("")
 
         try:
-            output = run_source_with_fno(
+            output = run_source_with_free(
                 source_file = source_file,
             )
 
             print("")
-            print(f"FNO saved to: {output}")
+            print(f"FREE saved to: {output}")
             print("")
 
             return output
 
         except Exception:
             print("")
-            print(f"FNO failed for {source_file}")
+            print(f"FREE failed for {source_file}")
             traceback.print_exc()
             raise
 
     raise ValueError(
-        "variant must be True or False."
+        "free must be True or False."
     )

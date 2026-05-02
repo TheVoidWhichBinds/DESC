@@ -1,9 +1,10 @@
 # custom_funcs.py
 #==============================================================================================================
 #
-# Shared FNO objective definitions for DESC/research/final.
+# Shared FREE objective definitions for DESC/research/lit_comp.
 #
-# FNO functions take grid, data and are wrapped by ObjectiveFromUser.
+# Params-based FREE functions are wrapped by LinearObjectiveFromUser.
+# Grid/data-based FREE functions are wrapped by ObjectiveFromUser.
 #
 #==============================================================================================================
 
@@ -17,48 +18,90 @@ import jax.numpy as jnp
 
 
 #==============================================================================================================
-# FNO Objectives:
+# FREE Linear Constraints:
 #==============================================================================================================
 
-def FNO_pressure_edge(
-        grid,
-        data,
+def FREE_pressure_axis(
+        params,
     ):
     """
-    Pressure is zero on edge.
+    Pressure on-axis.
+
+    This is constrained to the value from the initial equilibrium immediately before
+    optimization.
     """
-    p = data["p"][-1]
-    return jnp.atleast_1d(p)
+
+    return jnp.atleast_1d(params["p_l"][0])
 
 
-def FNO_pressure_positive(
+
+
+
+def FREE_pressure_edge(
+        params,
+    ):
+    """
+    Pressure at rho = 1.
+
+    For a PowerSeriesProfile this is the sum of pressure coefficients.
+    """
+
+    p_l = params["p_l"]
+
+    return jnp.atleast_1d(jnp.sum(p_l))
+
+
+
+
+
+def FREE_grad_pressure_edge(
+        params,
+    ):
+    """
+    Radial pressure gradient at rho = 1.
+
+    For a PowerSeriesProfile p(rho) = sum_l p_l rho^l, so
+    dp/drho at rho = 1 is sum_l l p_l.
+    """
+
+    p_l = params["p_l"]
+    powers = jnp.arange(p_l.size)
+
+    return jnp.atleast_1d(jnp.sum(powers * p_l))
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
+# FREE Nonlinear Objectives:
+#==============================================================================================================
+
+def FREE_pressure_positive(
         grid,
         data,
     ):
     """
     Maintain positive pressure.
     """
-    p = data["p"]
-    return p
+
+    return data["p"]
 
 
-def FNO_pressure_monotonic(
+
+
+
+def FREE_pressure_monotonic(
         grid,
         data,
     ):
     """
     Enforce monotonic pressure.
     """
-    dp_dr = data["p_r"]
-    return dp_dr
 
-
-def FNO_grad_pressure_edge(
-        grid,
-        data,
-    ):
-    """
-    Pressure gradient on edge equals zero.
-    """
-    dp_dr = data["p_r"][-1]
-    return jnp.atleast_1d(dp_dr)
+    return data["p_r"]
