@@ -1,7 +1,7 @@
 # driver.py
 #==============================================================================================================
 #
-# Top-level CLI for rerunning one DESC paper recreation file.
+# Top-level CLI for rerunning one DESC refs recreation file.
 #
 # This driver always runs:
 #   1. the recreation file exactly as-is
@@ -59,15 +59,15 @@ except ImportError:
 # Source File Helpers
 #==============================================================================================================
 
-def get_source_file_from_paper_case(
-        paper,
+def get_source_file_from_refs_case(
+        refs,
         case,
     ):
     """
-    Resolve the recreation source file from --paper and --case.
+    Resolve the recreation source file from --refs and --case.
 
     Expected layout:
-        research/lit_comp/refs/<paper>/<case>/<case>.py
+        research/lit_comp/refs/<refs>/<case>/<case>.py
     """
 
     case_name = normalize_case_name(
@@ -75,7 +75,7 @@ def get_source_file_from_paper_case(
     )
 
     case_dir = get_case_dir(
-        paper = paper,
+        refs = refs,
         case = case_name,
     )
 
@@ -91,7 +91,7 @@ def get_source_file_from_paper_case(
             "Could not find recreation source file:\n"
             f"{source_file}\n\n"
             "Expected layout:\n"
-            f"research/lit_comp/refs/{paper}/{case_name}/{case_name}.py"
+            f"research/lit_comp/refs/{refs}/{case_name}/{case_name}.py"
         )
 
     return source_file, case_name
@@ -110,7 +110,7 @@ def get_source_file_from_paper_case(
 #==============================================================================================================
 
 def run_comparison_outputs(
-        paper,
+        refs,
         case,
     ):
     """
@@ -124,7 +124,7 @@ def run_comparison_outputs(
     print("")
 
     rows, csv_path = case_obj(
-        paper = paper,
+        refs = refs,
         case = case,
     )
 
@@ -139,7 +139,7 @@ def run_comparison_outputs(
     print("")
 
     paths = plot_case(
-        paper = paper,
+        refs = refs,
         case = case,
         plot_folder = "pressure",
     )
@@ -171,11 +171,11 @@ def parse_args():
     """
 
     parser = argparse.ArgumentParser(
-        description = "Run one DESC paper recreation case as-is and with the FREE variant.",
+        description = "Run one DESC refs recreation case as-is and with the FREE variant.",
     )
 
     parser.add_argument(
-        "--paper",
+        "--refs",
         type = str,
         required = True,
         help = "Paper directory name, e.g. dudt2024.",
@@ -210,18 +210,18 @@ def main():
 
     args = parse_args()
 
-    source_file, case_name = get_source_file_from_paper_case(
-        paper = args.paper,
+    source_file, case_name = get_source_file_from_refs_case(
+        ref = args.ref,
         case = args.case,
     )
 
     print("")
     print("================================================================================================================")
-    print("DESC paper recreation driver")
+    print("DESC refs recreation driver")
     print("================================================================================================================")
     print("")
     print("Paper:")
-    print(args.paper)
+    print(args.refs)
     print("")
     print("Case:")
     print(case_name)
@@ -258,7 +258,7 @@ def main():
     print(f"FREE constrained-pressure output: {free_output}")
 
     run_comparison_outputs(
-        paper = args.paper,
+        refs = args.refs,
         case = case_name,
     )
 

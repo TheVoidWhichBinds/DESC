@@ -75,7 +75,7 @@ def get_lit_comp_dir():
 
 def get_refs_dir():
     """
-    Return the refs directory containing paper recreation cases.
+    Return the refs directory containing refs recreation cases.
     """
 
     return get_lit_comp_dir() / "refs"
@@ -85,14 +85,14 @@ def get_refs_dir():
 
 
 def get_case_dir(
-        paper,
+        refs,
         case,
     ):
     """
-    Return the paper case directory.
+    Return the refs case directory.
     """
 
-    return get_refs_dir() / paper / case
+    return get_refs_dir() / refs / case
 
 
 
@@ -1223,7 +1223,7 @@ def append_free_objectives(
 
 class FREEOptimizePatch:
     """
-    Patch Optimizer.optimize for one FREE paper recreation-file run.
+    Patch Optimizer.optimize for one FREE refs recreation-file run.
     """
 
     def __init__(
@@ -1550,7 +1550,7 @@ def run_source_with_free(
         source_file,
     ):
     """
-    Run one paper recreation source file with FREE enabled.
+    Run one refs recreation source file with FREE enabled.
     """
 
     source_file = resolve_source_file(

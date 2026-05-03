@@ -1,5 +1,5 @@
 # recreate.py
-"""Compare OG and recreated FXD DESC output files for any paper recreation."""
+"""Compare OG and recreated FXD DESC output files for any refs recreation."""
 
 
 #========================================================================================================================================
@@ -32,13 +32,13 @@ def parse_args():
     """Parse command-line arguments."""
 
     parser = ArgumentParser(
-        description = "Compare OG and FXD DESC output files for a paper recreation.",
+        description = "Compare OG and FXD DESC output files for a refs recreation.",
     )
 
     parser.add_argument(
-        "--paper",
+        "--refs",
         required = True,
-        help = "Paper directory name, e.g. dudt2024.",
+        help = "Reference directory name, e.g. dudt2024.",
     )
 
     parser.add_argument(
@@ -67,7 +67,7 @@ def main():
     args = parse_args()
 
     case_dir = get_case_dir(
-        paper = args.paper,
+        refs = args.refs,
         case = args.case,
     )
 
@@ -86,7 +86,7 @@ def main():
     print("DESC recreation comparison")
     print("================================================================")
     print("Paper:")
-    print(args.paper)
+    print(args.refs)
     print("")
     print("Case:")
     print(case_name)
@@ -106,7 +106,7 @@ def main():
     )
 
     rows = compare_all(
-        paper = args.paper,
+        refs = args.refs,
         case_name = case_name,
         eq_original = eq_original,
         eq_check = eq_fxd,
