@@ -67,7 +67,7 @@ def get_source_file_from_paper_case(
     Resolve the recreation source file from --paper and --case.
 
     Expected layout:
-        research/lit_comp/papers/<paper>/<case>/<case>.py
+        research/lit_comp/refs/<paper>/<case>/<case>.py
     """
 
     case_name = normalize_case_name(
@@ -91,7 +91,7 @@ def get_source_file_from_paper_case(
             "Could not find recreation source file:\n"
             f"{source_file}\n\n"
             "Expected layout:\n"
-            f"research/lit_comp/papers/{paper}/{case_name}/{case_name}.py"
+            f"research/lit_comp/refs/{paper}/{case_name}/{case_name}.py"
         )
 
     return source_file, case_name

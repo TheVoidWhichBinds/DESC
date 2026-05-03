@@ -73,12 +73,12 @@ def get_lit_comp_dir():
 
 
 
-def get_papers_dir():
+def get_refs_dir():
     """
-    Return the papers directory containing paper recreation cases.
+    Return the refs directory containing paper recreation cases.
     """
 
-    return get_lit_comp_dir() / "papers"
+    return get_lit_comp_dir() / "refs"
 
 
 
@@ -92,7 +92,7 @@ def get_case_dir(
     Return the paper case directory.
     """
 
-    return get_papers_dir() / paper / case
+    return get_refs_dir() / paper / case
 
 
 
@@ -1322,9 +1322,9 @@ def resolve_source_file(
     Resolve a source file path.
 
     Supports either:
-        research/lit_comp/papers/dudt2024/helical_qs/helical_qs.py
+        research/lit_comp/refs/dudt2024/helical_qs/helical_qs.py
     or, from research/lit_comp:
-        papers/dudt2024/helical_qs/helical_qs.py
+        refs/dudt2024/helical_qs/helical_qs.py
     or:
         dudt2024/helical_qs/helical_qs.py
     """
@@ -1338,7 +1338,7 @@ def resolve_source_file(
 
     else:
         candidates.append(Path.cwd() / source_file)
-        candidates.append(get_papers_dir() / source_file)
+        candidates.append(get_refs_dir() / source_file)
         candidates.append(get_lit_comp_dir() / source_file)
 
     for candidate in candidates:
