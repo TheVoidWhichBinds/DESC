@@ -30,7 +30,7 @@ from desc.objectives import (
     ObjectiveFunction,
     Omnigenity,
 )
-from desc.objectives.utils import (
+from desc.objectives import (
     get_fixed_boundary_constraints,
     get_NAE_constraints,
 )
@@ -318,11 +318,6 @@ eq = Equilibrium.from_near_axis(
     L = LM[0],
     M = LM[0],
     N = N,
-    L_well = L_well,
-    M_well = M_well,
-    L_omni = L_omni,
-    M_omni = M_omni,
-    N_omni = N_omni,
 )
 
 fam.append(eq)
