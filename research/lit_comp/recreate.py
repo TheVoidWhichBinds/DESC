@@ -42,15 +42,9 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--file",
+        "--case",
         required = True,
         help = "Case name or HDF5 file name to compare.",
-    )
-
-    parser.add_argument(
-        "--save",
-        action = "store_true",
-        help = "Save comparison CSV in the case directory.",
     )
 
     return parser.parse_args()
@@ -74,7 +68,7 @@ def main():
 
     case_dir = get_case_dir(
         paper = args.paper,
-        case = args.file,
+        case = args.case,
     )
 
     if not case_dir.exists():
@@ -84,7 +78,7 @@ def main():
 
     original_file, fxd_file, case_name = find_matching_fxd_files(
         case_dir = case_dir,
-        file_name = args.file,
+        file_name = args.case,
     )
 
     print("")
@@ -122,17 +116,16 @@ def main():
         rows = rows,
     )
 
-    if args.save:
-        csv_path = case_dir / "{}_OG_vs_FXD_comparison.csv".format(case_name)
+    csv_path = case_dir / "{}_OG_FXD_comp.csv".format(case_name)
 
-        save_comparison_rows(
-            rows = rows,
-            path = csv_path,
-        )
+    save_comparison_rows(
+        rows = rows,
+        path = csv_path,
+    )
 
-        print("")
-        print("Saved comparison CSV:")
-        print(csv_path)
+    print("")
+    print("Saved comparison CSV:")
+    print(csv_path)
 
 
 

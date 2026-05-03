@@ -3,8 +3,11 @@
 #
 # Top-level CLI for rerunning one DESC paper recreation file.
 #
-# If --free = False, the file runs exactly as-is.
-# If --free = True, the file runs with the FREE pressure-profile patch.
+# This driver always runs:
+#   1. the recreation file exactly as-is
+#   2. the same recreation file with the FREE pressure-profile patch
+#   3. the comparison CSV generation
+#   4. the comparison plot generation
 #
 #==============================================================================================================
 
@@ -20,9 +23,28 @@ set_device("gpu")
 import argparse
 
 try:
-    from .helper import run_file
+    from .helper import (
+        get_case_dir,
+        normalize_case_name,
+        run_file,
+    )
+
+    from .compare import (
+        case_obj,
+        plot_case,
+    )
+
 except ImportError:
-    from helper import run_file
+    from helper import (
+        get_case_dir,
+        normalize_case_name,
+        run_file,
+    )
+
+    from compare import (
+        case_obj,
+        plot_case,
+    )
 
 
 
@@ -34,30 +56,101 @@ except ImportError:
 
 
 #==============================================================================================================
-# Command-Line Helpers
+# Source File Helpers
 #==============================================================================================================
 
-def str_to_bool(
-        value,
+def get_source_file_from_paper_case(
+        paper,
+        case,
     ):
     """
-    Convert command-line True/False strings to booleans.
+    Resolve the recreation source file from --paper and --case.
+
+    Expected layout:
+        research/lit_comp/papers/<paper>/<case>/<case>.py
     """
 
-    if isinstance(value, bool):
-        return value
-
-    value = value.strip().lower()
-
-    if value in ("true", "t", "yes", "y", "1"):
-        return True
-
-    if value in ("false", "f", "no", "n", "0"):
-        return False
-
-    raise argparse.ArgumentTypeError(
-        "Expected True or False."
+    case_name = normalize_case_name(
+        name = case,
     )
+
+    case_dir = get_case_dir(
+        paper = paper,
+        case = case_name,
+    )
+
+    source_file = case_dir / f"{case_name}.py"
+
+    if not case_dir.exists():
+        raise FileNotFoundError(
+            f"Case directory does not exist: {case_dir}"
+        )
+
+    if not source_file.exists():
+        raise FileNotFoundError(
+            "Could not find recreation source file:\n"
+            f"{source_file}\n\n"
+            "Expected layout:\n"
+            f"research/lit_comp/papers/{paper}/{case_name}/{case_name}.py"
+        )
+
+    return source_file, case_name
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
+# Compare / Plot Helpers
+#==============================================================================================================
+
+def run_comparison_outputs(
+        paper,
+        case,
+    ):
+    """
+    Run compare.py logic after the OG/FXD and FREE runs.
+    """
+
+    print("")
+    print("================================================================================================================")
+    print("Running comparison CSV generation")
+    print("================================================================================================================")
+    print("")
+
+    rows, csv_path = case_obj(
+        paper = paper,
+        case = case,
+    )
+
+    print("")
+    print("Finished case-objective comparison.")
+    print(f"CSV written to: {csv_path}")
+
+    print("")
+    print("================================================================================================================")
+    print("Running comparison plot generation")
+    print("================================================================================================================")
+    print("")
+
+    paths = plot_case(
+        paper = paper,
+        case = case,
+        plot_folder = "pressure",
+    )
+
+    if len(paths) == 0:
+        print("No plots written.")
+
+    for path in paths:
+        print(f"Plot written to: {path}")
+
+    return rows, csv_path, paths
 
 
 
@@ -78,24 +171,25 @@ def parse_args():
     """
 
     parser = argparse.ArgumentParser(
-        description = "Run one DESC paper recreation file as-is or with the FREE variant.",
+        description = "Run one DESC paper recreation case as-is and with the FREE variant.",
     )
 
     parser.add_argument(
-        "--file",
+        "--paper",
         type = str,
         required = True,
-        help = "Path to the paper recreation .py file to rerun.",
+        help = "Paper directory name, e.g. dudt2024.",
     )
 
     parser.add_argument(
-        "--free",
-        type = str_to_bool,
+        "--case",
+        type = str,
         required = True,
-        help = "If True, run with FREE. If False, run the source file as-is.",
+        help = "Case name, e.g. helical_qs.",
     )
 
     return parser.parse_args()
+
 
 
 
@@ -116,19 +210,57 @@ def main():
 
     args = parse_args()
 
-    output = run_file(
-        source_file = args.file,
-        free = args.free,
+    source_file, case_name = get_source_file_from_paper_case(
+        paper = args.paper,
+        case = args.case,
     )
 
     print("")
-    print("Completed run:")
     print("================================================================================================================")
+    print("DESC paper recreation driver")
+    print("================================================================================================================")
+    print("")
+    print("Paper:")
+    print(args.paper)
+    print("")
+    print("Case:")
+    print(case_name)
+    print("")
+    print("Source file:")
+    print(source_file)
 
-    if output is None:
-        print("free = False: source file ran as-is.")
-    else:
-        print(f"free = True: {output}")
+    print("")
+    print("================================================================================================================")
+    print("Running unmodified recreation")
+    print("================================================================================================================")
+    print("")
+
+    run_file(
+        source_file = source_file,
+        free = False,
+    )
+
+    print("")
+    print("================================================================================================================")
+    print("Running FREE constrained-pressure recreation")
+    print("================================================================================================================")
+    print("")
+
+    free_output = run_file(
+        source_file = source_file,
+        free = True,
+    )
+
+    print("")
+    print("Completed runs:")
+    print("================================================================================================================")
+    print("Unmodified source file ran as-is.")
+    print(f"FREE constrained-pressure output: {free_output}")
+
+    run_comparison_outputs(
+        paper = args.paper,
+        case = case_name,
+    )
 
 
 

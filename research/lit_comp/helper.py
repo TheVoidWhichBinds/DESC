@@ -4,13 +4,12 @@
 # Shared helper functions for DESC/research/lit_comp.
 #
 # This file owns:
-#   1. FREE config access
-#   2. FixPressure removal for FREE runs
-#   3. Initial-equilibrium injection through kwargs["thing"]
-#   4. DESC custom objective construction
-#   5. Optimizer patching for recreation-file FREE runs
-#   6. Recreation-file output path patching
-#   7. Case-objective comparison helpers
+#   1. path helpers
+#   2. DESC h5 loading helpers
+#   3. case-objective comparison helpers
+#   4. FREE config/objective construction
+#   5. recreation-file patching
+#   6. unmodified and FREE recreation runners
 #
 #==============================================================================================================
 
@@ -43,78 +42,12 @@ from desc.objectives import (
 
 
 #========================================================================================================================================
-# Check / comparison settings
+# Settings
 #========================================================================================================================================
 
 ORIGINAL_SUFFIX = "_OG"
 FXD_SUFFIX = "_FXD"
 FREE_SUFFIX = "_FREE"
-
-SUMMARY_KEYS = [
-    "value",
-    "max_abs",
-    "mean_abs",
-    "rms",
-    "min",
-    "max",
-    "size",
-]
-
-QUANTITY_CANDIDATES = [
-    #-----------------------------------
-    # Main equilibrium / objective-like quantities
-    #-----------------------------------
-    "F_rho",
-    "F_theta",
-    "F_zeta",
-    "|F|",
-    "force",
-    "p",
-    "iota",
-    "current",
-    "lambda",
-
-    #-----------------------------------
-    # Common natural DESC scalar outputs
-    #-----------------------------------
-    "R0",
-    "a",
-    "A",
-    "V",
-    "S",
-    "R0/a",
-    "<R>",
-    "<Z>",
-    "<B>",
-    "<B^2>",
-    "B0",
-    "W",
-    "W_p",
-    "W_B",
-    "beta",
-    "<beta>",
-    "beta_a",
-    "beta_p",
-    "beta_t",
-    "shear",
-    "well",
-    "magnetic well",
-
-    #-----------------------------------
-    # Stability / optimization metrics used across papers
-    #-----------------------------------
-    "D_Mercier",
-    "Mercier",
-    "ideal ballooning lambda",
-    "ideal ballooning",
-    "QS error",
-    "quasisymmetry",
-    "mirror ratio",
-    "elongation",
-    "curvature",
-    "curvature_k1_rho",
-    "curvature_k2_rho",
-]
 
 
 
@@ -131,7 +64,7 @@ QUANTITY_CANDIDATES = [
 
 def get_lit_comp_dir():
     """
-    Returns the research/lit_comp directory.
+    Return the research/lit_comp directory.
     """
 
     return Path(__file__).resolve().parent
@@ -169,7 +102,7 @@ def normalize_case_name(
         name,
     ):
     """
-    Normalize a passed filename/case stem by removing .h5, _OG, _FXD, and _FREE.
+    Normalize a passed filename/case stem by removing .py, .h5, _OG, _FXD, and _FREE.
     """
 
     path = Path(name)
@@ -189,80 +122,11 @@ def normalize_case_name(
 
 
 
-def find_matching_fxd_files(
-        case_dir,
-        file_name,
-    ):
-    """
-    Find the OG and FXD files matching the requested case.
-    """
-
-    case_name = normalize_case_name(
-        name = file_name,
-    )
-
-    h5_files = sorted(case_dir.glob("*.h5"))
-
-    original_matches = []
-    fxd_matches = []
-
-    for path in h5_files:
-        normalized = normalize_case_name(
-            name = path.name,
-        )
-
-        if normalized != case_name:
-            continue
-
-        if path.stem.endswith(ORIGINAL_SUFFIX):
-            original_matches.append(path)
-
-        elif path.stem.endswith(FXD_SUFFIX):
-            fxd_matches.append(path)
-
-    if len(original_matches) == 0:
-        raise FileNotFoundError(
-            "Could not find OG file for case '{}' in {}".format(
-                case_name,
-                case_dir,
-            )
-        )
-
-    if len(fxd_matches) == 0:
-        raise FileNotFoundError(
-            "Could not find FXD file for case '{}' in {}".format(
-                case_name,
-                case_dir,
-            )
-        )
-
-    if len(original_matches) > 1:
-        raise RuntimeError(
-            "Found multiple OG files for case '{}':\n{}".format(
-                case_name,
-                "\n".join(str(path) for path in original_matches),
-            )
-        )
-
-    if len(fxd_matches) > 1:
-        raise RuntimeError(
-            "Found multiple FXD files for case '{}':\n{}".format(
-                case_name,
-                "\n".join(str(path) for path in fxd_matches),
-            )
-        )
-
-    return original_matches[0], fxd_matches[0], case_name
-
-
-
-
-
 def find_h5_files(
         case_dir : Path,
     ):
     """
-    Finds OG, FXD, and FREE h5 files in the case folder.
+    Find OG, FXD, and FREE h5 files in the case folder.
     """
 
     suffixes = {
@@ -292,27 +156,6 @@ def find_h5_files(
             )
 
     return files
-
-
-
-
-
-def find_case_h5_files(
-        paper : str,
-        case : str,
-    ):
-    """
-    Finds OG, FXD, and FREE h5 files for a paper/case.
-    """
-
-    case_dir = get_case_dir(
-        paper = paper,
-        case = case,
-    )
-
-    return find_h5_files(
-        case_dir = case_dir,
-    )
 
 
 
@@ -355,7 +198,7 @@ def load_final_eq(
         path : Path,
     ):
     """
-    Loads the final equilibrium from a DESC h5 file.
+    Load the final equilibrium from a DESC h5 file.
     """
 
     return load_latest_equilibrium(
@@ -366,173 +209,20 @@ def load_final_eq(
 
 
 
-def safe_compute(
-        eq,
-        quantity,
-    ):
-    """
-    Compute a DESC quantity if available.
-    """
-
-    try:
-        data = eq.compute(quantity)
-
-    except Exception:
-        return None
-
-    if isinstance(data, dict):
-        if quantity in data:
-            return data[quantity]
-
-        if len(data) == 1:
-            return next(iter(data.values()))
-
-        return data
-
-    return data
-
-
-
-
-
 
 
 
 
 
 #========================================================================================================================================
-# Numeric comparison helpers
+# Numeric helpers
 #========================================================================================================================================
-
-def to_numeric_array(
-        value,
-    ):
-    """
-    Convert a DESC compute output to a finite numeric numpy array.
-    """
-
-    if isinstance(value, dict):
-        return None
-
-    try:
-        array = np.asarray(value)
-
-    except Exception:
-        return None
-
-    if array.dtype == object:
-        return None
-
-    try:
-        array = array.astype(float)
-
-    except Exception:
-        return None
-
-    array = array[np.isfinite(array)]
-
-    if array.size == 0:
-        return None
-
-    return array
-
-
-
-
-
-def summarize_value(
-        value,
-    ):
-    """
-    Summarize scalar or array-valued DESC output.
-    """
-
-    array = to_numeric_array(
-        value = value,
-    )
-
-    if array is None:
-        return None
-
-    flat = array.reshape(-1)
-
-    if flat.size == 1:
-        scalar = float(flat[0])
-
-        return {
-            "value": scalar,
-            "max_abs": abs(scalar),
-            "mean_abs": abs(scalar),
-            "rms": abs(scalar),
-            "min": scalar,
-            "max": scalar,
-            "size": 1,
-        }
-
-    return {
-        "value": np.nan,
-        "max_abs": float(np.max(np.abs(flat))),
-        "mean_abs": float(np.mean(np.abs(flat))),
-        "rms": float(np.sqrt(np.mean(flat ** 2))),
-        "min": float(np.min(flat)),
-        "max": float(np.max(flat)),
-        "size": int(flat.size),
-    }
-
-
-
-
-
-def relative_difference(
-        original,
-        check,
-    ):
-    """
-    Return relative difference using the OG value as reference.
-    """
-
-    if not np.isfinite(original) or not np.isfinite(check):
-        return np.nan
-
-    scale = max(abs(original), 1.0e-30)
-
-    return abs(check - original) / scale
-
-
-
-
-
-def format_float(
-        value,
-    ):
-    """
-    Format floats for terminal output.
-    """
-
-    if value is None:
-        return ""
-
-    if isinstance(value, str):
-        return value
-
-    try:
-        if not np.isfinite(value):
-            return "nan"
-
-        return "{:.6e}".format(value)
-
-    except Exception:
-        return str(value)
-
-
-
-
 
 def flatten_values(
         values,
     ):
     """
-    Converts objective output to a flat numpy array.
+    Convert objective output to a flat numpy array.
     """
 
     values = np.asarray(values)
@@ -547,7 +237,7 @@ def summarize_values(
         values,
     ):
     """
-    Computes scalar summaries of an objective vector.
+    Compute scalar summaries of an objective vector.
     """
 
     values = flatten_values(
@@ -961,26 +651,6 @@ def dudt2024_helical_qs_objectives(
 
 
 
-def get_case_objectives(
-        paper,
-        case_name,
-        eq,
-    ):
-    """
-    Return case-specific objective specs if this paper/case has them.
-    """
-
-    if paper == "dudt2024" and case_name == "helical_qs":
-        return dudt2024_helical_qs_objectives(
-            eq = eq,
-        )
-
-    return []
-
-
-
-
-
 
 
 
@@ -990,263 +660,12 @@ def get_case_objectives(
 # Comparison helpers
 #========================================================================================================================================
 
-def compare_summaries(
-        category,
-        quantity,
-        original_summary,
-        check_summary,
-    ):
-    """
-    Create comparison rows from two summary dictionaries.
-    """
-
-    rows = []
-
-    for key in SUMMARY_KEYS:
-        original_stat = original_summary[key]
-        check_stat = check_summary[key]
-
-        if isinstance(original_stat, int) or isinstance(check_stat, int):
-            absolute = check_stat - original_stat
-            relative = 0.0 if absolute == 0 else np.nan
-
-        else:
-            absolute = abs(check_stat - original_stat)
-            relative = relative_difference(
-                original = original_stat,
-                check = check_stat,
-            )
-
-        rows.append(
-            {
-                "category": category,
-                "quantity": quantity,
-                "statistic": key,
-                "original": original_stat,
-                "check": check_stat,
-                "absolute_difference": absolute,
-                "relative_difference": relative,
-            }
-        )
-
-    return rows
-
-
-
-
-
-def compare_equilibria(
-        eq_original,
-        eq_check,
-    ):
-    """
-    Compare supported DESC quantities between OG and FXD equilibria.
-    """
-
-    rows = []
-
-    for quantity in QUANTITY_CANDIDATES:
-        original_value = safe_compute(
-            eq = eq_original,
-            quantity = quantity,
-        )
-
-        check_value = safe_compute(
-            eq = eq_check,
-            quantity = quantity,
-        )
-
-        if original_value is None and check_value is None:
-            continue
-
-        original_summary = summarize_value(
-            value = original_value,
-        )
-
-        check_summary = summarize_value(
-            value = check_value,
-        )
-
-        if original_summary is None or check_summary is None:
-            rows.append(
-                {
-                    "category": "DESC compute",
-                    "quantity": quantity,
-                    "statistic": "status",
-                    "original": "computed" if original_value is not None else "missing",
-                    "check": "computed" if check_value is not None else "missing",
-                    "absolute_difference": "",
-                    "relative_difference": "",
-                }
-            )
-
-            continue
-
-        rows.extend(
-            compare_summaries(
-                category = "DESC compute",
-                quantity = quantity,
-                original_summary = original_summary,
-                check_summary = check_summary,
-            )
-        )
-
-    return rows
-
-
-
-
-
-def compare_case_objectives(
-        paper,
-        case_name,
-        eq_original,
-        eq_check,
-    ):
-    """
-    Compare case-specific optimization objectives between OG and FXD equilibria.
-    """
-
-    rows = []
-
-    original_specs = get_case_objectives(
-        paper = paper,
-        case_name = case_name,
-        eq = eq_original,
-    )
-
-    check_specs = get_case_objectives(
-        paper = paper,
-        case_name = case_name,
-        eq = eq_check,
-    )
-
-    if len(original_specs) == 0 and len(check_specs) == 0:
-        return rows
-
-    if len(original_specs) != len(check_specs):
-        rows.append(
-            {
-                "category": "case objective",
-                "quantity": "objective registry",
-                "statistic": "status",
-                "original": f"{len(original_specs)} objectives",
-                "check": f"{len(check_specs)} objectives",
-                "absolute_difference": "",
-                "relative_difference": "",
-            }
-        )
-
-        return rows
-
-    for original_spec, check_spec in zip(original_specs, check_specs):
-        objective_name = original_spec["name"]
-
-        try:
-            original_value = evaluate_objective_safely(
-                objective = original_spec["objective"],
-                thing = original_spec.get("thing", eq_original),
-            )
-
-            check_value = evaluate_objective_safely(
-                objective = check_spec["objective"],
-                thing = check_spec.get("thing", eq_check),
-            )
-
-            original_summary = summarize_value(
-                value = original_value,
-            )
-
-            check_summary = summarize_value(
-                value = check_value,
-            )
-
-            if original_summary is None or check_summary is None:
-                rows.append(
-                    {
-                        "category": "case objective",
-                        "quantity": objective_name,
-                        "statistic": "status",
-                        "original": "computed" if original_summary is not None else "not numeric",
-                        "check": "computed" if check_summary is not None else "not numeric",
-                        "absolute_difference": "",
-                        "relative_difference": "",
-                    }
-                )
-
-                continue
-
-            rows.extend(
-                compare_summaries(
-                    category = "case objective",
-                    quantity = objective_name,
-                    original_summary = original_summary,
-                    check_summary = check_summary,
-                )
-            )
-
-        except Exception as error:
-            rows.append(
-                {
-                    "category": "case objective",
-                    "quantity": objective_name,
-                    "statistic": "status",
-                    "original": "error",
-                    "check": "error",
-                    "absolute_difference": "",
-                    "relative_difference": repr(error),
-                }
-            )
-
-    return rows
-
-
-
-
-
-def compare_all(
-        paper,
-        case_name,
-        eq_original,
-        eq_check,
-    ):
-    """
-    Compare DESC quantities and case-specific objectives.
-
-    This is used by recreate.py for OG vs FXD recreation checks.
-    compare.py only writes the case-objective CSV.
-    """
-
-    rows = []
-
-    rows.extend(
-        compare_equilibria(
-            eq_original = eq_original,
-            eq_check = eq_check,
-        )
-    )
-
-    rows.extend(
-        compare_case_objectives(
-            paper = paper,
-            case_name = case_name,
-            eq_original = eq_original,
-            eq_check = eq_check,
-        )
-    )
-
-    return rows
-
-
-
-
-
 def compare_objective_set(
         files : dict,
         objective_getter,
     ):
     """
-    Compares one set of objectives across OG, FXD, and FREE files.
+    Compare one set of objectives across OG, FXD, and FREE files.
     """
 
     rows = []
@@ -1354,89 +773,12 @@ def compare_objective_set(
 # Output helpers
 #========================================================================================================================================
 
-def print_comparison_rows(
-        rows,
-    ):
-    """
-    Print comparison rows to terminal.
-    """
-
-    if len(rows) == 0:
-        print("")
-        print("No comparable DESC quantities or case objectives were found.")
-        return
-
-    print("")
-    print("================================================================")
-    print("Comparison")
-    print("================================================================")
-    print(
-        "{:<18} {:<36} {:<14} {:>16} {:>16} {:>16} {:>16}".format(
-            "category",
-            "quantity",
-            "statistic",
-            "OG",
-            "FXD",
-            "abs diff",
-            "rel diff",
-        )
-    )
-    print("-" * 138)
-
-    for row in rows:
-        print(
-            "{:<18} {:<36} {:<14} {:>16} {:>16} {:>16} {:>16}".format(
-                row["category"][:18],
-                row["quantity"][:36],
-                row["statistic"][:14],
-                format_float(row["original"]),
-                format_float(row["check"]),
-                format_float(row["absolute_difference"]),
-                format_float(row["relative_difference"]),
-            )
-        )
-
-
-
-
-
-def save_comparison_rows(
-        rows,
-        path,
-    ):
-    """
-    Save comparison rows to CSV.
-    """
-
-    with open(path, "w", newline = "") as stream:
-        writer = csv.DictWriter(
-            stream,
-            fieldnames = [
-                "category",
-                "quantity",
-                "statistic",
-                "original",
-                "check",
-                "absolute_difference",
-                "relative_difference",
-            ],
-        )
-
-        writer.writeheader()
-
-        for row in rows:
-            writer.writerow(row)
-
-
-
-
-
 def write_table_csv(
         rows : list,
         path,
     ):
     """
-    Writes objective comparison rows to a readable wide-format CSV.
+    Write objective comparison rows to a readable wide-format CSV.
 
     Output format:
 
@@ -1524,40 +866,13 @@ def write_table_csv(
 
 
 
-def write_table_markdown(
-        rows : list,
-        path,
-    ):
-    """
-    Writes rows to a markdown table.
-    """
-
-    if len(rows) == 0:
-        path.write_text("No rows produced.\n")
-        return
-
-    headers = list(rows[0].keys())
-
-    lines = []
-    lines.append("| " + " | ".join(headers) + " |")
-    lines.append("| " + " | ".join(["---"] * len(headers)) + " |")
-
-    for row in rows:
-        lines.append("| " + " | ".join(str(row.get(header, "")) for header in headers) + " |")
-
-    path.write_text("\n".join(lines) + "\n")
-
-
-
-
-
 
 
 
 
 
 #========================================================================================================================================
-# FREE Helpers
+# FREE config helpers
 #========================================================================================================================================
 
 def get_free_config():
@@ -1582,7 +897,7 @@ def get_free_config():
 
 
 #========================================================================================================================================
-# DESC Custom Objective Builders
+# DESC custom objective builders
 #========================================================================================================================================
 
 def user_function_kind(
@@ -1708,7 +1023,7 @@ def build_user_objective(
 
 
 #========================================================================================================================================
-# Constraint Removal Helpers
+# Constraint removal helpers
 #========================================================================================================================================
 
 FIXED_PRESSURE_CLASS_NAMES = {
@@ -1787,7 +1102,7 @@ def remove_fixed_pressure_constraints_from_objects(
 
 
 #========================================================================================================================================
-# Equilibrium Helpers
+# Equilibrium helpers
 #========================================================================================================================================
 
 def find_equilibrium_in_object(
@@ -1821,7 +1136,7 @@ def find_equilibrium_in_object(
 
 
 #========================================================================================================================================
-# FREE Extension Builder
+# FREE extension builder
 #========================================================================================================================================
 
 def build_free_extension(
@@ -1903,7 +1218,7 @@ def append_free_objectives(
 
 
 #========================================================================================================================================
-# Optimizer Patch
+# Optimizer patch
 #========================================================================================================================================
 
 class FREEOptimizePatch:
@@ -1997,7 +1312,7 @@ class FREEOptimizePatch:
 
 
 #========================================================================================================================================
-# Recreation File Path Helpers
+# Recreation file path helpers
 #========================================================================================================================================
 
 def resolve_source_file(
@@ -2008,7 +1323,9 @@ def resolve_source_file(
 
     Supports either:
         research/lit_comp/papers/dudt2024/helical_qs/helical_qs.py
-    or, from DESC:
+    or, from research/lit_comp:
+        papers/dudt2024/helical_qs/helical_qs.py
+    or:
         dudt2024/helical_qs/helical_qs.py
     """
 
@@ -2022,6 +1339,7 @@ def resolve_source_file(
     else:
         candidates.append(Path.cwd() / source_file)
         candidates.append(get_papers_dir() / source_file)
+        candidates.append(get_lit_comp_dir() / source_file)
 
     for candidate in candidates:
         candidate = candidate.resolve()
@@ -2038,62 +1356,13 @@ def resolve_source_file(
 
 
 
-def get_case_name_from_source(
-        source_file,
-    ):
-    """
-    Return the case name for a source file.
-
-    Supports:
-        papers/dudt2024/input/helical_qs/helical_qs.py
-        papers/dudt2024/helical_qs/helical_qs.py
-        papers/dudt2024/input/helical_qs.py
-    """
-
-    source_file = Path(source_file).resolve()
-
-    if source_file.parent.name == "input":
-        return source_file.stem
-
-    return source_file.parent.name
-
-
-
-
-
-def get_paper_dir_for_source(
-        source_file,
-    ):
-    """
-    Return the paper directory for a recreation source file.
-
-    Supports:
-        papers/dudt2024/input/helical_qs/helical_qs.py  -> papers/dudt2024
-        papers/dudt2024/helical_qs/helical_qs.py        -> papers/dudt2024
-        papers/dudt2024/input/helical_qs.py             -> papers/dudt2024
-    """
-
-    source_file = Path(source_file).resolve()
-
-    if source_file.parent.name == "input":
-        return source_file.parent.parent
-
-    if source_file.parent.parent.name == "input":
-        return source_file.parent.parent.parent
-
-    return source_file.parent.parent
-
-
-
-
-
 def get_output_dir_for_source(
         source_file,
     ):
     """
     Return the directory containing the source file.
 
-    FREE output files are written beside the recreation file passed to --file.
+    FREE output files are written beside the recreation file passed to the driver.
     """
 
     source_file = Path(source_file).resolve()
@@ -2140,7 +1409,7 @@ def get_failure_output_path_for_source(
 
 
 #========================================================================================================================================
-# Recreation Source Patching
+# Recreation source patching
 #========================================================================================================================================
 
 def patch_recreation_source_text(
@@ -2246,7 +1515,7 @@ def make_temporary_recreation_runner(
 
 
 #========================================================================================================================================
-# Recreation Runners
+# Recreation runners
 #========================================================================================================================================
 
 def run_source_as_is(
