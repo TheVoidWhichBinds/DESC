@@ -1,15 +1,37 @@
 # helper.py
 #==============================================================================================================
 #
-# Shared helper functions for DESC/research/lit_comp.
+# Shared helper functions for DESC/research/lit_comp/tutorials.
 #
 # This file owns:
-#   1. path helpers
+#   1. tutorial-local path helpers
 #   2. DESC h5 loading helpers
-#   3. case-objective comparison helpers
+#   3. tutorial-objective comparison helpers
 #   4. FREE config/objective construction
-#   5. recreation-file patching
-#   6. unmodified and FREE recreation runners
+#   5. tutorial-source patching
+#   6. unmodified and FREE tutorial runners
+#
+# Expected layout:
+#
+#   research/lit_comp/
+#       wrappers.py
+#       custom_funcs.py
+#       papers/
+#           helper.py
+#           driver.py
+#           compare.py
+#       tutorials/
+#           helper.py
+#           driver.py
+#           compare.py
+#           basic_qs/
+#               basic_qs.py
+#           adv_qs/
+#               adv_qs.py
+#           balloon/
+#               balloon.py
+#           neoclassical/
+#               neoclassical.py
 #
 #==============================================================================================================
 
@@ -19,6 +41,7 @@ import csv
 import inspect
 import os
 import runpy
+import sys
 import traceback
 
 import numpy as np
@@ -45,7 +68,7 @@ from desc.objectives import (
 # Settings
 #========================================================================================================================================
 
-ORIGINAL_SUFFIX = "_OG"
+
 FXD_SUFFIX = "_FXD"
 FREE_SUFFIX = "_FREE"
 
@@ -62,9 +85,9 @@ FREE_SUFFIX = "_FREE"
 # Path helpers
 #========================================================================================================================================
 
-def get_lit_comp_dir():
+def get_tutorials_dir():
     """
-    Return the research/lit_comp directory.
+    Return the research/lit_comp/tutorials directory.
     """
 
     return Path(__file__).resolve().parent
@@ -73,43 +96,54 @@ def get_lit_comp_dir():
 
 
 
-def get_refs_dir():
+def get_lit_comp_dir():
     """
-    Return the refs directory containing refs recreation cases.
-    """
-
-    return get_lit_comp_dir() / "refs"
-
-
-
-
-
-def get_case_dir(
-        refs,
-        case,
-    ):
-    """
-    Return the refs case directory.
+    Return the research/lit_comp directory.
     """
 
-    return get_refs_dir() / refs / case
+    return get_tutorials_dir().parent
 
 
 
 
 
-def normalize_case_name(
+def ensure_lit_comp_on_path():
+    """
+    Ensure research/lit_comp is importable.
+
+    This allows tutorials/helper.py to import shared files from:
+
+        research/lit_comp/wrappers.py
+        research/lit_comp/custom_funcs.py
+
+    even when running directly from:
+
+        research/lit_comp/tutorials
+    """
+
+    lit_comp_dir = get_lit_comp_dir()
+
+    if str(lit_comp_dir) not in sys.path:
+        sys.path.insert(
+            0,
+            str(lit_comp_dir),
+        )
+
+
+
+
+
+def normalize_tutorial_name(
         name,
     ):
     """
-    Normalize a passed filename/case stem by removing .py, .h5, _OG, _FXD, and _FREE.
+    Normalize a passed tutorial filename/stem by removing .py, .h5, and known output suffixes.
     """
 
     path = Path(name)
     stem = path.stem
 
     for suffix in (
-        ORIGINAL_SUFFIX,
         FXD_SUFFIX,
         FREE_SUFFIX,
     ):
@@ -122,15 +156,103 @@ def normalize_case_name(
 
 
 
+def normalize_case_name(
+        name,
+    ):
+    """
+    Backward-compatible alias for normalize_tutorial_name.
+    """
+
+    return normalize_tutorial_name(
+        name = name,
+    )
+
+
+
+
+
+def get_tutorial_dir(
+        tutorial,
+    ):
+    """
+    Return the tutorial directory.
+
+    Expected layout:
+        research/lit_comp/tutorials/<tutorial>/<tutorial>.py
+    """
+
+    tutorial_name = normalize_tutorial_name(
+        name = tutorial,
+    )
+
+    return get_tutorials_dir() / tutorial_name
+
+
+
+
+
+def get_case_dir(
+        tutorial,
+    ):
+    """
+    Backward-compatible alias for get_tutorial_dir.
+    """
+
+    return get_tutorial_dir(
+        tutorial = tutorial,
+    )
+
+
+
+
+
+def get_source_file_from_tutorial(
+        tutorial,
+    ):
+    """
+    Resolve the tutorial source file.
+
+    Expected layout:
+        research/lit_comp/tutorials/<tutorial>/<tutorial>.py
+    """
+
+    tutorial_name = normalize_tutorial_name(
+        name = tutorial,
+    )
+
+    tutorial_dir = get_tutorial_dir(
+        tutorial = tutorial_name,
+    )
+
+    source_file = tutorial_dir / f"{tutorial_name}.py"
+
+    if not tutorial_dir.exists():
+        raise FileNotFoundError(
+            f"Tutorial directory does not exist: {tutorial_dir}"
+        )
+
+    if not source_file.exists():
+        raise FileNotFoundError(
+            "Could not find tutorial source file:\n"
+            f"{source_file}\n\n"
+            "Expected layout:\n"
+            f"research/lit_comp/tutorials/{tutorial_name}/{tutorial_name}.py"
+        )
+
+    return source_file, tutorial_name
+
+
+
+
+
 def find_h5_files(
         case_dir : Path,
     ):
     """
-    Find OG, FXD, and FREE h5 files in the case folder.
+    Find FXD and FREE h5 files in the tutorial folder.
     """
 
     suffixes = {
-        "OG": "_OG.h5",
         "FXD": "_FXD.h5",
         "FREE": "_FREE.h5",
     }
@@ -156,6 +278,25 @@ def find_h5_files(
             )
 
     return files
+
+
+
+
+
+def find_tutorial_h5_files(
+        tutorial,
+    ):
+    """
+    Find FXD, and FREE h5 files for a tutorial.
+    """
+
+    tutorial_dir = get_tutorial_dir(
+        tutorial = tutorial,
+    )
+
+    return find_h5_files(
+        case_dir = tutorial_dir,
+    )
 
 
 
@@ -525,127 +666,96 @@ def evaluate_objective_safely(
 
 
 #========================================================================================================================================
-# Case-specific objective constructors
+# Objective filtering helpers
 #========================================================================================================================================
 
-def make_dudt2024_helical_qs_field(
-        eq,
+FIX_OBJECTIVE_CLASS_NAMES = {
+    "FixIota",
+    "FixPressure",
+    "FixPsi",
+    "FixBoundaryR",
+    "FixBoundaryZ",
+    "FixCurrent",
+    "FixElectronTemperature",
+    "FixIonTemperature",
+    "FixElectronDensity",
+    "FixAtomicNumber",
+    "FixAnisotropy",
+    "FixParameters",
+    "FixModeR",
+    "FixModeZ",
+    "FixSumModesR",
+    "FixSumModesZ",
+    "FixOmniBmax",
+    "FixOmniBmin",
+    "FixOmniMap",
+}
+
+
+
+
+
+
+
+
+
+
+def is_fix_objective(
+        objective,
     ):
     """
-    Recreate the OmnigenousField used by dudt2024/helical_qs.py.
+    Return True if an objective is a Fix* objective that should be omitted from tutorial comparisons.
     """
 
-    from desc.magnetic_fields import OmnigenousField
+    class_name = objective.__class__.__name__
 
-    field = OmnigenousField(
-        L_B = 4,
-        M_B = 8,
-        L_x = 0,
-        M_x = 0,
-        N_x = 0,
-        NFP = eq.NFP,
-        helicity = (1, eq.NFP),
-    )
+    if class_name in FIX_OBJECTIVE_CLASS_NAMES:
+        return True
 
-    return field
+    if class_name.startswith("Fix"):
+        return True
 
-
-
-
-
-def make_dudt2024_helical_qs_omnigenity_objective(
-        eq,
-        field,
-        rho,
-        eta_weight,
-    ):
-    """
-    Recreate one Omnigenity objective from dudt2024/helical_qs.py.
-    """
-
-    from desc.grid import LinearGrid
-    from desc.objectives import Omnigenity
-
-    M_booz = min(int(np.ceil(1.5 * eq.M)), 16)
-    N_booz = min(int(np.ceil(1.5 * eq.N)), 16)
-
-    eq_grid = LinearGrid(
-        rho = rho,
-        M = int(np.ceil(1.5 * M_booz)),
-        N = int(np.ceil(1.5 * N_booz)),
-        NFP = eq.NFP,
-        sym = False,
-    )
-
-    field_grid = LinearGrid(
-        rho = rho,
-        theta = 2 * M_booz,
-        zeta = 2 * N_booz,
-        NFP = field.NFP,
-        sym = False,
-    )
-
-    objective = Omnigenity(
-        eq = eq,
-        field = field,
-        eq_grid = eq_grid,
-        field_grid = field_grid,
-        eta_weight = eta_weight,
-    )
-
-    return objective
-
-
-
-
-
-def dudt2024_helical_qs_objectives(
-        eq,
-    ):
-    """
-    Return the actual case objectives used by dudt2024/helical_qs.py.
-    """
-
-    from desc.objectives import CurrentDensity
-
-    field = make_dudt2024_helical_qs_field(
-        eq = eq,
-    )
-
-    surfaces = [
-        0.2,
-        0.4,
-        0.6,
-        0.8,
-        1.0,
-    ]
-
-    objective_specs = [
-        {
-            "name": "helical_qs CurrentDensity",
-            "objective": CurrentDensity(
-                eq = eq,
-                weight = 4e0,
-            ),
-            "thing": eq,
-        },
-    ]
-
-    for rho in surfaces:
-        objective_specs.append(
-            {
-                "name": f"helical_qs Omnigenity rho={rho}",
-                "objective": make_dudt2024_helical_qs_omnigenity_objective(
-                    eq = eq,
-                    field = field,
-                    rho = rho,
-                    eta_weight = 2,
-                ),
-                "thing": (eq, field),
-            }
+    name = str(
+        getattr(
+            objective,
+            "name",
+            "",
         )
+    )
 
-    return objective_specs
+    if name.startswith("Fix"):
+        return True
+
+    return False
+
+
+
+
+
+def filter_comparison_objective_specs(
+        objective_specs,
+    ):
+    """
+    Remove Fix* objective specs from comparison.
+    """
+
+    filtered_specs = []
+
+    for spec in objective_specs:
+        objective = spec["objective"]
+
+        if callable(objective):
+            filtered_specs.append(spec)
+            continue
+
+        if is_fix_objective(
+                objective = objective,
+            ):
+            continue
+
+        filtered_specs.append(spec)
+
+    return filtered_specs
 
 
 
@@ -665,7 +775,7 @@ def compare_objective_set(
         objective_getter,
     ):
     """
-    Compare one set of objectives across OG, FXD, and FREE files.
+    Compare one set of objectives across FXD, and FREE files.
     """
 
     rows = []
@@ -695,6 +805,10 @@ def compare_objective_set(
 
             objective_specs = objective_getter(eq)
 
+            objective_specs = filter_comparison_objective_specs(
+                objective_specs = objective_specs,
+            )
+
             if len(objective_specs) == 0:
                 rows.append(
                     {
@@ -716,6 +830,11 @@ def compare_objective_set(
 
                 if callable(thing):
                     thing = thing(eq)
+
+                if is_fix_objective(
+                        objective = objective,
+                    ):
+                    continue
 
                 values = evaluate_objective_safely(
                     objective = objective,
@@ -782,9 +901,9 @@ def write_table_csv(
 
     Output format:
 
-        objective, metric, OG, FXD, FREE
-        CurrentDensity, l2, ...
-        CurrentDensity, max_abs, ...
+        objective, metric, FXD, FREE
+        ForceBalance, l2, ...
+        ForceBalance, max_abs, ...
         ...
     """
 
@@ -877,13 +996,12 @@ def write_table_csv(
 
 def get_free_config():
     """
-    Return the FREE configuration.
+    Return the FREE configuration from research/lit_comp/wrappers.py.
     """
 
-    try:
-        from .wrappers import FREE_CONFIG
-    except ImportError:
-        from research.lit_comp.wrappers import FREE_CONFIG
+    ensure_lit_comp_on_path()
+
+    from wrappers import FREE_CONFIG
 
     return deepcopy(FREE_CONFIG)
 
@@ -1223,7 +1341,7 @@ def append_free_objectives(
 
 class FREEOptimizePatch:
     """
-    Patch Optimizer.optimize for one FREE refs recreation-file run.
+    Patch Optimizer.optimize for one FREE tutorial-file run.
     """
 
     def __init__(
@@ -1312,21 +1430,23 @@ class FREEOptimizePatch:
 
 
 #========================================================================================================================================
-# Recreation file path helpers
+# Tutorial source file path helpers
 #========================================================================================================================================
 
 def resolve_source_file(
         source_file,
     ):
     """
-    Resolve a source file path.
+    Resolve a tutorial source file path.
 
-    Supports either:
-        research/lit_comp/refs/dudt2024/helical_qs/helical_qs.py
-    or, from research/lit_comp:
-        refs/dudt2024/helical_qs/helical_qs.py
+    Supports:
+        absolute/path/to/basic_qs.py
+
+    or, from research/lit_comp/tutorials:
+        basic_qs/basic_qs.py
+
     or:
-        dudt2024/helical_qs/helical_qs.py
+        basic_qs
     """
 
     source_file = Path(source_file)
@@ -1337,9 +1457,15 @@ def resolve_source_file(
         candidates.append(source_file)
 
     else:
+        if source_file.suffix == "":
+            tutorial_name = normalize_tutorial_name(
+                name = source_file,
+            )
+
+            candidates.append(get_tutorials_dir() / tutorial_name / f"{tutorial_name}.py")
+
         candidates.append(Path.cwd() / source_file)
-        candidates.append(get_refs_dir() / source_file)
-        candidates.append(get_lit_comp_dir() / source_file)
+        candidates.append(get_tutorials_dir() / source_file)
 
     for candidate in candidates:
         candidate = candidate.resolve()
@@ -1348,7 +1474,7 @@ def resolve_source_file(
             return candidate
 
     raise FileNotFoundError(
-        "Could not find source file. Tried:\n"
+        "Could not find tutorial source file. Tried:\n"
         + "\n".join(str(candidate.resolve()) for candidate in candidates)
     )
 
@@ -1360,9 +1486,9 @@ def get_output_dir_for_source(
         source_file,
     ):
     """
-    Return the directory containing the source file.
+    Return the directory containing the tutorial source file.
 
-    FREE output files are written beside the recreation file passed to the driver.
+    FREE output files are written beside the tutorial file passed to the driver.
     """
 
     source_file = Path(source_file).resolve()
@@ -1409,17 +1535,17 @@ def get_failure_output_path_for_source(
 
 
 #========================================================================================================================================
-# Recreation source patching
+# Tutorial source patching
 #========================================================================================================================================
 
-def patch_recreation_source_text(
+def patch_tutorial_source_text(
         source_text,
     ):
     """
-    Patch recreation source text so final/failure output paths can be overridden by this driver.
+    Patch tutorial source text so final/failure output paths can be overridden by this driver.
 
     Important:
-        Do not override OUTPUT_DIR, because recreation files often use OUTPUT_DIR
+        Do not override OUTPUT_DIR, because tutorial files may use OUTPUT_DIR
         to locate local input files such as *_initial.h5.
     """
 
@@ -1479,11 +1605,26 @@ if os.environ.get("VFO_FAILURE_PATH"):
 
 
 
-def make_temporary_recreation_runner(
+def patch_recreation_source_text(
+        source_text,
+    ):
+    """
+    Backward-compatible alias for patch_tutorial_source_text.
+    """
+
+    return patch_tutorial_source_text(
+        source_text = source_text,
+    )
+
+
+
+
+
+def make_temporary_tutorial_runner(
         source_file,
     ):
     """
-    Create a patched temporary copy of the target recreation source file.
+    Create a patched temporary copy of the target tutorial source file.
 
     The temporary runner is written beside the original file so __file__.parent
     still points to the original input folder.
@@ -1493,7 +1634,7 @@ def make_temporary_recreation_runner(
 
     source_text = source_file.read_text()
 
-    patched_text = patch_recreation_source_text(
+    patched_text = patch_tutorial_source_text(
         source_text = source_text,
     )
 
@@ -1509,20 +1650,35 @@ def make_temporary_recreation_runner(
 
 
 
+def make_temporary_recreation_runner(
+        source_file,
+    ):
+    """
+    Backward-compatible alias for make_temporary_tutorial_runner.
+    """
+
+    return make_temporary_tutorial_runner(
+        source_file = source_file,
+    )
+
+
+
+
+
 
 
 
 
 
 #========================================================================================================================================
-# Recreation runners
+# Tutorial runners
 #========================================================================================================================================
 
 def run_source_as_is(
         source_file,
     ):
     """
-    Run one recreation source file exactly as written.
+    Run one tutorial source file exactly as written.
     """
 
     source_file = resolve_source_file(
@@ -1550,7 +1706,7 @@ def run_source_with_free(
         source_file,
     ):
     """
-    Run one refs recreation source file with FREE enabled.
+    Run one tutorial source file with FREE enabled.
     """
 
     source_file = resolve_source_file(
@@ -1574,7 +1730,7 @@ def run_source_with_free(
         source_file = source_file,
     )
 
-    runner_path = make_temporary_recreation_runner(
+    runner_path = make_temporary_tutorial_runner(
         source_file = source_file,
     )
 
@@ -1615,7 +1771,7 @@ def run_file(
         free = False,
     ):
     """
-    Run one recreation source file.
+    Run one tutorial source file.
 
     If free is False:
         Run the source file exactly as-is.

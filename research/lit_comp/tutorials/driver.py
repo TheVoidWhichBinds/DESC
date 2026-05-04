@@ -1,13 +1,20 @@
 # driver.py
 #==============================================================================================================
 #
-# Top-level CLI for rerunning one DESC refs recreation file.
+# Top-level CLI for rerunning one DESC tutorial file.
 #
 # This driver always runs:
-#   1. the recreation file exactly as-is
-#   2. the same recreation file with the FREE pressure-profile patch
-#   3. the comparison CSV generation
+#   1. the tutorial file exactly as-is
+#   2. the same tutorial file with the FREE pressure-profile patch
+#   3. the tutorial-specific comparison CSV generation
 #   4. the comparison plot generation
+#
+# Usage:
+#   cd research/lit_comp/tutorials
+#   python3 driver.py --tutorial balloon
+#
+# Or from DESC root:
+#   python3 research/lit_comp/tutorials/driver.py --tutorial balloon
 #
 #==============================================================================================================
 
@@ -24,77 +31,25 @@ import argparse
 
 try:
     from .helper import (
-        get_case_dir,
-        normalize_case_name,
+        get_source_file_from_tutorial,
         run_file,
     )
 
     from .compare import (
-        case_obj,
-        plot_case,
+        tutorial_obj,
+        plot_tutorial,
     )
 
 except ImportError:
     from helper import (
-        get_case_dir,
-        normalize_case_name,
+        get_source_file_from_tutorial,
         run_file,
     )
 
     from compare import (
-        case_obj,
-        plot_case,
+        tutorial_obj,
+        plot_tutorial,
     )
-
-
-
-
-
-
-
-
-
-
-#==============================================================================================================
-# Source File Helpers
-#==============================================================================================================
-
-def get_source_file_from_refs_case(
-        refs,
-        case,
-    ):
-    """
-    Resolve the recreation source file from --refs and --case.
-
-    Expected layout:
-        research/lit_comp/refs/<refs>/<case>/<case>.py
-    """
-
-    case_name = normalize_case_name(
-        name = case,
-    )
-
-    case_dir = get_case_dir(
-        refs = refs,
-        case = case_name,
-    )
-
-    source_file = case_dir / f"{case_name}.py"
-
-    if not case_dir.exists():
-        raise FileNotFoundError(
-            f"Case directory does not exist: {case_dir}"
-        )
-
-    if not source_file.exists():
-        raise FileNotFoundError(
-            "Could not find recreation source file:\n"
-            f"{source_file}\n\n"
-            "Expected layout:\n"
-            f"research/lit_comp/refs/{refs}/{case_name}/{case_name}.py"
-        )
-
-    return source_file, case_name
 
 
 
@@ -110,26 +65,24 @@ def get_source_file_from_refs_case(
 #==============================================================================================================
 
 def run_comparison_outputs(
-        refs,
-        case,
+        tutorial,
     ):
     """
-    Run compare.py logic after the OG/FXD and FREE runs.
+    Run compare.py logic after the OG/CHECK/FXD and FREE runs.
     """
 
     print("")
     print("================================================================================================================")
-    print("Running comparison CSV generation")
+    print("Running tutorial comparison CSV generation")
     print("================================================================================================================")
     print("")
 
-    rows, csv_path = case_obj(
-        refs = refs,
-        case = case,
+    rows, csv_path = tutorial_obj(
+        tutorial = tutorial,
     )
 
     print("")
-    print("Finished case-objective comparison.")
+    print("Finished tutorial-objective comparison.")
     print(f"CSV written to: {csv_path}")
 
     print("")
@@ -138,10 +91,9 @@ def run_comparison_outputs(
     print("================================================================================================================")
     print("")
 
-    paths = plot_case(
-        refs = refs,
-        case = case,
-        plot_folder = "pressure",
+    paths = plot_tutorial(
+        tutorial = tutorial,
+        plot_folder = "profiles",
     )
 
     if len(paths) == 0:
@@ -171,21 +123,14 @@ def parse_args():
     """
 
     parser = argparse.ArgumentParser(
-        description = "Run one DESC refs recreation case as-is and with the FREE variant.",
+        description = "Run one DESC tutorial case as-is and with the FREE variant.",
     )
 
     parser.add_argument(
-        "--refs",
+        "--tutorial",
         type = str,
         required = True,
-        help = "Paper directory name, e.g. dudt2024.",
-    )
-
-    parser.add_argument(
-        "--case",
-        type = str,
-        required = True,
-        help = "Case name, e.g. helical_qs.",
+        help = "Tutorial name, e.g. basic_qs, adv_qs, balloon, or neoclassical.",
     )
 
     return parser.parse_args()
@@ -210,28 +155,24 @@ def main():
 
     args = parse_args()
 
-    source_file, case_name = get_source_file_from_refs_case(
-        ref = args.ref,
-        case = args.case,
+    source_file, tutorial_name = get_source_file_from_tutorial(
+        tutorial = args.tutorial,
     )
 
     print("")
     print("================================================================================================================")
-    print("DESC refs recreation driver")
+    print("DESC tutorial driver")
     print("================================================================================================================")
     print("")
-    print("Paper:")
-    print(args.refs)
-    print("")
-    print("Case:")
-    print(case_name)
+    print("Tutorial:")
+    print(tutorial_name)
     print("")
     print("Source file:")
     print(source_file)
 
     print("")
     print("================================================================================================================")
-    print("Running unmodified recreation")
+    print("Running unmodified tutorial")
     print("================================================================================================================")
     print("")
 
@@ -242,7 +183,7 @@ def main():
 
     print("")
     print("================================================================================================================")
-    print("Running FREE constrained-pressure recreation")
+    print("Running FREE constrained-pressure tutorial")
     print("================================================================================================================")
     print("")
 
@@ -254,12 +195,11 @@ def main():
     print("")
     print("Completed runs:")
     print("================================================================================================================")
-    print("Unmodified source file ran as-is.")
+    print("Unmodified tutorial source file ran as-is.")
     print(f"FREE constrained-pressure output: {free_output}")
 
     run_comparison_outputs(
-        refs = args.refs,
-        case = case_name,
+        tutorial = tutorial_name,
     )
 
 
