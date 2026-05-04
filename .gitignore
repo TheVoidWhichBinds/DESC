@@ -1,0 +1,49 @@
+__pycache__/
+build/
+data/
+dist/
+docs/_api
+docs/_build
+htmlcov/
+local/
+matlab/
+tests/benchmarks/.benchmarks/
+.coverage
+.ipynb_checkpoints/
+.spyproject/
+*.egg-info
+*.gif
+*.ini
+*.mat
+*.out
+*.output
+*.pdf
+*.pyc
+*.swp
+*.swo
+.pymon
+
+# see https://github.com/github/gitignore/blob/main/Python.gitignore
+# pyenv
+.python-version
+
+# UV
+uv.lock
+
+# Environments
+.env
+.venv
+jax-caches/
+
+# Downloaded runs from papers
+research/lit_comp/papers/zip_files/
+# Python/cache/build junk
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# Large local paper/data files
+/research/lit_comp/papers/zip_files/
+/tests/inputs/wout_HELIOTRON_asym_NTHETA50_NZETA100.nc

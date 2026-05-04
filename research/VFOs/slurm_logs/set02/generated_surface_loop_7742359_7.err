@@ -1,0 +1,2 @@
+/scratch/dz2596/DESC/desc/continuation.py:298: UserWarning: WARNING: Automatic continuation failed with pres_step=0.5, retrying with pres_step=0.25
+  warnings.warn(

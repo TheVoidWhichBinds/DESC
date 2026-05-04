@@ -1,0 +1,46 @@
+index is out of bounds for axis 0 with size 0
+
+Traceback (most recent call last):
+  File "/Users/macdaddi/DESC/research/VFOs/driver.py", line 98, in main
+    eq_FLO, result_FLO = run_optimization(
+                         ^^^^^^^^^^^^^^^^^
+  File "/Users/macdaddi/DESC/research/VFOs/opt.py", line 425, in run_optimization
+    eq_opt, result = eq_0.optimize(
+                     ^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/desc-env/lib/python3.12/site-packages/desc/equilibrium/equilibrium.py", line 2359, in optimize
+    things, result = optimizer.optimize(
+                     ^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/desc-env/lib/python3.12/site-packages/desc/optimize/optimizer.py", line 222, in optimize
+    get_combined_constraint_objectives(
+  File "/opt/miniconda3/envs/desc-env/lib/python3.12/site-packages/desc/optimize/optimizer.py", line 516, in get_combined_constraint_objectives
+    objective.build(verbose=verbose)
+  File "/opt/miniconda3/envs/desc-env/lib/python3.12/site-packages/desc/optimize/_constraint_wrappers.py", line 706, in build
+    self._objective.build(use_jit=use_jit, verbose=verbose)
+  File "/opt/miniconda3/envs/desc-env/lib/python3.12/site-packages/desc/backend.py", line 146, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/desc-env/lib/python3.12/site-packages/desc/objectives/objective_funs.py", line 339, in build
+    objective.build(use_jit=self.use_jit, verbose=verbose)
+  File "/opt/miniconda3/envs/desc-env/lib/python3.12/site-packages/desc/objectives/_generic.py", line 442, in build
+    self._dim_f = jax.eval_shape(self._fun, thing.params_dict).size
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/macdaddi/DESC/research/VFOs/custom_funcs.py", line 146, in FLO_iota_axis
+    return params["i_l"][0]
+           ~~~~~~~~~~~~~^^^
+  File "/opt/miniconda3/envs/desc-env/lib/python3.12/site-packages/jax/_src/numpy/array_methods.py", line 1083, in op
+    return getattr(self.aval, f"_{name}")(self, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/desc-env/lib/python3.12/site-packages/jax/_src/numpy/array_methods.py", line 657, in _getitem
+    return indexing.rewriting_take(self, item)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/desc-env/lib/python3.12/site-packages/jax/_src/numpy/indexing.py", line 653, in rewriting_take
+    return internal_gather(arr, dynamic_idx)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/desc-env/lib/python3.12/site-packages/jax/_src/numpy/indexing.py", line 662, in _gather
+    indexer = index_to_gather(np.shape(arr), idx)  # shared with _scatter_update
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/desc-env/lib/python3.12/site-packages/jax/_src/numpy/indexing.py", line 904, in index_to_gather
+    raise IndexError(f"index is out of bounds for axis {x_axis} with size 0")
+IndexError: index is out of bounds for axis 0 with size 0
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.

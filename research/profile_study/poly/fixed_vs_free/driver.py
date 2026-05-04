@@ -1,0 +1,362 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from desc.grid import LinearGrid
+from .eq import run_equilibrium
+from .opt import run_optimization
+import os
+import pandas as pd
+from tabulate import tabulate
+from desc.plotting import plot_comparison
+from .helper import (
+    sci_compact,
+    _safe_extract_from_result,
+    _next_run_dir,
+    _write_readme,
+)
+
+
+
+
+
+
+
+
+
+
+#============== FIXED VS. FREE PROFILES COMPARISON ============================================================================================================
+def comparison(
+        eq_config: dict,
+        opt_config: dict,
+        driver_config: dict,
+    ):
+    """
+    Runs initial equilibrium solve, then optimization for
+    both fixed and optimized pressure. Plots and objective
+    table are also generated.
+    """
+    #====================================================
+    # Initializations:
+    #----------------------------------------------------
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    continuation_dir = os.path.join(base_dir, "continuation")
+    #--------------------------------------------------------
+
+    #---------------------------------------------
+    # Unpacking config variables needed in driver:
+    NFP = eq_config["NFP"]
+    opt_toggles = opt_config["opt_toggles"]
+    config_path = driver_config["config_path"]
+    #-----------------------------------------
+
+    #----------------------------------------
+    # Initializing table of objective values:
+    column_map = [
+        ("forcebalance_obj", f"Force error: "),
+        ("qs", f"Quasi-symmetry (1,{NFP}) Boozer error: "),
+        ("aspect_ratio", "Aspect ratio: "),
+        ("ballooning", "Ideal ballooning lambda: "),
+        ("mercier", "Mercier Stability: "),
+    ]
+
+    active_columns = []
+    for key, label in column_map:
+        if (
+            opt_toggles["toggle_BOTH"].get(key, {}).get("use", False)
+            or opt_toggles["toggle_FXD"].get(key, {}).get("use", False)
+            or opt_toggles["toggle_FREE"].get(key, {}).get("use", False)
+        ):
+            active_columns.append((key, label))
+    #------------------------------------------
+    
+    #------------------------------------------
+    # Generates meta-data README and directory:
+    out_dir = _next_run_dir(continuation_dir)
+    _write_readme(out_dir, config_path)
+    #----------------------------------
+    #==================================
+
+
+    #============================================
+    # Running & saving initial equilibrium solve:
+    #---------------------------------------------
+    eq_init = run_equilibrium(eq_config=eq_config)
+    #---------------------------------------------
+
+    #-------------------------------------------
+    eq_init.save(os.path.join(out_dir, "eq.h5"))
+    #-------------------------------------------
+    #===========================================
+
+
+    #======================================
+    # Running & saving optimizer:
+    #--------------------------
+    eq_opt_FXD = eq_init.copy()
+    eq_opt_FREE = eq_init.copy()
+    opt_result_FXD = None
+    opt_result_FREE = None
+    #--------------------
+
+    #------------------------------
+    optimizer = opt_toggles["name"]
+
+    if optimizer is not None:
+        stage_opt_config = {
+            **opt_config,
+            "toggle_BOTH": opt_toggles["toggle_BOTH"],
+            "toggle_FXD": opt_toggles["toggle_FXD"],
+            "toggle_FREE": opt_toggles["toggle_FREE"],
+        }
+
+        eq_opt_FREE, opt_result_FREE = run_optimization(
+            eq_opt_FREE,
+            optimizer,
+            opt_config = stage_opt_config,
+            FXD = False,
+        )
+
+        eq_opt_FXD, opt_result_FXD = run_optimization(
+            eq_opt_FXD,
+            optimizer,
+            opt_config = stage_opt_config,
+            FXD = True,
+        )
+    #------------------
+    
+    #---------------------------------------------------
+    eq_opt_FREE.save(os.path.join(out_dir, "opt_FREE.h5"))
+    eq_opt_FXD.save(os.path.join(out_dir, "opt_FXD.h5"))
+    #---------------------------------------------------
+    #===================================================
+
+
+    #====================================
+    # Generating comparison table labels:
+    rows = []
+    values = []
+
+    rows.append(("Fixed Profiles",))
+    rows.append(("Free Profiles",))
+    rows.append(("Difference",))
+
+    row_FXD = []
+    row_FREE = []
+    row_DIFF = []
+    #====================================
+
+
+    #=============================
+    # Extracting objective values:
+    for key, label in active_columns:
+        fmin_FXD, fmean_FXD, fmax_FXD = _safe_extract_from_result(
+            opt_result_FXD, label
+        )
+        fmin_FREE, fmean_FREE, fmax_FREE = _safe_extract_from_result(
+            opt_result_FREE, label
+        )
+
+        row_FXD.append(
+            f"f_min={sci_compact(fmin_FXD, sig=4)}, "
+            f"f_mean={sci_compact(fmean_FXD, sig=4)}, "
+            f"f_max={sci_compact(fmax_FXD, sig=4)}"
+        )
+        row_FREE.append(
+            f"f_min={sci_compact(fmin_FREE, sig=4)}, "
+            f"f_mean={sci_compact(fmean_FREE, sig=4)}, "
+            f"f_max={sci_compact(fmax_FREE, sig=4)}"
+        )
+
+        dmin = fmin_FREE - fmin_FXD
+        dmean = fmean_FREE - fmean_FXD
+        dmax = fmax_FREE - fmax_FXD
+        row_DIFF.append(
+            f"f_min diff={sci_compact(dmin, sig=4)}, "
+            f"f_mean diff={sci_compact(dmean, sig=4)}, "
+            f"f_max diff={sci_compact(dmax, sig=4)}"
+        )
+    #===============================================
+
+
+    #=========================
+    # Including Beta in table:
+    beta_FXD = float(
+        eq_opt_FXD.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
+    )
+    beta_FREE = float(
+        eq_opt_FREE.compute("<beta>_vol", override_grid=True)["<beta>_vol"]
+    )
+    beta_DIFF = beta_FREE - beta_FXD
+
+    row_FXD.append(f"{beta_FXD:.4g}")
+    row_FREE.append(f"{beta_FREE:.4g}")
+    row_DIFF.append(f"{beta_DIFF:.4g}")
+
+    values.append(row_FXD)
+    values.append(row_FREE)
+    values.append(row_DIFF)
+    #======================
+
+
+    #==============================
+    # Save table inside run folder:
+    index = pd.Index(
+        [row[0] for row in rows],
+        name="Run",
+    )
+    df = pd.DataFrame(
+        values,
+        index=index,
+        columns=[label.replace(": ", "") for _, label in active_columns] + ["Beta"],
+    )
+
+    ascii_table = tabulate(df, headers="keys", tablefmt="grid")
+
+    output_file = os.path.join(out_dir, "comparison.txt")
+    with open(output_file, "w") as f:
+        f.write("Comparison of Post-Optimization Objectives\n\n")
+        f.write(ascii_table)
+    #=======================
+
+
+    #====================
+    #--------------------
+    # Plotting pressures:
+    rho = np.linspace(0.0, 1.0, 400)
+    grid = LinearGrid(
+        rho = rho, 
+        M = 0, 
+        N = 0, 
+        NFP = eq_opt_FREE.NFP, 
+        sym = eq_opt_FREE.sym
+    )
+
+    p_FXD = eq_opt_FXD.compute("p", grid=grid)["p"]
+    p_FREE = eq_opt_FREE.compute("p", grid=grid)["p"]
+
+    plt.figure(figsize=(7, 5))
+    plt.plot(rho, p_FXD, linewidth=2, label="Fixed Pressure", color="blue")
+    plt.plot(rho, p_FREE, linewidth=2, label="Optimized Pressure", color="red")
+    plt.xlabel(r"$\rho$", fontsize=14)
+    plt.ylabel("Pressure", fontsize=14)
+    plt.title(
+        f"Pressure vs $\\rho$",
+        fontsize=14,
+    )
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+
+    pressure_path = os.path.join(out_dir, "pressure_compare.png")
+    plt.savefig(pressure_path, dpi=200)
+    plt.close()
+    #----------
+
+    #------------------------------------------------------
+    # Plotting gridded toroidal cross-sections of B-fields:
+    plt.title("Toroidal Cross-Sections of Solved Equilibria")
+    fig, ax = plot_comparison(
+        eqs=[eq_init, eq_opt_FXD, eq_opt_FREE],
+        labels=[
+            "Initial Equilibrium",
+            "Optimized (Fixed Pressure)",
+            "Optimized (Optimized Pressure)",
+        ],
+        color=["green", "blue", "red"],
+    )
+
+    toroidal_cuts_path = os.path.join(out_dir, "toroidal_cuts.png")
+    plt.savefig(toroidal_cuts_path, dpi=200)
+    plt.close()
+    #----------
+
+    #-------------------------------------------
+    # J_parallel vs. rho plotting:
+    rho_grid = np.linspace(0.0, 1.0, 100)
+    grid_J = LinearGrid(
+        rho=rho_grid,
+        M=24,
+        N=24,
+        NFP=eq_opt_FREE.NFP,
+        sym=eq_opt_FREE.sym,
+    )
+
+    def _j_parallel_profile(eq):
+        data = eq.compute(["J_parallel"], grid=grid_J)
+        J_parallel = np.asarray(data["J_parallel"])
+
+        rho_nodes = grid_J.nodes[:, 0]
+        rho_unique = np.unique(rho_nodes)
+
+        J_parallel_fs = np.empty_like(rho_unique, dtype=float)
+        for i, r in enumerate(rho_unique):
+            mask = np.isclose(rho_nodes, r)
+            J_parallel_fs[i] = np.mean(J_parallel[mask])
+
+        return rho_unique, J_parallel_fs
+
+    rho_u_FXD, J_parallel_FXD = _j_parallel_profile(eq_opt_FXD)
+    rho_u_FREE, J_parallel_FREE = _j_parallel_profile(eq_opt_FREE)
+
+    plt.figure(figsize=(7, 5))
+    plt.plot(rho_u_FXD, J_parallel_FXD, linewidth=2, label="Fixed Pressure", color="blue")
+    plt.plot(rho_u_FREE, J_parallel_FREE, linewidth=2, label="Optimized Pressure", color="red")
+    plt.xlabel(r"$\rho$", fontsize=14)
+    plt.ylabel(r"$\langle J_{\parallel} \rangle$", fontsize=14)
+    plt.title(r"$J_{\parallel}$", fontsize=13)
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+
+    j_parallel_path = os.path.join(out_dir, "j_parallel.png")
+    plt.savefig(j_parallel_path, dpi=200)
+    plt.close()
+    #-------------------------------------------
+
+    #-----------------------
+    # iota vs. rho plotting:
+    grid_iota = LinearGrid(rho=rho_grid, M=0, N=0, NFP=eq_opt_FREE.NFP, sym=eq_opt_FREE.sym)
+
+    iota_FXD = eq_opt_FXD.compute("iota", grid=grid_iota)["iota"]
+    iota_FREE = eq_opt_FREE.compute("iota", grid=grid_iota)["iota"]
+
+    plt.figure(figsize=(7, 5))
+    plt.plot(rho_grid, iota_FXD, linewidth=2, label="Fixed Pressure", color="blue")
+    plt.plot(rho_grid, iota_FREE, linewidth=2, label="Optimized Pressure", color="red")
+    plt.xlabel(r"$\rho$", fontsize=14)
+    plt.ylabel(r"$\iota$", fontsize=14)
+    plt.title(
+        f"Rotational transform vs $\\rho$",
+        fontsize=13,
+    )
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+
+    iota_path = os.path.join(out_dir, "iota.png")
+    plt.savefig(iota_path, dpi=200)
+    plt.close()
+    #----------
+    #==========
+#==============================================================================================================================================================
+
+
+
+
+
+
+
+
+
+
+#============== CONFIGURATION ENTRYPOINT ==========================================================================================================================
+def run_from_config(
+        eq_config: dict, 
+        opt_config: dict, 
+        driver_config: dict
+    ):
+    comparison(
+        eq_config = eq_config,
+        opt_config = opt_config,
+        driver_config = driver_config,
+    )
+#==============================================================================================================================================================
