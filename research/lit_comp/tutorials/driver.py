@@ -7,7 +7,6 @@
 #   1. the tutorial file exactly as-is
 #   2. the same tutorial file with the FREE pressure-profile patch
 #   3. the tutorial-specific comparison CSV generation
-#   4. the comparison plot generation
 #
 # Usage:
 #   cd research/lit_comp/tutorials
@@ -21,6 +20,7 @@
 import os
 os.environ["JAX_PLATFORMS"] = "cuda,cpu"
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+
 if "JAX_PLATFORM_NAME" in os.environ:
     del os.environ["JAX_PLATFORM_NAME"]
 
@@ -37,7 +37,6 @@ try:
 
     from .compare import (
         tutorial_obj,
-        plot_tutorial,
     )
 
 except ImportError:
@@ -48,7 +47,6 @@ except ImportError:
 
     from compare import (
         tutorial_obj,
-        plot_tutorial,
     )
 
 
@@ -61,14 +59,14 @@ except ImportError:
 
 
 #==============================================================================================================
-# Compare / Plot Helpers
+# Compare Helpers
 #==============================================================================================================
 
 def run_comparison_outputs(
         tutorial,
     ):
     """
-    Run compare.py logic after the OG/CHECK/FXD and FREE runs.
+    Run compare.py logic after the FXD and FREE runs.
     """
 
     print("")
@@ -85,24 +83,7 @@ def run_comparison_outputs(
     print("Finished tutorial-objective comparison.")
     print(f"CSV written to: {csv_path}")
 
-    print("")
-    print("================================================================================================================")
-    print("Running comparison plot generation")
-    print("================================================================================================================")
-    print("")
-
-    paths = plot_tutorial(
-        tutorial = tutorial,
-        plot_folder = "profiles",
-    )
-
-    if len(paths) == 0:
-        print("No plots written.")
-
-    for path in paths:
-        print(f"Plot written to: {path}")
-
-    return rows, csv_path, paths
+    return rows, csv_path
 
 
 
@@ -176,7 +157,7 @@ def main():
     print("================================================================================================================")
     print("")
 
-    run_file(
+    fxd_output = run_file(
         source_file = source_file,
         free = False,
     )
@@ -195,8 +176,8 @@ def main():
     print("")
     print("Completed runs:")
     print("================================================================================================================")
-    print("Unmodified tutorial source file ran as-is.")
-    print(f"FREE constrained-pressure output: {free_output}")
+    print(f"FXD output: {fxd_output}")
+    print(f"FREE output: {free_output}")
 
     run_comparison_outputs(
         tutorial = tutorial_name,

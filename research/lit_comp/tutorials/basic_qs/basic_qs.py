@@ -48,12 +48,12 @@ OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 TRIPLE_PRODUCT_PATH = os.path.join(
     OUTPUT_DIR,
-    f"{fname}_triple_product.h5",
+    f"{fname}_T.h5",
 )
 
 TWO_TERM_PATH = os.path.join(
     OUTPUT_DIR,
-    f"{fname}_two_term.h5",
+    f"{fname}_C.h5",
 )
 
 
@@ -68,7 +68,22 @@ TWO_TERM_PATH = os.path.join(
 #========================================================================================================================================
 # INITIAL GUESS
 #========================================================================================================================================
-eq_init = desc.io.load("qs_initial_guess.h5")
+DESC_ROOT = os.path.abspath(
+    os.path.join(
+        os.path.dirname(__file__),
+        "../../../..",
+    )
+)
+
+QS_INITIAL_GUESS_PATH = os.path.join(
+    DESC_ROOT,
+    "docs",
+    "notebooks",
+    "tutorials",
+    "qs_initial_guess.h5",
+)
+
+eq_init = desc.io.load(QS_INITIAL_GUESS_PATH)
 
 
 

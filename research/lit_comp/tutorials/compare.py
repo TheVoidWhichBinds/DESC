@@ -2,18 +2,15 @@
 #==============================================================================================================
 #
 # Compare tutorial-specific objective outputs between FXD, and FREE files.
-# Also owns plotting now that plot.py has been removed.
 #
 # Usage:
+#   python3 research/lit_comp/tutorials/compare.py --tutorial basic_qs
 #   python3 research/lit_comp/tutorials/compare.py --tutorial balloon
-#   python3 research/lit_comp/tutorials/compare.py --tutorial balloon --plot
 #
 #==============================================================================================================
 
 import argparse
-import traceback
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 from desc.grid import LinearGrid
@@ -22,7 +19,6 @@ from helper import (
     compare_objective_set,
     find_h5_files,
     get_tutorial_dir,
-    load_final_eq,
     write_table_csv,
 )
 
@@ -81,6 +77,13 @@ def basic_qs_objectives(
         sym = eq.sym,
     )
 
+    boozer_grid = LinearGrid(
+        M = eq.M_grid,
+        N = eq.N_grid,
+        NFP = eq.NFP,
+        sym = False,
+    )
+
     return [
         objective_spec(
             name = "ForceBalance",
@@ -93,10 +96,10 @@ def basic_qs_objectives(
             name = "QuasisymmetryBoozer",
             objective = QuasisymmetryBoozer(
                 eq = eq,
-                helicity = (1, 0),
+                helicity = (1, eq.NFP),
                 M_booz = 2 * eq.M,
                 N_booz = 2 * eq.N,
-                grid = grid,
+                grid = boozer_grid,
             ),
         ),
     ]
@@ -124,6 +127,13 @@ def adv_qs_objectives(
         sym = eq.sym,
     )
 
+    boozer_grid = LinearGrid(
+        M = eq.M_grid,
+        N = eq.N_grid,
+        NFP = eq.NFP,
+        sym = False,
+    )
+
     return [
         objective_spec(
             name = "ForceBalance",
@@ -136,10 +146,10 @@ def adv_qs_objectives(
             name = "QuasisymmetryBoozer",
             objective = QuasisymmetryBoozer(
                 eq = eq,
-                helicity = (1, 0),
+                helicity = (1, eq.NFP),
                 M_booz = 2 * eq.M,
                 N_booz = 2 * eq.N,
-                grid = grid,
+                grid = boozer_grid,
             ),
         ),
     ]
@@ -305,6 +315,73 @@ TUTORIAL_OBJECTIVES = {
 
 
 #==============================================================================================================
+# Multiple-Optimization File Helpers
+#==============================================================================================================
+
+def flatten_h5_file_map(
+        files,
+    ):
+    """
+    Flatten the h5 file map.
+
+    New helper.find_h5_files format:
+
+        {
+            "C": {
+                "FXD": Path(...),
+                "FREE": Path(...),
+            },
+            "T": {
+                "FXD": Path(...),
+                "FREE": Path(...),
+            },
+        }
+
+    Flattened format expected by compare_objective_set:
+
+        {
+            "C_FXD": Path(...),
+            "C_FREE": Path(...),
+            "T_FXD": Path(...),
+            "T_FREE": Path(...),
+        }
+
+    Also supports the older flat format:
+
+        {
+            "FXD": Path(...),
+            "FREE": Path(...),
+        }
+    """
+
+    if len(files) == 0:
+        return {}
+
+    first_value = next(iter(files.values()))
+
+    if not isinstance(first_value, dict):
+        return files
+
+    flattened_files = {}
+
+    for optimization_name, variant_files in files.items():
+        for variant_name, path in variant_files.items():
+            flattened_label = f"{optimization_name}_{variant_name}"
+
+            flattened_files[flattened_label] = path
+
+    return flattened_files
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
 # Tutorial Objective Comparison
 #==============================================================================================================
 
@@ -321,6 +398,10 @@ def tutorial_obj(
 
     files = find_h5_files(
         case_dir = tutorial_dir,
+    )
+
+    files = flatten_h5_file_map(
+        files = files,
     )
 
     objective_getter = TUTORIAL_OBJECTIVES.get(
@@ -357,289 +438,6 @@ def tutorial_obj(
 
 
 #==============================================================================================================
-# Plot Helpers
-#==============================================================================================================
-
-def compute_pressure_profile(
-        eq,
-        num_rho : int = 200,
-    ):
-    """
-    Computes pressure on a radial grid.
-    """
-
-    rho = np.linspace(0.0, 1.0, num_rho)
-
-    grid = LinearGrid(
-        rho = rho,
-        M = 0,
-        N = 0,
-        NFP = eq.NFP,
-    )
-
-    data = eq.compute(
-        "p",
-        grid = grid,
-    )
-
-    pressure = np.asarray(data["p"]).reshape(-1)
-
-    return rho, pressure
-
-
-
-
-
-def compute_iota_profile(
-        eq,
-        num_rho : int = 200,
-    ):
-    """
-    Computes iota on a radial grid.
-    """
-
-    rho = np.linspace(0.0, 1.0, num_rho)
-
-    grid = LinearGrid(
-        rho = rho,
-        M = 0,
-        N = 0,
-        NFP = eq.NFP,
-    )
-
-    data = eq.compute(
-        "iota",
-        grid = grid,
-    )
-
-    iota = np.asarray(data["iota"]).reshape(-1)
-
-    return rho, iota
-
-
-
-
-
-def plot_pressure(
-        tutorial : str,
-    ):
-    """
-    Plot pressure profiles for FXD, and FREE files.
-    """
-
-    tutorial_dir = get_tutorial_dir(
-        tutorial = tutorial,
-    )
-
-    files = find_h5_files(
-        case_dir = tutorial_dir,
-    )
-
-    plt.figure()
-
-    plotted_anything = False
-
-    for label, path in files.items():
-        if path is None:
-            print(f"Skipping missing {label} file.")
-            continue
-
-        try:
-            eq = load_final_eq(
-                path = path,
-            )
-
-            rho, pressure = compute_pressure_profile(
-                eq = eq,
-            )
-
-            plt.plot(
-                rho,
-                pressure,
-                label = label,
-            )
-
-            plotted_anything = True
-
-        except Exception:
-            print(f"\nFailed while plotting pressure for {label}: {path}")
-            traceback.print_exc()
-
-    if not plotted_anything:
-        print("No pressure profiles plotted.")
-        return None
-
-    plt.xlabel(r"$\rho$")
-    plt.ylabel("Pressure")
-    plt.title(f"{tutorial} pressure profile")
-    plt.legend()
-    plt.tight_layout()
-
-    output_path = tutorial_dir / f"{tutorial}_pressure.png"
-
-    plt.savefig(
-        output_path,
-        dpi = 300,
-    )
-
-    plt.close()
-
-    return output_path
-
-
-
-
-
-def plot_iota(
-        tutorial : str,
-    ):
-    """
-    Plot iota profiles for FXD, and FREE files.
-    """
-
-    tutorial_dir = get_tutorial_dir(
-        tutorial = tutorial,
-    )
-
-    files = find_h5_files(
-        case_dir = tutorial_dir,
-    )
-
-    plt.figure()
-
-    plotted_anything = False
-
-    for label, path in files.items():
-        if path is None:
-            print(f"Skipping missing {label} file.")
-            continue
-
-        try:
-            eq = load_final_eq(
-                path = path,
-            )
-
-            rho, iota = compute_iota_profile(
-                eq = eq,
-            )
-
-            plt.plot(
-                rho,
-                iota,
-                label = label,
-            )
-
-            plotted_anything = True
-
-        except Exception:
-            print(f"\nFailed while plotting iota for {label}: {path}")
-            traceback.print_exc()
-
-    if not plotted_anything:
-        print("No iota profiles plotted.")
-        return None
-
-    plt.xlabel(r"$\rho$")
-    plt.ylabel(r"$\iota$")
-    plt.title(f"{tutorial} iota profile")
-    plt.legend()
-    plt.tight_layout()
-
-    output_path = tutorial_dir / f"{tutorial}_iota.png"
-
-    plt.savefig(
-        output_path,
-        dpi = 300,
-    )
-
-    plt.close()
-
-    return output_path
-
-
-
-
-
-def plot_tutorial(
-        tutorial : str,
-        plot_folder : str,
-    ):
-    """
-    Tutorial-specific plot router.
-    """
-
-    if plot_folder == "pressure":
-        pressure_path = plot_pressure(
-            tutorial = tutorial,
-        )
-
-        if pressure_path is None:
-            return []
-
-        return [pressure_path]
-
-    if plot_folder == "iota":
-        iota_path = plot_iota(
-            tutorial = tutorial,
-        )
-
-        if iota_path is None:
-            return []
-
-        return [iota_path]
-
-    if plot_folder == "profiles":
-        paths = []
-
-        pressure_path = plot_pressure(
-            tutorial = tutorial,
-        )
-
-        iota_path = plot_iota(
-            tutorial = tutorial,
-        )
-
-        if pressure_path is not None:
-            paths.append(pressure_path)
-
-        if iota_path is not None:
-            paths.append(iota_path)
-
-        return paths
-
-    print("")
-    print(f"No plot branch defined for tutorial = {tutorial}, plot_folder = {plot_folder}.")
-    print("")
-
-    return []
-
-
-
-
-
-def plot_case(
-        tutorial : str,
-        plot_folder : str,
-    ):
-    """
-    Backward-compatible alias for plot_tutorial.
-    """
-
-    return plot_tutorial(
-        tutorial = tutorial,
-        plot_folder = plot_folder,
-    )
-
-
-
-
-
-
-
-
-
-
-#==============================================================================================================
 # Command-Line Interface
 #==============================================================================================================
 
@@ -656,18 +454,6 @@ def parse_args():
         help = "Tutorial name, e.g. basic_qs, adv_qs, balloon, or neoclassical.",
     )
 
-    parser.add_argument(
-        "--plot",
-        action = "store_true",
-        help = "Also generate plots.",
-    )
-
-    parser.add_argument(
-        "--plot-folder",
-        default = "pressure",
-        help = "Plot branch key: pressure, iota, or profiles.",
-    )
-
     return parser.parse_args()
 
 
@@ -676,7 +462,7 @@ def parse_args():
 
 def main():
     """
-    Runs tutorial-specific objective comparison and optional plots.
+    Runs tutorial-specific objective comparison.
     """
 
     args = parse_args()
@@ -692,25 +478,6 @@ def main():
     print("")
     print("Finished tutorial-objective comparison.")
     print(f"CSV written to: {csv_path}")
-
-    if args.plot:
-        print("")
-        print("=" * 120)
-        print(f"Plotting for tutorial = {args.tutorial}, plot_folder = {args.plot_folder}")
-        print("=" * 120)
-        print("")
-
-        paths = plot_tutorial(
-            tutorial = args.tutorial,
-            plot_folder = args.plot_folder,
-        )
-
-        if len(paths) == 0:
-            print("No plots written.")
-
-        for path in paths:
-            print(f"Plot written to: {path}")
-
     print()
 
 

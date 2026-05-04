@@ -79,6 +79,164 @@ FREE_SUFFIX = "_FREE"
 
 
 
+#========================================================================================================================================
+# Save patch helpers
+#========================================================================================================================================
+
+def normalize_specific_optimization_name(
+        raw_name,
+    ):
+    """
+    Convert path/variable-derived optimization names into compact suffix names.
+
+    Examples:
+        triple_product -> T
+        two_term       -> C
+        eq_qs_T        -> T
+        eq_qs_C        -> C
+    """
+
+    raw_name = str(raw_name)
+
+    name = Path(raw_name).stem
+
+    for suffix in (
+        FXD_SUFFIX,
+        FREE_SUFFIX,
+        "_triple_product",
+        "_two_term",
+    ):
+        if name.endswith(suffix):
+            name = name[: -len(suffix)]
+
+    replacements = {
+        "triple_product": "T",
+        "two_term": "C",
+        "eq_qs_T": "T",
+        "eq_qs_C": "C",
+        "T": "T",
+        "C": "C",
+    }
+
+    if name in replacements:
+        return replacements[name]
+
+    parts = name.split("_")
+
+    if len(parts) > 0 and parts[-1] in replacements:
+        return replacements[parts[-1]]
+
+    return parts[-1]
+
+
+
+
+
+def infer_specific_optimization_name_from_save_path(
+        path,
+    ):
+    """
+    Infer specific optimization name from the path passed into eq.save(...).
+    """
+
+    return normalize_specific_optimization_name(
+        raw_name = path,
+    )
+
+
+
+
+
+def get_variant_output_path(
+        source_file,
+        specific_optimization_name,
+        variant,
+    ):
+    """
+    Build:
+
+        {tutorial}_{specific_optimization}_{FXD/FREE}.h5
+    """
+
+    source_file = Path(source_file).resolve()
+    tutorial_name = source_file.stem
+
+    return source_file.parent / f"{tutorial_name}_{specific_optimization_name}_{variant}.h5"
+
+
+
+
+
+class EquilibriumSavePatch:
+    """
+    Patch Equilibrium.save so every tutorial save gets routed to:
+
+        {tutorial}_{specific_optimization}_{FXD/FREE}.h5
+    """
+
+    def __init__(
+            self,
+            source_file,
+            variant,
+        ):
+        self.source_file = Path(source_file).resolve()
+        self.variant = variant
+        self.original_save = None
+        self.saved_paths = []
+
+    def __enter__(self):
+        self.original_save = Equilibrium.save
+
+        def patched_save(
+                eq_self,
+                path,
+                *args,
+                **kwargs,
+            ):
+            specific_optimization_name = infer_specific_optimization_name_from_save_path(
+                path = path,
+            )
+
+            output_path = get_variant_output_path(
+                source_file = self.source_file,
+                specific_optimization_name = specific_optimization_name,
+                variant = self.variant,
+            )
+
+            output_path.parent.mkdir(
+                parents = True,
+                exist_ok = True,
+            )
+
+            self.saved_paths.append(output_path)
+
+            print("")
+            print("================================================================================================================")
+            print(f"Redirecting save to: {output_path}")
+            print("================================================================================================================")
+            print("")
+
+            return self.original_save(
+                eq_self,
+                str(output_path),
+                *args,
+                **kwargs,
+            )
+
+        Equilibrium.save = patched_save
+
+        return self
+
+    def __exit__(
+            self,
+            exc_type,
+            exc_value,
+            exc_traceback,
+        ):
+        Equilibrium.save = self.original_save
+
+
+
 
 
 #========================================================================================================================================
@@ -245,37 +403,92 @@ def get_source_file_from_tutorial(
 
 
 
+def get_specific_optimization_name(
+        tutorial_name,
+        path,
+    ):
+    """
+    Extract the specific optimization name from:
+
+        {tutorial}_{specific}_{FXD/FREE}.h5
+
+    Example:
+        basic_qs_C_FXD.h5 -> C
+        basic_qs_T_FREE.h5 -> T
+    """
+
+    stem = Path(path).stem
+
+    for suffix in (
+        FXD_SUFFIX,
+        FREE_SUFFIX,
+    ):
+        if stem.endswith(suffix):
+            stem = stem[: -len(suffix)]
+
+    prefix = f"{tutorial_name}_"
+
+    if stem.startswith(prefix):
+        return stem[len(prefix):]
+
+    return stem
+
+
+
+
+
 def find_h5_files(
         case_dir : Path,
     ):
     """
-    Find FXD and FREE h5 files in the tutorial folder.
+    Find all FXD and FREE h5 files in the tutorial folder.
+
+    Returns:
+        {
+            "C": {
+                "FXD": basic_qs_C_FXD.h5,
+                "FREE": basic_qs_C_FREE.h5,
+            },
+            "T": {
+                "FXD": basic_qs_T_FXD.h5,
+                "FREE": basic_qs_T_FREE.h5,
+            },
+        }
     """
 
-    suffixes = {
-        "FXD": "_FXD.h5",
-        "FREE": "_FREE.h5",
-    }
+    case_dir = Path(case_dir)
+    tutorial_name = case_dir.name
 
     files = {}
 
-    for label, suffix in suffixes.items():
+    for variant, suffix in (
+        (
+            "FXD",
+            "_FXD.h5",
+        ),
+        (
+            "FREE",
+            "_FREE.h5",
+        ),
+    ):
         matches = sorted(case_dir.glob(f"*{suffix}"))
 
         if len(matches) == 0:
             matches = sorted(case_dir.rglob(f"*{suffix}"))
 
-        if len(matches) == 0:
-            files[label] = None
-
-        elif len(matches) == 1:
-            files[label] = matches[0]
-
-        else:
-            raise RuntimeError(
-                f"Multiple files ending in {suffix} found in {case_dir}:\n"
-                + "\n".join(str(match) for match in matches)
+        for path in matches:
+            optimization_name = get_specific_optimization_name(
+                tutorial_name = tutorial_name,
+                path = path,
             )
+
+            if optimization_name not in files:
+                files[optimization_name] = {
+                    "FXD": None,
+                    "FREE": None,
+                }
+
+            files[optimization_name][variant] = path
 
     return files
 
@@ -1678,7 +1891,7 @@ def run_source_as_is(
         source_file,
     ):
     """
-    Run one tutorial source file exactly as written.
+    Run one tutorial source file exactly as written, but redirect saves to FXD names.
     """
 
     source_file = resolve_source_file(
@@ -1691,12 +1904,21 @@ def run_source_as_is(
     print("################################################################################################################")
     print("")
 
-    runpy.run_path(
-        path_name = str(source_file),
-        run_name = "__main__",
-    )
+    with EquilibriumSavePatch(
+            source_file = source_file,
+            variant = "FXD",
+        ) as save_patch:
+        runpy.run_path(
+            path_name = str(source_file),
+            run_name = "__main__",
+        )
 
-    return None
+    if len(save_patch.saved_paths) == 0:
+        raise FileNotFoundError(
+            f"No FXD output files were saved by tutorial source: {source_file}"
+        )
+
+    return tuple(save_patch.saved_paths)
 
 
 
@@ -1707,6 +1929,10 @@ def run_source_with_free(
     ):
     """
     Run one tutorial source file with FREE enabled.
+
+    Every save is redirected to:
+
+        {tutorial}_{specific_optimization}_FREE.h5
     """
 
     source_file = resolve_source_file(
@@ -1722,14 +1948,6 @@ def run_source_with_free(
         exist_ok = True,
     )
 
-    final_path = get_final_output_path_for_source(
-        source_file = source_file,
-    )
-
-    failure_path = get_failure_output_path_for_source(
-        source_file = source_file,
-    )
-
     runner_path = make_temporary_tutorial_runner(
         source_file = source_file,
     )
@@ -1738,15 +1956,17 @@ def run_source_with_free(
 
     os.environ["VFO_VARIANT"] = "FREE"
     os.environ["VFO_OUTPUT_DIR"] = str(output_dir)
-    os.environ["VFO_FINAL_PATH"] = str(final_path)
-    os.environ["VFO_FAILURE_PATH"] = str(failure_path)
 
     try:
         with FREEOptimizePatch():
-            runpy.run_path(
-                path_name = str(runner_path),
-                run_name = "__main__",
-            )
+            with EquilibriumSavePatch(
+                    source_file = source_file,
+                    variant = "FREE",
+                ) as save_patch:
+                runpy.run_path(
+                    path_name = str(runner_path),
+                    run_name = "__main__",
+                )
 
     finally:
         os.environ.clear()
@@ -1755,12 +1975,24 @@ def run_source_with_free(
         if runner_path.exists():
             runner_path.unlink()
 
-    if not final_path.exists():
+    if len(save_patch.saved_paths) == 0:
         raise FileNotFoundError(
-            f"Expected final FREE output was not created: {final_path}"
+            f"No FREE output files were saved by tutorial source: {source_file}"
         )
 
-    return final_path
+    missing_paths = [
+        path
+        for path in save_patch.saved_paths
+        if not path.exists()
+    ]
+
+    if len(missing_paths) > 0:
+        raise FileNotFoundError(
+            "Expected FREE output files were not created:\n"
+            + "\n".join(str(path) for path in missing_paths)
+        )
+
+    return tuple(save_patch.saved_paths)
 
 
 
@@ -1802,7 +2034,9 @@ def run_file(
             )
 
             print("")
-            print(f"FREE saved to: {output}")
+            print("FREE saved files:")
+            for path in output:
+                print(path)
             print("")
 
             return output
