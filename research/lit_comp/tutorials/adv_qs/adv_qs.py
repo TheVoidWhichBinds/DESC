@@ -8,13 +8,12 @@ Write-up of the DESC Advanced QS Optimization tutorial, minus plotting.
 #========================================================================================================================================
 # IMPORTS
 #========================================================================================================================================
+from desc import set_device
+set_device("gpu")
 import os
 import sys
-from pathlib import Path
-
 sys.path.insert(0, os.path.abspath("."))
 sys.path.append(os.path.abspath("../../../"))
-
 import numpy as np
 
 from desc.continuation import solve_continuation_automatic
@@ -40,6 +39,11 @@ from desc.objectives import (
 )
 from desc.optimize import Optimizer
 
+from helper import (
+    append_free_objectives,
+    build_free_extension,
+)
+
 
 
 
@@ -54,10 +58,27 @@ from desc.optimize import Optimizer
 #========================================================================================================================================
 fname = "adv_qs"
 
-OUTPUT_DIR = Path(__file__).resolve().parent
+OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-MULTIGRID_PATH = OUTPUT_DIR / f"{fname}_multigrid.h5"
-AUGLAG_PATH = OUTPUT_DIR / f"{fname}_auglag.h5"
+MULTIGRID_FXD_PATH = os.path.join(
+    OUTPUT_DIR,
+    f"{fname}_multigrid_FXD.h5",
+)
+
+MULTIGRID_FREE_PATH = os.path.join(
+    OUTPUT_DIR,
+    f"{fname}_multigrid_FREE.h5",
+)
+
+AUGLAG_FXD_PATH = os.path.join(
+    OUTPUT_DIR,
+    f"{fname}_auglag_FXD.h5",
+)
+
+AUGLAG_FREE_PATH = os.path.join(
+    OUTPUT_DIR,
+    f"{fname}_auglag_FREE.h5",
+)
 
 
 
@@ -74,8 +95,15 @@ AUGLAG_PATH = OUTPUT_DIR / f"{fname}_auglag.h5"
 surf = FourierRZToroidalSurface(
     R_lmn = [1, 0.125, 0.1],
     Z_lmn = [-0.125, -0.1],
-    modes_R = [[0, 0], [1, 0], [0, 1]],
-    modes_Z = [[-1, 0], [0, -1]],
+    modes_R = [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+    ],
+    modes_Z = [
+        [-1, 0],
+        [0, -1],
+    ],
     NFP = 4,
 )
 
@@ -91,8 +119,6 @@ eq0 = solve_continuation_automatic(
     verbose = 0,
 )[-1]
 
-eqfam = EquilibriaFamily(eq0)
-
 
 
 
@@ -103,33 +129,42 @@ eqfam = EquilibriaFamily(eq0)
 
 
 #========================================================================================================================================
-# MULTIGRID METHOD WITH PROXIMAL OPTIMIZER
+# MULTIGRID HELPERS
 #========================================================================================================================================
-def run_qh_step(k, eq):
-    """Run a step of the precise QH optimization example from Landreman & Paul."""
+def build_qh_grid(
+        eq,
+    ):
+    """
+    Build the shared QH objective grid for the multigrid optimization.
+    """
 
     grid = LinearGrid(
         M = eq.M_grid,
         N = eq.N_grid,
         NFP = eq.NFP,
-        rho = np.array([0.6, 0.8, 1.0]),
+        rho = np.array(
+            [
+                0.6,
+                0.8,
+                1.0,
+            ]
+        ),
         sym = True,
     )
 
-    objective = ObjectiveFunction(
-        (
-            QuasisymmetryTwoTerm(
-                eq = eq,
-                helicity = (1, eq.NFP),
-                grid = grid,
-            ),
-            AspectRatio(
-                eq = eq,
-                target = 8,
-                weight = 100,
-            ),
-        ),
-    )
+    return grid
+
+
+
+
+
+def build_qh_modes(
+        k,
+        eq,
+    ):
+    """
+    Build boundary modes fixed during a multigrid step.
+    """
 
     R_modes = np.vstack(
         (
@@ -154,19 +189,114 @@ def run_qh_step(k, eq):
         :,
     ]
 
-    constraints = (
-        ForceBalance(eq = eq),
-        FixBoundaryR(
-            eq = eq,
-            modes = R_modes,
+    return R_modes, Z_modes
+
+
+
+
+
+def build_qh_objective(
+        eq,
+        free_objectives = (),
+    ):
+    """
+    Build the QH objective for one multigrid step.
+    """
+
+    grid = build_qh_grid(
+        eq = eq,
+    )
+
+    objective = ObjectiveFunction(
+        (
+            QuasisymmetryTwoTerm(
+                eq = eq,
+                helicity = (1, eq.NFP),
+                grid = grid,
+            ),
+            AspectRatio(
+                eq = eq,
+                target = 8,
+                weight = 100,
+            ),
         ),
-        FixBoundaryZ(
+    )
+
+    objective = append_free_objectives(
+        objective = objective,
+        free_objectives = free_objectives,
+    )
+
+    return objective
+
+
+
+
+
+def build_qh_constraints(
+        k,
+        eq,
+        free_pressure = False,
+    ):
+    """
+    Build constraints for one multigrid step.
+    """
+
+    R_modes, Z_modes = build_qh_modes(
+        k = k,
+        eq = eq,
+    )
+
+    if free_pressure:
+        free_objectives, free_constraints = build_free_extension(
             eq = eq,
-            modes = Z_modes,
-        ),
-        FixPressure(eq = eq),
-        FixCurrent(eq = eq),
-        FixPsi(eq = eq),
+            eq_initial = eq.copy(),
+        )
+
+        constraints = (
+            ForceBalance(eq = eq),
+            FixBoundaryR(eq = eq, modes = R_modes),
+            FixBoundaryZ(eq = eq, modes = Z_modes),
+            FixCurrent(eq = eq),
+            FixPsi(eq = eq),
+        ) + tuple(free_constraints)
+
+    else:
+        free_objectives = ()
+
+        constraints = (
+            ForceBalance(eq = eq),
+            FixBoundaryR(eq = eq, modes = R_modes),
+            FixBoundaryZ(eq = eq, modes = Z_modes),
+            FixPressure(eq = eq),
+            FixCurrent(eq = eq),
+            FixPsi(eq = eq),
+        )
+
+    return constraints, free_objectives
+
+
+
+
+
+def run_qh_step(
+        k,
+        eq,
+        free_pressure = False,
+    ):
+    """
+    Run one step of the precise QH optimization example from Landreman & Paul.
+    """
+
+    constraints, free_objectives = build_qh_constraints(
+        k = k,
+        eq = eq,
+        free_pressure = free_pressure,
+    )
+
+    objective = build_qh_objective(
+        eq = eq,
+        free_objectives = free_objectives,
     )
 
     optimizer = Optimizer("proximal-lsq-exact")
@@ -183,7 +313,7 @@ def run_qh_step(k, eq):
         },
     )
 
-    return eq_new
+    return eq_new, history
 
 
 
@@ -195,30 +325,36 @@ def run_qh_step(k, eq):
 
 
 #========================================================================================================================================
-# RUN MULTIGRID STEPS
+# RUN MULTIGRID STEPS - FXD PRESSURE
 #========================================================================================================================================
-eq1 = run_qh_step(
+eq_multigrid_FXD_0 = eq0.copy()
+eqfam_multigrid_FXD = EquilibriaFamily(eq_multigrid_FXD_0)
+
+eq_multigrid_FXD_1, history_multigrid_FXD_1 = run_qh_step(
     1,
-    eq0,
+    eq_multigrid_FXD_0,
+    free_pressure = False,
 )
 
-eqfam.append(eq1)
+eqfam_multigrid_FXD.append(eq_multigrid_FXD_1)
 
-eq2 = run_qh_step(
+eq_multigrid_FXD_2, history_multigrid_FXD_2 = run_qh_step(
     2,
-    eq1,
+    eq_multigrid_FXD_1,
+    free_pressure = False,
 )
 
-eqfam.append(eq2)
+eqfam_multigrid_FXD.append(eq_multigrid_FXD_2)
 
-eq3 = run_qh_step(
+eq_multigrid_FXD_3, history_multigrid_FXD_3 = run_qh_step(
     3,
-    eq2,
+    eq_multigrid_FXD_2,
+    free_pressure = False,
 )
 
-eqfam.append(eq3)
+eqfam_multigrid_FXD.append(eq_multigrid_FXD_3)
 
-eqfam.save(str(MULTIGRID_PATH))
+eqfam_multigrid_FXD.save(MULTIGRID_FXD_PATH)
 
 
 
@@ -230,44 +366,120 @@ eqfam.save(str(MULTIGRID_PATH))
 
 
 #========================================================================================================================================
-# CONSTRAINED OPTIMIZATION OBJECTIVE
+# RUN MULTIGRID STEPS - FREE PRESSURE
 #========================================================================================================================================
-grid = LinearGrid(
-    M = eq0.M_grid,
-    N = eq0.N_grid,
-    NFP = eq0.NFP,
-    rho = np.array([0.6, 0.8, 1.0]),
-    sym = True,
+eq_multigrid_FREE_0 = eq0.copy()
+eqfam_multigrid_FREE = EquilibriaFamily(eq_multigrid_FREE_0)
+
+eq_multigrid_FREE_1, history_multigrid_FREE_1 = run_qh_step(
+    1,
+    eq_multigrid_FREE_0,
+    free_pressure = True,
 )
 
-objective = ObjectiveFunction(
-    (
-        GenericObjective(
-            f = "f_C",
-            thing = eq0,
-            grid = grid,
-            compute_kwargs = {
-                "helicity": (1, eq.NFP),
-            },
-            name = "QS Two-Term",
+eqfam_multigrid_FREE.append(eq_multigrid_FREE_1)
+
+eq_multigrid_FREE_2, history_multigrid_FREE_2 = run_qh_step(
+    2,
+    eq_multigrid_FREE_1,
+    free_pressure = True,
+)
+
+eqfam_multigrid_FREE.append(eq_multigrid_FREE_2)
+
+eq_multigrid_FREE_3, history_multigrid_FREE_3 = run_qh_step(
+    3,
+    eq_multigrid_FREE_2,
+    free_pressure = True,
+)
+
+eqfam_multigrid_FREE.append(eq_multigrid_FREE_3)
+
+eqfam_multigrid_FREE.save(MULTIGRID_FREE_PATH)
+
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# CONSTRAINED OPTIMIZATION HELPERS
+#========================================================================================================================================
+def build_constrained_grid(
+        eq,
+    ):
+    """
+    Build the shared QH objective grid for the constrained optimization.
+    """
+
+    grid = LinearGrid(
+        M = eq.M_grid,
+        N = eq.N_grid,
+        NFP = eq.NFP,
+        rho = np.array(
+            [
+                0.6,
+                0.8,
+                1.0,
+            ]
         ),
-    ),
-)
+        sym = True,
+    )
+
+    return grid
 
 
 
 
 
+def build_constrained_objective(
+        eq,
+        free_objectives = (),
+    ):
+    """
+    Build the constrained-optimization QH objective.
+    """
+
+    grid = build_constrained_grid(
+        eq = eq,
+    )
+
+    objective = ObjectiveFunction(
+        (
+            GenericObjective(
+                f = "f_C",
+                thing = eq,
+                grid = grid,
+                compute_kwargs = {
+                    "helicity": (1, eq.NFP),
+                },
+                name = "QS Two-Term",
+            ),
+        ),
+    )
+
+    objective = append_free_objectives(
+        objective = objective,
+        free_objectives = free_objectives,
+    )
+
+    return objective
 
 
 
 
 
-#========================================================================================================================================
-# CONSTRAINED OPTIMIZATION CONSTRAINTS
-#========================================================================================================================================
-def fun_mirror_ratio(grid, data):
-    """Compute the mirror ratio from |B|."""
+def fun_mirror_ratio(
+        grid,
+        data,
+    ):
+    """
+    Compute the mirror ratio from |B|.
+    """
 
     max_tz_B = surface_max(
         grid = grid,
@@ -299,47 +511,149 @@ def fun_mirror_ratio(grid, data):
 
 
 
-obj_mirror_ratio = ObjectiveFromUser(
-    fun = fun_mirror_ratio,
-    thing = eq0,
-    grid = LinearGrid(
-        rho = 1.0,
-        M = eq.M_grid,
-        N = eq.N_grid,
-        NFP = eq.NFP,
-    ),
-    bounds = (0.18, 0.22),
-    name = "my mirror ratio",
-)
+def build_mirror_ratio_objective(
+        eq,
+    ):
+    """
+    Build the mirror-ratio user objective for the constrained optimization.
+    """
 
-constraints = (
-    ForceBalance(eq = eq0),
-    AspectRatio(
-        eq = eq0,
-        bounds = (7, 9),
-    ),
-    Elongation(
-        eq = eq0,
-        bounds = (0, 3),
-    ),
-    Volume(
-        eq = eq0,
-        target = eq0.compute("V")["V"],
-    ),
-    RotationalTransform(
-        eq = eq0,
-        target = 1.1,
-        loss_function = "mean",
-    ),
-    obj_mirror_ratio,
-    FixBoundaryR(
-        eq = eq0,
-        modes = [0, 0, 0],
-    ),
-    FixPressure(eq = eq0),
-    FixCurrent(eq = eq0),
-    FixPsi(eq = eq0),
-)
+    obj_mirror_ratio = ObjectiveFromUser(
+        fun = fun_mirror_ratio,
+        thing = eq,
+        grid = LinearGrid(
+            rho = 1.0,
+            M = eq.M_grid,
+            N = eq.N_grid,
+            NFP = eq.NFP,
+        ),
+        bounds = (0.18, 0.22),
+        name = "my mirror ratio",
+    )
+
+    return obj_mirror_ratio
+
+
+
+
+
+def build_constrained_constraints(
+        eq,
+        free_pressure = False,
+    ):
+    """
+    Build the constrained-optimization constraints.
+    """
+
+    obj_mirror_ratio = build_mirror_ratio_objective(
+        eq = eq,
+    )
+
+    if free_pressure:
+        free_objectives, free_constraints = build_free_extension(
+            eq = eq,
+            eq_initial = eq.copy(),
+        )
+
+        constraints = (
+            ForceBalance(eq = eq),
+            AspectRatio(
+                eq = eq,
+                bounds = (7, 9),
+            ),
+            Elongation(
+                eq = eq,
+                bounds = (0, 3),
+            ),
+            Volume(
+                eq = eq,
+                target = eq.compute("V")["V"],
+            ),
+            RotationalTransform(
+                eq = eq,
+                target = 1.1,
+                loss_function = "mean",
+            ),
+            obj_mirror_ratio,
+            FixBoundaryR(
+                eq = eq,
+                modes = [0, 0, 0],
+            ),
+            FixCurrent(eq = eq),
+            FixPsi(eq = eq),
+        ) + tuple(free_constraints)
+
+    else:
+        free_objectives = ()
+
+        constraints = (
+            ForceBalance(eq = eq),
+            AspectRatio(
+                eq = eq,
+                bounds = (7, 9),
+            ),
+            Elongation(
+                eq = eq,
+                bounds = (0, 3),
+            ),
+            Volume(
+                eq = eq,
+                target = eq.compute("V")["V"],
+            ),
+            RotationalTransform(
+                eq = eq,
+                target = 1.1,
+                loss_function = "mean",
+            ),
+            obj_mirror_ratio,
+            FixBoundaryR(
+                eq = eq,
+                modes = [0, 0, 0],
+            ),
+            FixPressure(eq = eq),
+            FixCurrent(eq = eq),
+            FixPsi(eq = eq),
+        )
+
+    return constraints, free_objectives
+
+
+
+
+
+def run_constrained_optimization(
+        eq,
+        free_pressure = False,
+    ):
+    """
+    Run the augmented-Lagrangian constrained optimization.
+    """
+
+    constraints, free_objectives = build_constrained_constraints(
+        eq = eq,
+        free_pressure = free_pressure,
+    )
+
+    objective = build_constrained_objective(
+        eq = eq,
+        free_objectives = free_objectives,
+    )
+
+    optimizer = Optimizer("lsq-auglag")
+
+    eq_new, history = eq.optimize(
+        objective = objective,
+        constraints = constraints,
+        optimizer = optimizer,
+        maxiter = 200,
+        copy = True,
+        verbose = 3,
+        options = {},
+    )
+
+    eq_new.solve()
+
+    return eq_new, history
 
 
 
@@ -351,20 +665,34 @@ constraints = (
 
 
 #========================================================================================================================================
-# RUN CONSTRAINED OPTIMIZATION
+# RUN CONSTRAINED OPTIMIZATION - FXD PRESSURE
 #========================================================================================================================================
-optimizer = Optimizer("lsq-auglag")
+eq_auglag_FXD = eq0.copy()
 
-eqa, history = eq0.optimize(
-    objective = objective,
-    constraints = constraints,
-    optimizer = optimizer,
-    maxiter = 200,
-    copy = True,
-    verbose = 3,
-    options = {},
+eq_auglag_FXD, history_auglag_FXD = run_constrained_optimization(
+    eq = eq_auglag_FXD,
+    free_pressure = False,
 )
 
-eqa.solve()
+eq_auglag_FXD.save(AUGLAG_FXD_PATH)
 
-eqa.save(str(AUGLAG_PATH))
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# RUN CONSTRAINED OPTIMIZATION - FREE PRESSURE
+#========================================================================================================================================
+eq_auglag_FREE = eq0.copy()
+
+eq_auglag_FREE, history_auglag_FREE = run_constrained_optimization(
+    eq = eq_auglag_FREE,
+    free_pressure = True,
+)
+
+eq_auglag_FREE.save(AUGLAG_FREE_PATH)
