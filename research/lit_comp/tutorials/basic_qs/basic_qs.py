@@ -36,14 +36,6 @@ from helper import (
 )
 
 
-
-
-
-
-
-
-
-
 #========================================================================================================================================
 # PATHS
 #========================================================================================================================================
@@ -102,24 +94,44 @@ eq_init = desc.io.load(QS_INITIAL_GUESS_PATH)
 
 
 
-
-
-
-
-
-
-
 #========================================================================================================================================
 # OPTIMIZER
 #========================================================================================================================================
 optimizer = Optimizer("proximal-lsq-exact")
-
-
-
-
-
-
-
+maxiter = 100
+x_scale = "auto"
+#
+ftol_T = 1e-6
+xtol_T = 1e-6
+gtol_T = 1e-6
+options_T = {
+    "perturb_options": {
+        "order": 2,
+        "verbose": 0,
+    },
+    "solve_options": {
+        "ftol": 1e-1,
+        "xtol": 1e-1,
+        "gtol": 1e-1,
+        "verbose": 0,
+    },
+}
+#
+ftol_C = 1e-5
+xtol_C = 1e-5
+gtol_C = 1e-5
+options_C = {
+    "perturb_options": {
+        "order": 2,
+        "verbose": 0,
+    },
+    "solve_options": {
+        "ftol": 1e1,
+        "xtol": 1e0,
+        "gtol": 1e0,
+        "verbose": 0,
+    },
+}
 
 
 
@@ -148,13 +160,6 @@ Z_modes = np.delete(
     ],
     axis = 0,
 )
-
-
-
-
-
-
-
 
 
 
@@ -211,34 +216,17 @@ eq_qs_T_FXD, result_T_FXD = eq_qs_T_FXD.optimize(
     objective = objective_fT,
     constraints = constraints,
     optimizer = optimizer,
-    ftol = 1e-4,
-    xtol = 1e-6,
-    gtol = 1e-6,
-    maxiter = 50,
-    options = {
-        "perturb_options": {
-            "order": 2,
-            "verbose": 0,
-        },
-        "solve_options": {
-            "ftol": 1e-1,
-            "xtol": 1e-2,
-            "gtol": 1e-2,
-            "verbose": 0,
-        },
-    },
+    ftol = ftol_T,
+    xtol = xtol_T,
+    gtol = gtol_T,
+    maxiter = maxiter,
+    options = options_T,
     copy = False,
     verbose = 3,
+    x_scale = "auto",
 )
 
 eq_qs_T_FXD.save(TRIPLE_PRODUCT_FXD_PATH)
-
-
-
-
-
-
-
 
 
 
@@ -276,34 +264,17 @@ eq_qs_T_FREE, result_T_FREE = eq_qs_T_FREE.optimize(
     objective = objective_fT_FREE,
     constraints = constraints,
     optimizer = optimizer,
-    ftol = 1e-4,
-    xtol = 1e-6,
-    gtol = 1e-6,
-    maxiter = 50,
-    options = {
-        "perturb_options": {
-            "order": 2,
-            "verbose": 0,
-        },
-        "solve_options": {
-            "ftol": 1e-1,
-            "xtol": 1e-2,
-            "gtol": 1e-2,
-            "verbose": 0,
-        },
-    },
+    ftol = ftol_T,
+    xtol = xtol_T,
+    gtol = gtol_T,
+    maxiter = maxiter,
+    options = options_T,
     copy = False,
     verbose = 3,
+    x_scale = "auto"
 )
 
 eq_qs_T_FREE.save(TRIPLE_PRODUCT_FREE_PATH)
-
-
-
-
-
-
-
 
 
 
@@ -333,34 +304,17 @@ eq_qs_C_FXD, result_C_FXD = eq_qs_C_FXD.optimize(
     objective = objective_fC,
     constraints = constraints,
     optimizer = optimizer,
-    ftol = 1e-4,
-    xtol = 1e-6,
-    gtol = 1e-6,
-    maxiter = 50,
-    options = {
-        "perturb_options": {
-            "order": 2,
-            "verbose": 0,
-        },
-        "solve_options": {
-            "ftol": 1e-1,
-            "xtol": 1e-2,
-            "gtol": 1e-2,
-            "verbose": 0,
-        },
-    },
+    ftol = ftol_C,
+    xtol = xtol_C,
+    gtol = gtol_C,
+    maxiter = maxiter,
+    options = options_C,
     copy = False,
     verbose = 3,
+    x_scale = "auto"
 )
 
 eq_qs_C_FXD.save(TWO_TERM_FXD_PATH)
-
-
-
-
-
-
-
 
 
 
@@ -399,24 +353,14 @@ eq_qs_C_FREE, result_C_FREE = eq_qs_C_FREE.optimize(
     objective = objective_fC_FREE,
     constraints = constraints,
     optimizer = optimizer,
-    ftol = 1e-4,
-    xtol = 1e-6,
-    gtol = 1e-6,
-    maxiter = 50,
-    options = {
-        "perturb_options": {
-            "order": 2,
-            "verbose": 0,
-        },
-        "solve_options": {
-            "ftol": 1e-1,
-            "xtol": 1e-2,
-            "gtol": 1e-2,
-            "verbose": 0,
-        },
-    },
+    ftol = ftol_C,
+    xtol = xtol_C,
+    gtol = gtol_C,
+    maxiter = maxiter,
+    options = options_C,
     copy = False,
     verbose = 3,
+    x_scale = "auto",
 )
 
 eq_qs_C_FREE.save(TWO_TERM_FREE_PATH)
