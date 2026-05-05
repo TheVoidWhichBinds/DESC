@@ -1,0 +1,26 @@
+{
+    "label": "basic_qs_T_FXD",
+    "equilibrium_output_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/basic_qs/basic_qs_T_FXD.h5",
+    "result_pickle_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/basic_qs/basic_qs_T_FXD_result.pkl",
+    "summary_json_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/basic_qs/basic_qs_T_FXD_result_summary.json",
+    "result": {
+        "final_cost": 0.005652295498261488,
+        "message": "`gtol` condition satisfied. (gtol=1.00e-06)",
+        "termination_message": null,
+        "success": true,
+        "status": null,
+        "nfev": 14,
+        "njev": 13,
+        "nit": 12,
+        "optimality": "Array(9.33885303e-07, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "proximal-lsq-exact",
+        "ftol": 1e-06,
+        "xtol": 1e-06,
+        "gtol": 1e-06,
+        "maxiter": 100,
+        "x_scale": "auto",
+        "options": {}
+    }
+}

@@ -33,7 +33,16 @@ from desc.optimize import Optimizer
 from helper import (
     append_free_objectives,
     build_free_extension,
+    optimize_save_report,
 )
+
+
+
+
+
+
+
+
 
 
 #========================================================================================================================================
@@ -94,13 +103,61 @@ eq_init = desc.io.load(QS_INITIAL_GUESS_PATH)
 
 
 
+
+#===========================================================================================================================
+# CHECK INITIAL PRESSURE
+#=============================================================================================================================
+
+rho = np.linspace(
+    0.0,
+    1.0,
+    11,
+)
+
+grid_pressure = LinearGrid(
+    rho = rho,
+    M = 0,
+    N = 0,
+    NFP = eq_init.NFP,
+    sym = eq_init.sym,
+)
+
+print("")
+print("Initial pressure object:")
+print(eq_init.pressure)
+
+print("")
+print("Initial pressure coefficients p_l:")
+print(np.asarray(eq_init.params_dict["p_l"]))
+
+print("")
+print("Initial pressure P(rho):")
+p_rho = np.asarray(eq_init.pressure.compute(grid_pressure))
+for rho_i, p_i in zip(grid_pressure.nodes[:, 0], p_rho):
+    print(f"rho = {rho_i:.3f}, P = {p_i:.8e}")
+
+print("")
+print("Initial pressure gradient dP/drho:")
+dp_drho = np.asarray(eq_init.pressure.compute(grid_pressure, dr = 1))
+for rho_i, dp_i in zip(grid_pressure.nodes[:, 0], dp_drho):
+    print(f"rho = {rho_i:.3f}, dP/drho = {dp_i:.8e}")
+
+
+
+
+
+
+
+
+
+
 #========================================================================================================================================
 # OPTIMIZER
 #========================================================================================================================================
 optimizer = Optimizer("proximal-lsq-exact")
 maxiter = 100
 x_scale = "auto"
-#
+
 ftol_T = 1e-6
 xtol_T = 1e-6
 gtol_T = 1e-6
@@ -109,29 +166,40 @@ options_T = {
         "order": 2,
         "verbose": 0,
     },
+    "max_nfev": 100,
     "solve_options": {
-        "ftol": 1e-1,
-        "xtol": 1e-1,
-        "gtol": 1e-1,
+        "ftol": 1e-6,
+        "xtol": 1e-8,
+        "gtol": 1e-8,
+        "maxiter": maxiter,
         "verbose": 0,
     },
 }
-#
-ftol_C = 1e-5
-xtol_C = 1e-5
-gtol_C = 1e-5
+
+ftol_C = 1e-4
+xtol_C = 1e-4
+gtol_C = 1e-4
 options_C = {
     "perturb_options": {
         "order": 2,
         "verbose": 0,
     },
+    "max_nfev": 100,
     "solve_options": {
-        "ftol": 1e1,
-        "xtol": 1e0,
-        "gtol": 1e0,
+        "ftol": 1e-3,
+        "xtol": 1e-3,
+        "gtol": 1e-3,
+        "maxiter": maxiter,
         "verbose": 0,
     },
 }
+
+
+
+
+
+
+
 
 
 
@@ -160,6 +228,13 @@ Z_modes = np.delete(
     ],
     axis = 0,
 )
+
+
+
+
+
+
+
 
 
 
@@ -212,10 +287,13 @@ objective_fT = ObjectiveFunction(
     )
 )
 
-eq_qs_T_FXD, result_T_FXD = eq_qs_T_FXD.optimize(
+eq_qs_T_FXD, result_T_FXD = optimize_save_report(
+    eq = eq_qs_T_FXD,
     objective = objective_fT,
     constraints = constraints,
     optimizer = optimizer,
+    output_path = TRIPLE_PRODUCT_FXD_PATH,
+    label = "basic_qs_T_FXD",
     ftol = ftol_T,
     xtol = xtol_T,
     gtol = gtol_T,
@@ -223,10 +301,15 @@ eq_qs_T_FXD, result_T_FXD = eq_qs_T_FXD.optimize(
     options = options_T,
     copy = False,
     verbose = 3,
-    x_scale = "auto",
+    x_scale = x_scale,
 )
 
-eq_qs_T_FXD.save(TRIPLE_PRODUCT_FXD_PATH)
+
+
+
+
+
+
 
 
 
@@ -260,10 +343,13 @@ objective_fT_FREE = append_free_objectives(
     free_objectives = free_objectives_T,
 )
 
-eq_qs_T_FREE, result_T_FREE = eq_qs_T_FREE.optimize(
+eq_qs_T_FREE, result_T_FREE = optimize_save_report(
+    eq = eq_qs_T_FREE,
     objective = objective_fT_FREE,
     constraints = constraints,
     optimizer = optimizer,
+    output_path = TRIPLE_PRODUCT_FREE_PATH,
+    label = "basic_qs_T_FREE",
     ftol = ftol_T,
     xtol = xtol_T,
     gtol = gtol_T,
@@ -271,10 +357,15 @@ eq_qs_T_FREE, result_T_FREE = eq_qs_T_FREE.optimize(
     options = options_T,
     copy = False,
     verbose = 3,
-    x_scale = "auto"
+    x_scale = x_scale,
 )
 
-eq_qs_T_FREE.save(TRIPLE_PRODUCT_FREE_PATH)
+
+
+
+
+
+
 
 
 
@@ -300,10 +391,13 @@ objective_fC = ObjectiveFunction(
     )
 )
 
-eq_qs_C_FXD, result_C_FXD = eq_qs_C_FXD.optimize(
+eq_qs_C_FXD, result_C_FXD = optimize_save_report(
+    eq = eq_qs_C_FXD,
     objective = objective_fC,
     constraints = constraints,
     optimizer = optimizer,
+    output_path = TWO_TERM_FXD_PATH,
+    label = "basic_qs_C_FXD",
     ftol = ftol_C,
     xtol = xtol_C,
     gtol = gtol_C,
@@ -311,10 +405,15 @@ eq_qs_C_FXD, result_C_FXD = eq_qs_C_FXD.optimize(
     options = options_C,
     copy = False,
     verbose = 3,
-    x_scale = "auto"
+    x_scale = x_scale,
 )
 
-eq_qs_C_FXD.save(TWO_TERM_FXD_PATH)
+
+
+
+
+
+
 
 
 
@@ -349,10 +448,13 @@ objective_fC_FREE = append_free_objectives(
     free_objectives = free_objectives_C,
 )
 
-eq_qs_C_FREE, result_C_FREE = eq_qs_C_FREE.optimize(
+eq_qs_C_FREE, result_C_FREE = optimize_save_report(
+    eq = eq_qs_C_FREE,
     objective = objective_fC_FREE,
     constraints = constraints,
     optimizer = optimizer,
+    output_path = TWO_TERM_FREE_PATH,
+    label = "basic_qs_C_FREE",
     ftol = ftol_C,
     xtol = xtol_C,
     gtol = gtol_C,
@@ -360,7 +462,5 @@ eq_qs_C_FREE, result_C_FREE = eq_qs_C_FREE.optimize(
     options = options_C,
     copy = False,
     verbose = 3,
-    x_scale = "auto",
+    x_scale = x_scale,
 )
-
-eq_qs_C_FREE.save(TWO_TERM_FREE_PATH)

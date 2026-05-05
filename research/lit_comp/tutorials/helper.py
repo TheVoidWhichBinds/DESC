@@ -9,6 +9,7 @@
 #   3. tutorial-objective comparison helpers
 #   4. FREE config/objective construction
 #   5. direct tutorial runners
+#   6. optimization result saving/reporting
 #
 # Expected layout:
 #
@@ -38,7 +39,9 @@ from copy import deepcopy
 from pathlib import Path
 import csv
 import inspect
+import json
 import os
+import pickle
 import runpy
 import sys
 import traceback
@@ -1032,6 +1035,459 @@ def write_table_csv(
 
         writer.writeheader()
         writer.writerows(output_rows)
+
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# Optimization result helpers
+#========================================================================================================================================
+
+def get_result_value(
+        result,
+        key,
+        default = None,
+    ):
+    """
+    Get a value from a DESC optimization result.
+    """
+
+    if isinstance(result, dict):
+        return result.get(
+            key,
+            default,
+        )
+
+    if hasattr(result, key):
+        return getattr(
+            result,
+            key,
+        )
+
+    try:
+        return result[key]
+
+    except Exception:
+        return default
+
+
+
+
+
+def to_json_safe(
+        value,
+    ):
+    """
+    Convert objects to JSON-safe forms.
+    """
+
+    if value is None:
+        return None
+
+    if isinstance(value, Path):
+        return str(value)
+
+    if isinstance(value, np.generic):
+        return value.item()
+
+    if isinstance(value, float):
+        if not np.isfinite(value):
+            return None
+
+        return value
+
+    if isinstance(value, (str, int, bool)):
+        return value
+
+    if isinstance(value, np.ndarray):
+        return to_json_safe(
+            value = value.tolist(),
+        )
+
+    if isinstance(value, dict):
+        return {
+            str(key): to_json_safe(
+                value = item,
+            )
+            for key, item in value.items()
+        }
+
+    if isinstance(value, (list, tuple)):
+        return [
+            to_json_safe(
+                value = item,
+            )
+            for item in value
+        ]
+
+    return repr(value)
+
+
+
+
+
+def get_optimizer_name(
+        optimizer,
+    ):
+    """
+    Return a readable optimizer name.
+    """
+
+    if isinstance(optimizer, str):
+        return optimizer
+
+    for attr in (
+            "method",
+            "_method",
+            "name",
+        ):
+        if hasattr(optimizer, attr):
+            return str(
+                getattr(
+                    optimizer,
+                    attr,
+                )
+            )
+
+    return str(optimizer)
+
+
+
+
+
+def get_final_cost(
+        result,
+    ):
+    """
+    Extract final least-squares cost from an optimization result.
+
+    Uses result.cost when available. If only result.fun exists, falls back to
+    0.5 * ||fun||^2 for vector-valued least-squares residuals.
+    """
+
+    for key in (
+            "cost",
+            "final_cost",
+        ):
+        value = get_result_value(
+            result = result,
+            key = key,
+        )
+
+        if value is not None:
+            value = np.asarray(value).reshape(-1)
+
+            if value.size > 0:
+                return float(value[0])
+
+    fun = get_result_value(
+        result = result,
+        key = "fun",
+    )
+
+    if fun is None:
+        return None
+
+    values = np.asarray(fun).reshape(-1)
+
+    if values.size == 0:
+        return None
+
+    if values.size == 1:
+        return float(values[0])
+
+    return float(0.5 * np.sum(values ** 2))
+
+
+
+
+
+def get_optimization_result_paths(
+        output_path,
+    ):
+    """
+    Return result paths matching an equilibrium output path.
+
+    Example:
+        basic_qs_T_FXD.h5
+        basic_qs_T_FXD_result.pkl
+        basic_qs_T_FXD_result_summary.json
+    """
+
+    output_path = Path(output_path)
+    stem_path = output_path.with_suffix("")
+
+    result_path = stem_path.with_name(
+        f"{stem_path.name}_result.pkl"
+    )
+
+    summary_path = stem_path.with_name(
+        f"{stem_path.name}_result_summary.json"
+    )
+
+    return result_path, summary_path
+
+
+
+
+
+def make_optimization_summary(
+        result,
+        output_path,
+        result_path,
+        summary_path,
+        label,
+        optimizer,
+        ftol,
+        xtol,
+        gtol,
+        maxiter,
+        options,
+        x_scale,
+    ):
+    """
+    Build a readable optimization summary.
+    """
+
+    return {
+        "label": label,
+        "equilibrium_output_path": str(output_path),
+        "result_pickle_path": str(result_path),
+        "summary_json_path": str(summary_path),
+        "result": {
+            "final_cost": get_final_cost(
+                result = result,
+            ),
+            "message": get_result_value(
+                result = result,
+                key = "message",
+            ),
+            "termination_message": get_result_value(
+                result = result,
+                key = "termination_message",
+            ),
+            "success": get_result_value(
+                result = result,
+                key = "success",
+            ),
+            "status": get_result_value(
+                result = result,
+                key = "status",
+            ),
+            "nfev": get_result_value(
+                result = result,
+                key = "nfev",
+            ),
+            "njev": get_result_value(
+                result = result,
+                key = "njev",
+            ),
+            "nit": get_result_value(
+                result = result,
+                key = "nit",
+            ),
+            "optimality": get_result_value(
+                result = result,
+                key = "optimality",
+            ),
+        },
+        "hyperparameters": {
+            "optimizer": get_optimizer_name(
+                optimizer = optimizer,
+            ),
+            "ftol": ftol,
+            "xtol": xtol,
+            "gtol": gtol,
+            "maxiter": maxiter,
+            "x_scale": x_scale,
+            "options": options,
+        },
+    }
+
+
+
+
+
+def print_optimization_summary(
+        summary,
+    ):
+    """
+    Print the important optimization result information.
+    """
+
+    result = summary["result"]
+    hyperparameters = summary["hyperparameters"]
+
+    message = result.get("message")
+
+    if message is None:
+        message = result.get("termination_message")
+
+    print("")
+    print("================================================================================================================")
+    print(f"Optimization summary: {summary['label']}")
+    print("================================================================================================================")
+    print("")
+    print(f"Final cost: {result.get('final_cost')}")
+    print(f"Termination message: {message}")
+    print(f"Success: {result.get('success')}")
+    print(f"Status: {result.get('status')}")
+    print(f"Function evaluations: {result.get('nfev')}")
+    print(f"Jacobian evaluations: {result.get('njev')}")
+    print(f"Iterations: {result.get('nit')}")
+    print(f"Optimality: {result.get('optimality')}")
+    print("")
+    print("Optimization hyperparameters:")
+    print(f"optimizer: {hyperparameters.get('optimizer')}")
+    print(f"ftol: {hyperparameters.get('ftol')}")
+    print(f"xtol: {hyperparameters.get('xtol')}")
+    print(f"gtol: {hyperparameters.get('gtol')}")
+    print(f"maxiter: {hyperparameters.get('maxiter')}")
+    print(f"x_scale: {hyperparameters.get('x_scale')}")
+    print("options:")
+    print(
+        json.dumps(
+            to_json_safe(
+                value = hyperparameters.get("options"),
+            ),
+            indent = 4,
+        )
+    )
+    print("")
+    print(f"Saved result pickle: {summary['result_pickle_path']}")
+    print(f"Saved result summary: {summary['summary_json_path']}")
+    print("================================================================================================================")
+    print("")
+
+
+
+
+
+def save_optimization_result(
+        result,
+        output_path,
+        label,
+        optimizer,
+        ftol,
+        xtol,
+        gtol,
+        maxiter,
+        options,
+        x_scale,
+    ):
+    """
+    Save the full optimization result and a readable JSON summary.
+    """
+
+    output_path = Path(output_path)
+
+    result_path, summary_path = get_optimization_result_paths(
+        output_path = output_path,
+    )
+
+    with open(result_path, "wb") as file:
+        pickle.dump(
+            result,
+            file,
+        )
+
+    summary = make_optimization_summary(
+        result = result,
+        output_path = output_path,
+        result_path = result_path,
+        summary_path = summary_path,
+        label = label,
+        optimizer = optimizer,
+        ftol = ftol,
+        xtol = xtol,
+        gtol = gtol,
+        maxiter = maxiter,
+        options = options,
+        x_scale = x_scale,
+    )
+
+    with open(summary_path, "w") as file:
+        json.dump(
+            to_json_safe(
+                value = summary,
+            ),
+            file,
+            indent = 4,
+        )
+
+    print_optimization_summary(
+        summary = to_json_safe(
+            value = summary,
+        )
+    )
+
+    return result_path, summary_path, summary
+
+
+
+
+
+def optimize_save_report(
+        eq,
+        objective,
+        constraints,
+        optimizer,
+        output_path,
+        label = None,
+        ftol = None,
+        xtol = None,
+        gtol = None,
+        maxiter = None,
+        options = None,
+        copy = False,
+        verbose = 3,
+        x_scale = "auto",
+    ):
+    """
+    Run one optimization, save the equilibrium, save the result, and print a summary.
+    """
+
+    if label is None:
+        label = Path(output_path).stem
+
+    eq, result = eq.optimize(
+        objective = objective,
+        constraints = constraints,
+        optimizer = optimizer,
+        ftol = ftol,
+        xtol = xtol,
+        gtol = gtol,
+        maxiter = maxiter,
+        options = options,
+        copy = copy,
+        verbose = verbose,
+        x_scale = x_scale,
+    )
+
+    eq.save(
+        str(output_path)
+    )
+
+    save_optimization_result(
+        result = result,
+        output_path = output_path,
+        label = label,
+        optimizer = optimizer,
+        ftol = ftol,
+        xtol = xtol,
+        gtol = gtol,
+        maxiter = maxiter,
+        options = options,
+        x_scale = x_scale,
+    )
+
+    return eq, result
 
 
 

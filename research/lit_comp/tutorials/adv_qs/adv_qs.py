@@ -42,6 +42,9 @@ from desc.optimize import Optimizer
 from helper import (
     append_free_objectives,
     build_free_extension,
+    get_final_cost,
+    get_result_value,
+    save_optimization_result,
 )
 
 
@@ -118,6 +121,162 @@ eq0 = solve_continuation_automatic(
     eq,
     verbose = 0,
 )[-1]
+
+
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# OPTIMIZATION HYPERPARAMETERS
+#========================================================================================================================================
+MULTIGRID_OPTIMIZER = "proximal-lsq-exact"
+MULTIGRID_MAXITER = 20
+MULTIGRID_FTOL = None
+MULTIGRID_XTOL = None
+MULTIGRID_GTOL = None
+MULTIGRID_X_SCALE = "auto"
+MULTIGRID_OPTIONS = {
+    "initial_trust_ratio": 0.1,
+}
+
+AUGLAG_OPTIMIZER = "lsq-auglag"
+AUGLAG_MAXITER = 200
+AUGLAG_FTOL = None
+AUGLAG_XTOL = None
+AUGLAG_GTOL = None
+AUGLAG_X_SCALE = "auto"
+AUGLAG_OPTIONS = {}
+
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# RESULT HELPERS
+#========================================================================================================================================
+def sum_history_value(
+        histories,
+        key,
+    ):
+    """
+    Sum scalar optimization-result counters across a multigrid sequence.
+    """
+
+    values = []
+
+    for history in histories:
+        value = get_result_value(
+            result = history,
+            key = key,
+        )
+
+        if value is not None:
+            values.append(value)
+
+    if len(values) == 0:
+        return None
+
+    try:
+        return int(
+            np.sum(values)
+        )
+
+    except Exception:
+        return None
+
+
+
+
+
+def bundle_optimization_histories(
+        histories,
+    ):
+    """
+    Bundle multigrid step histories into one save-compatible result object.
+    """
+
+    histories = tuple(histories)
+    final_history = histories[-1]
+
+    return {
+        "cost": get_final_cost(
+            result = final_history,
+        ),
+        "message": get_result_value(
+            result = final_history,
+            key = "message",
+        ),
+        "termination_message": get_result_value(
+            result = final_history,
+            key = "termination_message",
+        ),
+        "success": get_result_value(
+            result = final_history,
+            key = "success",
+        ),
+        "status": get_result_value(
+            result = final_history,
+            key = "status",
+        ),
+        "nfev": sum_history_value(
+            histories = histories,
+            key = "nfev",
+        ),
+        "njev": sum_history_value(
+            histories = histories,
+            key = "njev",
+        ),
+        "nit": sum_history_value(
+            histories = histories,
+            key = "nit",
+        ),
+        "optimality": get_result_value(
+            result = final_history,
+            key = "optimality",
+        ),
+        "steps": histories,
+    }
+
+
+
+
+
+def save_multigrid_result(
+        histories,
+        output_path,
+        label,
+    ):
+    """
+    Save multigrid histories using the same sidecar files as the other tutorials.
+    """
+
+    result = bundle_optimization_histories(
+        histories = histories,
+    )
+
+    return save_optimization_result(
+        result = result,
+        output_path = output_path,
+        label = label,
+        optimizer = MULTIGRID_OPTIMIZER,
+        ftol = MULTIGRID_FTOL,
+        xtol = MULTIGRID_XTOL,
+        gtol = MULTIGRID_GTOL,
+        maxiter = MULTIGRID_MAXITER,
+        options = MULTIGRID_OPTIONS,
+        x_scale = MULTIGRID_X_SCALE,
+    )
 
 
 
@@ -299,18 +458,17 @@ def run_qh_step(
         free_objectives = free_objectives,
     )
 
-    optimizer = Optimizer("proximal-lsq-exact")
+    optimizer = Optimizer(MULTIGRID_OPTIMIZER)
 
     eq_new, history = eq.optimize(
         objective = objective,
         constraints = constraints,
         optimizer = optimizer,
-        maxiter = 20,
+        maxiter = MULTIGRID_MAXITER,
         verbose = 3,
         copy = True,
-        options = {
-            "initial_trust_ratio": 0.1,
-        },
+        options = MULTIGRID_OPTIONS,
+        x_scale = MULTIGRID_X_SCALE,
     )
 
     return eq_new, history
@@ -356,6 +514,16 @@ eqfam_multigrid_FXD.append(eq_multigrid_FXD_3)
 
 eqfam_multigrid_FXD.save(MULTIGRID_FXD_PATH)
 
+save_multigrid_result(
+    histories = (
+        history_multigrid_FXD_1,
+        history_multigrid_FXD_2,
+        history_multigrid_FXD_3,
+    ),
+    output_path = MULTIGRID_FXD_PATH,
+    label = "adv_qs_multigrid_FXD",
+)
+
 
 
 
@@ -396,6 +564,16 @@ eq_multigrid_FREE_3, history_multigrid_FREE_3 = run_qh_step(
 eqfam_multigrid_FREE.append(eq_multigrid_FREE_3)
 
 eqfam_multigrid_FREE.save(MULTIGRID_FREE_PATH)
+
+save_multigrid_result(
+    histories = (
+        history_multigrid_FREE_1,
+        history_multigrid_FREE_2,
+        history_multigrid_FREE_3,
+    ),
+    output_path = MULTIGRID_FREE_PATH,
+    label = "adv_qs_multigrid_FREE",
+)
 
 
 
@@ -639,16 +817,17 @@ def run_constrained_optimization(
         free_objectives = free_objectives,
     )
 
-    optimizer = Optimizer("lsq-auglag")
+    optimizer = Optimizer(AUGLAG_OPTIMIZER)
 
     eq_new, history = eq.optimize(
         objective = objective,
         constraints = constraints,
         optimizer = optimizer,
-        maxiter = 200,
+        maxiter = AUGLAG_MAXITER,
         copy = True,
         verbose = 3,
-        options = {},
+        options = AUGLAG_OPTIONS,
+        x_scale = AUGLAG_X_SCALE,
     )
 
     eq_new.solve()
@@ -676,6 +855,19 @@ eq_auglag_FXD, history_auglag_FXD = run_constrained_optimization(
 
 eq_auglag_FXD.save(AUGLAG_FXD_PATH)
 
+save_optimization_result(
+    result = history_auglag_FXD,
+    output_path = AUGLAG_FXD_PATH,
+    label = "adv_qs_auglag_FXD",
+    optimizer = AUGLAG_OPTIMIZER,
+    ftol = AUGLAG_FTOL,
+    xtol = AUGLAG_XTOL,
+    gtol = AUGLAG_GTOL,
+    maxiter = AUGLAG_MAXITER,
+    options = AUGLAG_OPTIONS,
+    x_scale = AUGLAG_X_SCALE,
+)
+
 
 
 
@@ -696,3 +888,16 @@ eq_auglag_FREE, history_auglag_FREE = run_constrained_optimization(
 )
 
 eq_auglag_FREE.save(AUGLAG_FREE_PATH)
+
+save_optimization_result(
+    result = history_auglag_FREE,
+    output_path = AUGLAG_FREE_PATH,
+    label = "adv_qs_auglag_FREE",
+    optimizer = AUGLAG_OPTIMIZER,
+    ftol = AUGLAG_FTOL,
+    xtol = AUGLAG_XTOL,
+    gtol = AUGLAG_GTOL,
+    maxiter = AUGLAG_MAXITER,
+    options = AUGLAG_OPTIONS,
+    x_scale = AUGLAG_X_SCALE,
+)

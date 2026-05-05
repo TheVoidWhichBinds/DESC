@@ -40,6 +40,7 @@ from desc.optimize import Optimizer
 from helper import (
     append_free_objectives,
     build_free_extension,
+    optimize_save_report,
 )
 
 
@@ -143,6 +144,22 @@ nzetaperturn = 200
 k = 2
 
 optimizer = Optimizer("proximal-lsq-exact")
+maxiter = 200
+x_scale = "auto"
+
+ftol = 1e-4
+xtol = 1e-6
+gtol = 1e-6
+options = {
+    "initial_trust_ratio": 2e-3,
+    "max_nfev": 200,
+    "solve_options": {
+        "ftol": 1e-2,
+        "xtol": 1e-3,
+        "gtol": 1e-4,
+        "verbose": 0,
+    },
+}
 
 
 
@@ -160,7 +177,11 @@ eq_balloon_FXD = eq0.copy()
 
 modes_R = np.vstack(
     (
-        [0,0,0,],
+        [
+            0,
+            0,
+            0,
+        ],
         eq_balloon_FXD.surface.R_basis.modes[
             np.max(
                 np.abs(eq_balloon_FXD.surface.R_basis.modes),
@@ -244,28 +265,22 @@ objective_FXD = ObjectiveFunction(
     )
 )
 
-(eq_balloon_FXD,), result_FXD = optimizer.optimize(
-    eq_balloon_FXD,
-    objective_FXD,
-    constraints,
-    ftol = 1e-4,
-    xtol = 1e-6,
-    gtol = 1e-6,
-    maxiter = 200,
+eq_balloon_FXD, result_FXD = optimize_save_report(
+    eq = eq_balloon_FXD,
+    objective = objective_FXD,
+    constraints = constraints,
+    optimizer = optimizer,
+    output_path = BALLOON_FXD_PATH,
+    label = "balloon_optimized_FXD",
+    ftol = ftol,
+    xtol = xtol,
+    gtol = gtol,
+    maxiter = maxiter,
+    options = options,
+    copy = False,
     verbose = 3,
-    options = {
-        "initial_trust_ratio": 2e-3,
-        "max_nfev": 200,
-        "solve_options": {
-            "ftol": 1e-2,
-            "xtol": 1e-3,
-            "gtol": 1e-4,
-            "verbose": 0,
-        },
-    },
+    x_scale = x_scale,
 )
-
-eq_balloon_FXD.save(str(BALLOON_FXD_PATH))
 
 
 
