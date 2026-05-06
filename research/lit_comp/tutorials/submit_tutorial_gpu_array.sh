@@ -41,21 +41,21 @@ case "${TUTORIAL}" in
         ;;
 
     adv_qs)
-        DEFAULT_SWEEP_COUNT=12288
-        DEFAULT_TIME="06:00:00"
-        DEFAULT_MEM="40G"
+        DEFAULT_SWEEP_COUNT=36
+        DEFAULT_TIME="04:00:00"
+        DEFAULT_MEM="30G"
         ;;
 
     balloon)
-        DEFAULT_SWEEP_COUNT=12288
-        DEFAULT_TIME="06:00:00"
-        DEFAULT_MEM="40G"
+        DEFAULT_SWEEP_COUNT=36
+        DEFAULT_TIME="04:00:00"
+        DEFAULT_MEM="30G"
         ;;
 
     neoclassical)
-        DEFAULT_SWEEP_COUNT=144
-        DEFAULT_TIME="03:00:00"
-        DEFAULT_MEM="40G"
+        DEFAULT_SWEEP_COUNT=36
+        DEFAULT_TIME="04:00:00"
+        DEFAULT_MEM="30G"
         ;;
 
     *)
