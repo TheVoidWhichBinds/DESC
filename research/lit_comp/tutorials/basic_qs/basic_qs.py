@@ -43,6 +43,7 @@ from helper import (
     optimize_save_report,
     prepare_tolerance_case_dir,
     print_tolerance_case_header,
+    should_run_tolerance_case,
 )
 
 
@@ -302,6 +303,8 @@ def build_basic_qs_options(
 #========================================================================================================================================
 # TOLERANCE SWEEP
 #========================================================================================================================================
+ran_tolerance_case = False
+
 for tolerance_case in iter_tolerance_cases(
         ftol_orders = OUTER_FTOL_ORDERS,
         xtol_orders = OUTER_XTOL_ORDERS,
@@ -312,6 +315,13 @@ for tolerance_case in iter_tolerance_cases(
         inner_gtol_orders = INNER_GTOL_ORDERS,
         base_options = {},
     ):
+
+    if not should_run_tolerance_case(
+            tolerance_case = tolerance_case,
+        ):
+        continue
+
+    ran_tolerance_case = True
 
     case_dir, tolerance_report_path = prepare_tolerance_case_dir(
         output_dir = OUTPUT_DIR,
@@ -539,4 +549,17 @@ for tolerance_case in iter_tolerance_cases(
         verbose = 3,
         x_scale = x_scale,
         tolerance_case = tolerance_case,
+    )
+
+
+
+
+if not ran_tolerance_case:
+    requested_sweep_index = os.environ.get(
+        "DESC_SWEEP_INDEX",
+        None,
+    )
+
+    raise ValueError(
+        f"No basic_qs tolerance case matched DESC_SWEEP_INDEX = {requested_sweep_index}."
     )

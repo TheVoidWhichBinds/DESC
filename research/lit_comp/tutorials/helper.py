@@ -73,6 +73,10 @@ FREE_SUFFIX = "_FREE"
 
 TOLERANCE_CASE_REPORT_NAME = "tolerance_case_report.json"
 
+DESC_SWEEP_INDEX_ENV_NAME = "DESC_SWEEP_INDEX"
+DESC_CASE_START_INDEX_ENV_NAME = "DESC_CASE_START_INDEX"
+DESC_CREATED_CASE_LABELS_ENV_NAME = "DESC_CREATED_CASE_LABELS"
+
 
 
 
@@ -776,6 +780,207 @@ def iter_tolerance_cases(
 
 
 
+def get_optional_int_env(
+        name,
+    ):
+    """
+    Return an optional integer environment variable.
+    """
+
+    value = os.environ.get(
+        name,
+        None,
+    )
+
+    if value is None or value == "":
+        return None
+
+    return int(value)
+
+
+
+
+
+def get_requested_sweep_index():
+    """
+    Return the requested one-based tolerance-sweep index, if any.
+    """
+
+    return get_optional_int_env(
+        name = DESC_SWEEP_INDEX_ENV_NAME,
+    )
+
+
+
+
+
+def get_case_start_index_from_env():
+    """
+    Return the requested first output-folder index, if any.
+    """
+
+    return get_optional_int_env(
+        name = DESC_CASE_START_INDEX_ENV_NAME,
+    )
+
+
+
+
+
+def should_run_tolerance_case(
+        tolerance_case,
+    ):
+    """
+    Return True if this tolerance case should run in the current process.
+
+    If DESC_SWEEP_INDEX is unset, every case is run serially.
+    If DESC_SWEEP_INDEX is set, only the matching sweep_index is run.
+    """
+
+    requested_sweep_index = get_requested_sweep_index()
+
+    if requested_sweep_index is None:
+        return True
+
+    return int(tolerance_case["sweep_index"]) == int(requested_sweep_index)
+
+
+
+
+
+def get_created_case_labels_from_env():
+    """
+    Return output case labels created by this Python process.
+    """
+
+    value = os.environ.get(
+        DESC_CREATED_CASE_LABELS_ENV_NAME,
+        "[]",
+    )
+
+    try:
+        labels = json.loads(value)
+
+    except json.JSONDecodeError:
+        labels = []
+
+    return tuple(
+        str(label)
+        for label in labels
+    )
+
+
+
+
+
+def register_created_case_label(
+        case_label,
+    ):
+    """
+    Record one output case label created by this Python process.
+    """
+
+    labels = list(get_created_case_labels_from_env())
+
+    case_label = str(case_label)
+
+    if case_label not in labels:
+        labels.append(case_label)
+
+    os.environ[DESC_CREATED_CASE_LABELS_ENV_NAME] = json.dumps(labels)
+
+
+
+
+
+def reserve_next_numbered_case_dir(
+        output_dir,
+    ):
+    """
+    Atomically reserve the next numbered output folder.
+
+    This is safe for SLURM array jobs because mkdir(..., exist_ok = False) is
+    used as the reservation operation. If another task gets the same folder
+    first, this process tries the next number.
+    """
+
+    output_dir = Path(output_dir)
+
+    output_dir.mkdir(
+        parents = True,
+        exist_ok = True,
+    )
+
+    starting_index = get_next_numbered_case_index(
+        tutorial_dir = output_dir,
+    )
+
+    for case_index in range(starting_index, starting_index + 100000):
+
+        case_label = make_tolerance_case_label(
+            index = case_index,
+        )
+
+        case_dir = output_dir / case_label
+
+        try:
+            case_dir.mkdir(
+                parents = False,
+                exist_ok = False,
+            )
+
+            return case_index, case_label, case_dir
+
+        except FileExistsError:
+            continue
+
+    raise RuntimeError(
+        f"Could not reserve a numbered output folder in {output_dir}."
+    )
+
+
+
+
+
+def reserve_requested_case_dir(
+        output_dir,
+        case_index,
+    ):
+    """
+    Reserve a specific numbered output folder.
+    """
+
+    output_dir = Path(output_dir)
+
+    output_dir.mkdir(
+        parents = True,
+        exist_ok = True,
+    )
+
+    case_label = make_tolerance_case_label(
+        index = case_index,
+    )
+
+    case_dir = output_dir / case_label
+
+    try:
+        case_dir.mkdir(
+            parents = False,
+            exist_ok = False,
+        )
+
+    except FileExistsError as error:
+        raise FileExistsError(
+            f"Requested output folder already exists: {case_dir}\n"
+            "Choose a new DESC_CASE_START_INDEX or remove the existing folder."
+        ) from error
+
+    return case_label, case_dir
+
+
+
+
+
 def write_tolerance_case_report(
         case_dir,
         tolerance_case,
@@ -811,30 +1016,53 @@ def write_tolerance_case_report(
 def prepare_tolerance_case_dir(
         output_dir,
         tolerance_case,
+        case_start_index = None,
     ):
     """
-    Create the next numbered output folder and write its tolerance report.
+    Create one numbered output folder and write its tolerance report.
+
+    If case_start_index or DESC_CASE_START_INDEX is provided, the output label is
+    deterministic:
+
+        case_index = case_start_index + sweep_index - 1
+
+    Otherwise, the next available numbered folder is reserved atomically.
     """
 
     output_dir = Path(output_dir)
 
-    output_dir.mkdir(
-        parents = True,
-        exist_ok = True,
-    )
+    if case_start_index is None:
+        case_start_index = get_case_start_index_from_env()
 
-    case_index = get_next_numbered_case_index(
-        tutorial_dir = output_dir,
-    )
+    if case_start_index is None:
+        case_index, case_label, case_dir = reserve_next_numbered_case_dir(
+            output_dir = output_dir,
+        )
 
-    case_label = make_tolerance_case_label(
-        index = case_index,
-    )
+    else:
+        sweep_index = int(
+            tolerance_case.get(
+                "sweep_index",
+                tolerance_case.get(
+                    "case_index",
+                    1,
+                ),
+            )
+        )
+
+        case_index = int(case_start_index) + sweep_index - 1
+
+        case_label, case_dir = reserve_requested_case_dir(
+            output_dir = output_dir,
+            case_index = case_index,
+        )
 
     tolerance_case["case_index"] = int(case_index)
     tolerance_case["case_label"] = case_label
 
-    case_dir = output_dir / case_label
+    register_created_case_label(
+        case_label = case_label,
+    )
 
     report_path = write_tolerance_case_report(
         case_dir = case_dir,
@@ -2251,6 +2479,9 @@ def run_file(
         source_file = source_file,
     )
 
+    if DESC_CREATED_CASE_LABELS_ENV_NAME in os.environ:
+        del os.environ[DESC_CREATED_CASE_LABELS_ENV_NAME]
+
     print("")
     print("################################################################################################################")
     print(f"Starting tutorial run for {source_file}")
@@ -2264,9 +2495,18 @@ def run_file(
 
     tutorial_dir = source_file.parent
 
-    case_dirs = get_output_case_dirs(
-        tutorial_dir = tutorial_dir,
-    )
+    created_case_labels = get_created_case_labels_from_env()
+
+    if len(created_case_labels) > 0:
+        case_dirs = tuple(
+            tutorial_dir / case_label
+            for case_label in created_case_labels
+        )
+
+    else:
+        case_dirs = get_output_case_dirs(
+            tutorial_dir = tutorial_dir,
+        )
 
     files_by_case = {
         case_dir.name: find_h5_files(

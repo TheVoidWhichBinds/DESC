@@ -53,6 +53,7 @@ from helper import (
     prepare_tolerance_case_dir,
     print_tolerance_case_header,
     save_optimization_result,
+    should_run_tolerance_case,
 )
 
 
@@ -132,40 +133,19 @@ AUGLAG_MAXITER = 200
 AUGLAG_X_SCALE = "auto"
 AUGLAG_BASE_OPTIONS = {}
 
-OUTER_FTOL_ORDERS = range(
-    4,
-    8,
-)
+OUTER_FTOL_ORDERS = [2,4,6]
 
-OUTER_XTOL_ORDERS = range(
-    4,
-    8,
-)
+OUTER_XTOL_ORDERS = [6]
 
-OUTER_GTOL_ORDERS = range(
-    4,
-    8,
-)
+OUTER_GTOL_ORDERS = [3,6]
 
-INNER_FTOL_ORDERS = range(
-    4,
-    8,
-)
+INNER_FTOL_ORDERS = [2,4,6]
 
-INNER_XTOL_ORDERS = range(
-    4,
-    8,
-)
+INNER_XTOL_ORDERS = [6]
 
-INNER_GTOL_ORDERS = range(
-    4,
-    8,
-)
+INNER_GTOL_ORDERS = [3,6]
 
-INITIAL_TRUST_RATIO_ORDERS = range(
-    1,
-    4,
-)
+INITIAL_TRUST_RATIO_ORDERS = [3]
 
 
 
@@ -944,6 +924,8 @@ def run_constrained_optimization(
 #========================================================================================================================================
 # TOLERANCE SWEEP
 #========================================================================================================================================
+ran_tolerance_case = False
+
 for tolerance_case in iter_tolerance_cases(
         ftol_orders = OUTER_FTOL_ORDERS,
         xtol_orders = OUTER_XTOL_ORDERS,
@@ -954,6 +936,13 @@ for tolerance_case in iter_tolerance_cases(
         inner_gtol_orders = INNER_GTOL_ORDERS,
         base_options = {},
     ):
+
+    if not should_run_tolerance_case(
+            tolerance_case = tolerance_case,
+        ):
+        continue
+
+    ran_tolerance_case = True
 
     case_dir, tolerance_report_path = prepare_tolerance_case_dir(
         output_dir = OUTPUT_DIR,
@@ -1075,4 +1064,17 @@ for tolerance_case in iter_tolerance_cases(
         options = options_auglag_FREE,
         x_scale = AUGLAG_X_SCALE,
         tolerance_case = tolerance_case,
+    )
+
+
+
+
+if not ran_tolerance_case:
+    requested_sweep_index = os.environ.get(
+        "DESC_SWEEP_INDEX",
+        None,
+    )
+
+    raise ValueError(
+        f"No adv_qs tolerance case matched DESC_SWEEP_INDEX = {requested_sweep_index}."
     )

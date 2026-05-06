@@ -43,6 +43,7 @@ from helper import (
     optimize_save_report,
     prepare_tolerance_case_dir,
     print_tolerance_case_header,
+    should_run_tolerance_case,
 )
 
 
@@ -304,40 +305,19 @@ BASE_OPTIONS = {
     "max_nfev": 100,
 }
 
-OUTER_FTOL_ORDERS = range(
-    4,
-    7,
-)
+OUTER_FTOL_ORDERS = [2,4,6]
 
-OUTER_XTOL_ORDERS = range(
-    5,
-    7,
-)
+OUTER_XTOL_ORDERS = [6]
 
-OUTER_GTOL_ORDERS = range(
-    5,
-    7,
-)
+OUTER_GTOL_ORDERS = [3,6]
 
-INNER_FTOL_ORDERS = range(
-    4,
-    7,
-)
+INNER_FTOL_ORDERS = [2,4,6]
 
-INNER_XTOL_ORDERS = range(
-    5,
-    7,
-)
+INNER_XTOL_ORDERS = [6]
 
-INNER_GTOL_ORDERS = range(
-    5,
-    7,
-)
+INNER_GTOL_ORDERS = [3,6]
 
-INITIAL_TRUST_RATIO_ORDERS = range(
-    3,
-    4,
-)
+INITIAL_TRUST_RATIO_ORDERS = [3]
 
 
 
@@ -409,6 +389,8 @@ def run_neoclassical_optimization(
 #========================================================================================================================================
 # TOLERANCE SWEEP
 #========================================================================================================================================
+ran_tolerance_case = False
+
 for tolerance_case in iter_tolerance_cases(
         ftol_orders = OUTER_FTOL_ORDERS,
         xtol_orders = OUTER_XTOL_ORDERS,
@@ -419,6 +401,13 @@ for tolerance_case in iter_tolerance_cases(
         inner_gtol_orders = INNER_GTOL_ORDERS,
         base_options = BASE_OPTIONS,
     ):
+
+    if not should_run_tolerance_case(
+            tolerance_case = tolerance_case,
+        ):
+        continue
+
+    ran_tolerance_case = True
 
     case_dir, tolerance_report_path = prepare_tolerance_case_dir(
         output_dir = OUTPUT_DIR,
@@ -470,4 +459,17 @@ for tolerance_case in iter_tolerance_cases(
         label = "neoclassical_optimized_FREE",
         tolerance_case = tolerance_case,
         free_pressure = True,
+    )
+
+
+
+
+if not ran_tolerance_case:
+    requested_sweep_index = os.environ.get(
+        "DESC_SWEEP_INDEX",
+        None,
+    )
+
+    raise ValueError(
+        f"No neoclassical tolerance case matched DESC_SWEEP_INDEX = {requested_sweep_index}."
     )
