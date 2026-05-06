@@ -4,22 +4,22 @@
     "result_pickle_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/balloon/balloon_optimized_FXD_result.pkl",
     "summary_json_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/balloon/balloon_optimized_FXD_result_summary.json",
     "result": {
-        "final_cost": 21.806926795535134,
-        "message": "A bad approximation caused failure to predict improvement.",
+        "final_cost": 40.89085354308386,
+        "message": "Optimization terminated successfully.\n`xtol` condition satisfied. (xtol=1.00e-04)",
         "termination_message": null,
-        "success": false,
+        "success": true,
         "status": null,
-        "nfev": 36,
+        "nfev": 13,
         "njev": 9,
-        "nit": 9,
-        "optimality": "Array(6.60407856, dtype=float64)"
+        "nit": 8,
+        "optimality": "Array(7.52023363, dtype=float64)"
     },
     "hyperparameters": {
         "optimizer": "proximal-lsq-exact",
         "ftol": 0.0001,
-        "xtol": 1e-06,
-        "gtol": 1e-06,
-        "maxiter": 50,
+        "xtol": 0.0001,
+        "gtol": 0.0001,
+        "maxiter": 200,
         "x_scale": "auto",
         "options": {}
     }

@@ -12,9 +12,10 @@
 #
 # This script:
 #   1. finds *_FXD.h5 and *_FREE.h5 files inside the requested tutorial folder
-#   2. always plots all pressure profiles together in one tutorial-level figure
-#   3. makes tutorial-specific additional plots
-#   4. saves all plots into that same tutorial folder
+#   2. plots all pressure profiles together in one tutorial-level figure
+#   3. plots all iota profiles together in one tutorial-level figure
+#   4. plots all toroidal cross-sections together in one tutorial-level figure
+#   5. saves all plots into that same tutorial folder
 #
 #==============================================================================================================
 
@@ -30,7 +31,8 @@ import numpy as np
 
 from desc.grid import LinearGrid
 from desc.io import load
-
+from desc.plotting import plot_comparison
+from desc.plotting import plot_surfaces
 
 
 
@@ -90,6 +92,74 @@ def get_tutorial_dir(
         )
 
     return tutorial_dir
+
+
+
+
+def is_numbered_case_dir(
+        path,
+    ):
+    """
+    Return True for output folders named 001, 002, 003, ...
+    """
+
+    path = Path(path)
+
+    return path.is_dir() and path.name.isdigit()
+
+
+
+
+
+def find_numbered_case_dirs(
+        tutorial_dir,
+    ):
+    """
+    Return numbered tolerance-case folders in a tutorial directory.
+    """
+
+    tutorial_dir = Path(tutorial_dir)
+
+    return tuple(
+        sorted(
+            path
+            for path in tutorial_dir.iterdir()
+            if is_numbered_case_dir(
+                path = path,
+            )
+        )
+    )
+
+
+
+
+
+def get_output_case_dirs(
+        tutorial_dir,
+    ):
+    """
+    Return output case directories.
+
+    If numbered folders exist, return:
+        001/
+        002/
+        ...
+
+    Otherwise return the tutorial directory itself for backward compatibility.
+    """
+
+    tutorial_dir = Path(tutorial_dir)
+
+    numbered_case_dirs = find_numbered_case_dirs(
+        tutorial_dir = tutorial_dir,
+    )
+
+    if len(numbered_case_dirs) > 0:
+        return numbered_case_dirs
+
+    return (
+        tutorial_dir,
+    )
 
 
 
@@ -165,7 +235,7 @@ def find_h5_files(
         tutorial_dir,
     ):
     """
-    Find FXD and FREE files in the tutorial folder.
+    Find FXD and FREE files in one output folder.
 
     Returns:
         {
@@ -185,7 +255,7 @@ def find_h5_files(
     """
 
     tutorial_dir = Path(tutorial_dir)
-    tutorial_name = tutorial_dir.name
+    tutorial_name = tutorial_dir.parent.name if tutorial_dir.name.isdigit() else tutorial_dir.name
 
     files = {}
 
@@ -210,6 +280,8 @@ def find_h5_files(
             files[optimization_name][variant] = path
 
     return files
+
+
 
 
 
@@ -363,6 +435,73 @@ def load_pressure_gradient_profiles_for_group(
 
 
 #========================================================================================================================================
+# TOROIDAL CROSS-SECTION HELPERS
+#========================================================================================================================================
+def compute_toroidal_cross_section(
+        eq,
+        zeta,
+        rho_values = None,
+        num_theta = 200,
+    ):
+    """
+    Compute R-Z flux-surface curves at one fixed toroidal angle.
+    """
+
+    if rho_values is None:
+        rho_values = np.linspace(
+            0.0,
+            1.0,
+            9,
+        )
+
+    theta = np.linspace(
+        0.0,
+        2.0 * np.pi,
+        num_theta,
+    )
+
+    curves = []
+
+    for rho_value in rho_values:
+
+        grid = LinearGrid(
+            rho = np.atleast_1d(rho_value),
+            theta = theta,
+            zeta = np.atleast_1d(zeta),
+            NFP = eq.NFP,
+        )
+
+        data = eq.compute(
+            [
+                "R",
+                "Z",
+            ],
+            grid = grid,
+        )
+
+        R = np.asarray(data["R"]).reshape(-1)
+        Z = np.asarray(data["Z"]).reshape(-1)
+
+        curves.append(
+            (
+                rho_value,
+                R,
+                Z,
+            )
+        )
+
+    return curves
+
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
 # PLOTTING HELPERS
 #========================================================================================================================================
 def make_profile_plot(
@@ -463,6 +602,184 @@ def make_profile_plot(
     plt.close(fig)
 
     return save_path
+
+
+
+
+
+
+def make_toroidal_cross_section_plot(
+        equilibrium_data,
+        title,
+        save_path,
+        rho = 8,
+        theta = 8,
+        num_phi = 6,
+    ):
+    """
+    Make and save one toroidal cross-section figure for one optimization.
+
+    The figure has one row per variant (FXD / FREE) and 6 columns,
+    corresponding to 6 toroidal cross-sections over one field period,
+    in the style of the DESC Basic Equilibrium tutorial.
+    """
+
+    if len(equilibrium_data) == 0:
+        return None
+
+    fig, axes = plt.subplots(
+        len(equilibrium_data),
+        num_phi,
+        figsize = (
+            3.0 * num_phi,
+            3.4 * len(equilibrium_data),
+        ),
+        squeeze = False,
+    )
+
+    for row, (variant, eq) in enumerate(equilibrium_data):
+
+        phi_values = np.linspace(
+            0.0,
+            2.0 * np.pi / eq.NFP,
+            num_phi,
+            endpoint = False,
+        )
+
+        for col, phi_value in enumerate(phi_values):
+
+            ax = axes[row, col]
+
+            plot_surfaces(
+                eq,
+                rho = rho,
+                theta = theta,
+                phi = float(phi_value),
+                ax = np.atleast_1d(ax),
+            )
+
+            if row == 0:
+                ax.set_title(
+                    rf"$\phi = {phi_value:.3f}$",
+                    fontsize = 10,
+                )
+
+            if col == 0:
+                ax.text(
+                    -0.20,
+                    0.50,
+                    variant,
+                    transform = ax.transAxes,
+                    rotation = 90,
+                    va = "center",
+                    ha = "center",
+                    fontsize = 11,
+                )
+
+    fig.suptitle(
+        title,
+        fontsize = 12,
+    )
+
+    fig.tight_layout(
+        rect = (
+            0.02,
+            0.02,
+            1.00,
+            0.94,
+        ),
+    )
+
+    fig.savefig(
+        save_path,
+        dpi = 300,
+        bbox_inches = "tight",
+    )
+
+    plt.close(fig)
+
+    return save_path
+
+
+
+
+
+def plot_toroidal_cross_sections(
+        tutorial_name,
+        tutorial_dir,
+        files,
+    ):
+    """
+    Plot toroidal cross-sections one figure per optimization.
+
+    Each figure has:
+        - one row for FXD
+        - one row for FREE
+        - 6 toroidal cuts across one field period
+    """
+
+    saved_paths = []
+
+    for optimization_name, group_files in files.items():
+
+        equilibrium_data = []
+
+        for variant in (
+            "FXD",
+            "FREE",
+        ):
+            path = group_files.get(
+                variant,
+                None,
+            )
+
+            if path is None:
+                continue
+
+            try:
+                eq = load_final_equilibrium(
+                    path = path,
+                )
+
+            except Exception as error:
+                print("")
+                print(f"Skipping toroidal cross-sections for {optimization_name} {variant}: {error}")
+                print("")
+                continue
+
+            equilibrium_data.append(
+                (
+                    variant,
+                    eq,
+                )
+            )
+
+        if len(equilibrium_data) == 0:
+            continue
+
+        output_stem = get_output_stem(
+            tutorial_name = tutorial_name,
+            optimization_name = optimization_name,
+        )
+
+        save_path = tutorial_dir / f"{output_stem}_toroidal_cross_sections.png"
+
+        if optimization_name == "main":
+            title = f"{tutorial_name}: toroidal cross-sections"
+        else:
+            title = f"{tutorial_name} {optimization_name}: toroidal cross-sections"
+
+        saved = make_toroidal_cross_section_plot(
+            equilibrium_data = equilibrium_data,
+            title = title,
+            save_path = save_path,
+            num_phi = 6,
+        )
+
+        if saved is not None:
+            saved_paths.append(saved)
+
+    return saved_paths
 
 
 
@@ -617,13 +934,13 @@ def plot_iota_profiles(
 #========================================================================================================================================
 # TUTORIAL-SPECIFIC PLOTTERS
 #========================================================================================================================================
-def plot_basic_qs(
+def plot_standard_tutorial_outputs(
         tutorial_name,
         tutorial_dir,
         files,
     ):
     """
-    Plots for the basic_qs tutorial.
+    Plot the standard tutorial-level comparisons.
     """
 
     saved_paths = []
@@ -640,7 +957,32 @@ def plot_basic_qs(
         files = files,
     )
 
+    saved_paths += plot_toroidal_cross_sections(
+        tutorial_name = tutorial_name,
+        tutorial_dir = tutorial_dir,
+        files = files,
+    )
+
     return saved_paths
+
+
+
+
+
+def plot_basic_qs(
+        tutorial_name,
+        tutorial_dir,
+        files,
+    ):
+    """
+    Plots for the basic_qs tutorial.
+    """
+
+    return plot_standard_tutorial_outputs(
+        tutorial_name = tutorial_name,
+        tutorial_dir = tutorial_dir,
+        files = files,
+    )
 
 
 
@@ -655,21 +997,11 @@ def plot_adv_qs(
     Plots for the adv_qs tutorial.
     """
 
-    saved_paths = []
-
-    saved_paths += plot_pressure_profiles(
+    return plot_standard_tutorial_outputs(
         tutorial_name = tutorial_name,
         tutorial_dir = tutorial_dir,
         files = files,
     )
-
-    saved_paths += plot_iota_profiles(
-        tutorial_name = tutorial_name,
-        tutorial_dir = tutorial_dir,
-        files = files,
-    )
-
-    return saved_paths
 
 
 
@@ -684,15 +1016,11 @@ def plot_balloon(
     Plots for the balloon tutorial.
     """
 
-    saved_paths = []
-
-    saved_paths += plot_pressure_profiles(
+    return plot_standard_tutorial_outputs(
         tutorial_name = tutorial_name,
         tutorial_dir = tutorial_dir,
         files = files,
     )
-
-    return saved_paths
 
 
 
@@ -707,21 +1035,11 @@ def plot_neoclassical(
     Plots for the neoclassical tutorial.
     """
 
-    saved_paths = []
-
-    saved_paths += plot_pressure_profiles(
+    return plot_standard_tutorial_outputs(
         tutorial_name = tutorial_name,
         tutorial_dir = tutorial_dir,
         files = files,
     )
-
-    saved_paths += plot_iota_profiles(
-        tutorial_name = tutorial_name,
-        tutorial_dir = tutorial_dir,
-        files = files,
-    )
-
-    return saved_paths
 
 
 
@@ -759,6 +1077,9 @@ def plot_tutorial(
     ):
     """
     Plot all relevant comparisons for one tutorial.
+
+    If numbered tolerance-case folders exist, plots are generated separately
+    inside each numbered folder.
     """
 
     tutorial_name = normalize_tutorial_name(
@@ -769,15 +1090,9 @@ def plot_tutorial(
         tutorial = tutorial_name,
     )
 
-    files = find_h5_files(
+    case_dirs = get_output_case_dirs(
         tutorial_dir = tutorial_dir,
     )
-
-    if len(files) == 0:
-        raise FileNotFoundError(
-            "No *_FXD.h5 or *_FREE.h5 files were found in:\n"
-            f"{tutorial_dir}"
-        )
 
     plotter = PLOTTERS.get(
         tutorial_name,
@@ -789,11 +1104,33 @@ def plot_tutorial(
             f"No plot registry entry found for tutorial = {tutorial_name}"
         )
 
-    return plotter(
-        tutorial_name = tutorial_name,
-        tutorial_dir = tutorial_dir,
-        files = files,
-    )
+    saved_paths = []
+
+    for case_dir in case_dirs:
+
+        files = find_h5_files(
+            tutorial_dir = case_dir,
+        )
+
+        if len(files) == 0:
+            print("")
+            print(f"No *_FXD.h5 or *_FREE.h5 files were found in: {case_dir}")
+            print("")
+            continue
+
+        saved_paths += plotter(
+            tutorial_name = tutorial_name,
+            tutorial_dir = case_dir,
+            files = files,
+        )
+
+    if len(saved_paths) == 0:
+        raise FileNotFoundError(
+            "No plots were generated because no *_FXD.h5 or *_FREE.h5 files were found in:\n"
+            f"{tutorial_dir}"
+        )
+
+    return saved_paths
 
 
 

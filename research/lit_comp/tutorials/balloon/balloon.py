@@ -22,7 +22,7 @@ import numpy as np
 
 import desc
 
-from desc.grid import Grid, LinearGrid
+from desc.grid import LinearGrid
 from desc.objectives import (
     AspectRatio,
     BallooningStability,
@@ -40,7 +40,10 @@ from desc.optimize import Optimizer
 from helper import (
     append_free_objectives,
     build_free_extension,
+    iter_tolerance_cases,
     optimize_save_report,
+    prepare_tolerance_case_dir,
+    print_tolerance_case_header,
 )
 
 
@@ -58,12 +61,6 @@ from helper import (
 fname = "balloon"
 
 OUTPUT_DIR = Path(__file__).resolve().parent
-
-INITIAL_PATH = OUTPUT_DIR / f"{fname}_initial.h5"
-
-BALLOON_FXD_PATH = OUTPUT_DIR / f"{fname}_optimized_FXD.h5"
-
-BALLOON_FREE_PATH = OUTPUT_DIR / f"{fname}_optimized_FREE.h5"
 
 
 
@@ -92,8 +89,6 @@ eq0.surface = eq0.get_surface_at(
     rho = 1,
 )
 
-eq0.save(str(INITIAL_PATH))
-
 
 
 
@@ -106,18 +101,6 @@ eq0.save(str(INITIAL_PATH))
 #========================================================================================================================================
 # BALLOONING GRID
 #========================================================================================================================================
-surfaces = np.array(
-    [
-        0.01,
-        0.1,
-        0.2,
-        0.4,
-        0.6,
-        0.8,
-        1.0,
-    ]
-)
-
 alpha = np.linspace(
     0,
     np.pi,
@@ -140,28 +123,38 @@ nturns = 3
 # SHARED OPTIMIZATION SETUP
 #========================================================================================================================================
 nzetaperturn = 200
-
-k = 2
-
+mode_cutoff = 2
 optimizer = Optimizer("proximal-lsq-exact")
-maxiter = 50
+maxiter = 200
 x_scale = "auto"
-
-ftol = 1e-4
-xtol = 1e-6
-gtol = 1e-6
-options = {
-    "initial_trust_ratio": 2e-3,
+BASE_OPTIONS = {
     "max_nfev": 200,
-    "solve_options": {
-        "ftol": 1e-2,
-        "xtol": 1e-3,
-        "gtol": 1e-4,
-        "verbose": 0,
-    },
 }
 
 
+FTOL_ORDERS = range(
+    4,
+    8,
+)
+
+XTOL_ORDERS = range(
+    4,
+    8,
+)
+
+GTOL_ORDERS = range(
+    4,
+    8,
+)
+
+INITIAL_TRUST_RATIO_ORDERS = range(
+    1,
+    4,
+)
+
+
+
+
 
 
 
@@ -171,243 +164,301 @@ options = {
 
 
 #========================================================================================================================================
-# OPTIMIZING BALLOONING STABILITY - FXD PRESSURE
+# OBJECTIVE / CONSTRAINT HELPERS
 #========================================================================================================================================
-eq_balloon_FXD = eq0.copy()
+def build_balloon_modes(
+        eq,
+    ):
+    """
+    Build boundary modes fixed during the ballooning optimization.
+    """
 
-modes_R = np.vstack(
-    (
-        [
-            0,
-            0,
-            0,
-        ],
-        eq_balloon_FXD.surface.R_basis.modes[
-            np.max(
-                np.abs(eq_balloon_FXD.surface.R_basis.modes),
-                1,
-            )
-            > k,
-            :,
-        ],
-    )
-)
-
-modes_Z = eq_balloon_FXD.surface.Z_basis.modes[
-    np.max(
-        np.abs(eq_balloon_FXD.surface.Z_basis.modes),
-        1,
-    )
-    > k,
-    :,
-]
-
-constraints = (
-    ForceBalance(eq = eq_balloon_FXD),
-    FixBoundaryR(
-        eq = eq_balloon_FXD,
-        modes = modes_R,
-    ),
-    FixBoundaryZ(
-        eq = eq_balloon_FXD,
-        modes = modes_Z,
-    ),
-    FixPressure(eq = eq_balloon_FXD),
-    FixIota(eq = eq_balloon_FXD),
-    FixPsi(eq = eq_balloon_FXD),
-)
-
-Curvature_grid = LinearGrid(
-    M = eq_balloon_FXD.M_grid,
-    N = eq_balloon_FXD.N_grid,
-    rho = np.array(
-        [
-            1.0,
-        ]
-    ),
-    NFP = eq_balloon_FXD.NFP,
-    sym = eq_balloon_FXD.sym,
-    axis = False,
-)
-
-objective_FXD = ObjectiveFunction(
-    (
-        BallooningStability(
-            eq = eq_balloon_FXD,
-            rho = np.array(
-                [
-                    0.8,
-                ]
-            ),
-            alpha = alpha,
-            nturns = nturns,
-            nzetaperturn = nzetaperturn,
-            weight = 2,
-        ),
-        AspectRatio(
-            eq = eq_balloon_FXD,
-            bounds = (
-                8,
-                11,
-            ),
-            weight = 1,
-        ),
-        GenericObjective(
-            f = "curvature_k2_rho",
-            thing = eq_balloon_FXD,
-            grid = Curvature_grid,
-            bounds = (
-                -np.inf,
+    modes_R = np.vstack(
+        (
+            [
                 0,
-            ),
-            weight = 2,
-        ),
-    )
-)
-
-eq_balloon_FXD, result_FXD = optimize_save_report(
-    eq = eq_balloon_FXD,
-    objective = objective_FXD,
-    constraints = constraints,
-    optimizer = optimizer,
-    output_path = BALLOON_FXD_PATH,
-    label = "balloon_optimized_FXD",
-    ftol = ftol,
-    xtol = xtol,
-    gtol = gtol,
-    maxiter = maxiter,
-    options = options,
-    copy = False,
-    verbose = 3,
-    x_scale = x_scale,
-)
-
-
-
-
-
-
-
-
-
-
-#========================================================================================================================================
-# OPTIMIZING BALLOONING STABILITY - FREE PRESSURE
-#========================================================================================================================================
-eq_balloon_FREE = eq0.copy()
-
-free_objectives, free_constraints = build_free_extension(
-    eq = eq_balloon_FREE,
-    eq_initial = eq_balloon_FREE.copy(),
-)
-
-modes_R = np.vstack(
-    (
-        [
-            0,
-            0,
-            0,
-        ],
-        eq_balloon_FREE.surface.R_basis.modes[
-            np.max(
-                np.abs(eq_balloon_FREE.surface.R_basis.modes),
-                1,
-            )
-            > k,
-            :,
-        ],
-    )
-)
-
-modes_Z = eq_balloon_FREE.surface.Z_basis.modes[
-    np.max(
-        np.abs(eq_balloon_FREE.surface.Z_basis.modes),
-        1,
-    )
-    > k,
-    :,
-]
-
-constraints = (
-    ForceBalance(eq = eq_balloon_FREE),
-    FixBoundaryR(
-        eq = eq_balloon_FREE,
-        modes = modes_R,
-    ),
-    FixBoundaryZ(
-        eq = eq_balloon_FREE,
-        modes = modes_Z,
-    ),
-    FixIota(eq = eq_balloon_FREE),
-    FixPsi(eq = eq_balloon_FREE),
-) + tuple(free_constraints)
-
-Curvature_grid = LinearGrid(
-    M = eq_balloon_FREE.M_grid,
-    N = eq_balloon_FREE.N_grid,
-    rho = np.array(
-        [
-            1.0,
-        ]
-    ),
-    NFP = eq_balloon_FREE.NFP,
-    sym = eq_balloon_FREE.sym,
-    axis = False,
-)
-
-objective_FREE = ObjectiveFunction(
-    (
-        BallooningStability(
-            eq = eq_balloon_FREE,
-            rho = np.array(
-                [
-                    0.8,
-                ]
-            ),
-            alpha = alpha,
-            nturns = nturns,
-            nzetaperturn = nzetaperturn,
-            weight = 2,
-        ),
-        AspectRatio(
-            eq = eq_balloon_FREE,
-            bounds = (
-                8,
-                11,
-            ),
-            weight = 1,
-        ),
-        GenericObjective(
-            f = "curvature_k2_rho",
-            thing = eq_balloon_FREE,
-            grid = Curvature_grid,
-            bounds = (
-                -np.inf,
                 0,
-            ),
-            weight = 2,
-        ),
+                0,
+            ],
+            eq.surface.R_basis.modes[
+                np.max(
+                    np.abs(eq.surface.R_basis.modes),
+                    1,
+                )
+                > mode_cutoff,
+                :,
+            ],
+        )
     )
-)
 
-objective_FREE = append_free_objectives(
-    objective = objective_FREE,
-    free_objectives = free_objectives,
-)
+    modes_Z = eq.surface.Z_basis.modes[
+        np.max(
+            np.abs(eq.surface.Z_basis.modes),
+            1,
+        )
+        > mode_cutoff,
+        :,
+    ]
 
-eq_balloon_FREE, result_FREE = optimize_save_report(
-    eq = eq_balloon_FREE,
-    objective = objective_FREE,
-    constraints = constraints,
-    optimizer = optimizer,
-    output_path = BALLOON_FREE_PATH,
-    label = "balloon_optimized_FREE",
-    ftol = ftol,
-    xtol = xtol,
-    gtol = gtol,
-    maxiter = maxiter,
-    options = options,
-    copy = False,
-    verbose = 3,
-    x_scale = x_scale,
-)
+    return modes_R, modes_Z
+
+
+
+
+
+def build_curvature_grid(
+        eq,
+    ):
+    """
+    Build the curvature grid used by the ballooning tutorial.
+    """
+
+    grid = LinearGrid(
+        M = eq.M_grid,
+        N = eq.N_grid,
+        rho = np.array(
+            [
+                1.0,
+            ]
+        ),
+        NFP = eq.NFP,
+        sym = eq.sym,
+        axis = False,
+    )
+
+    return grid
+
+
+
+
+
+def build_balloon_objective(
+        eq,
+        free_objectives = (),
+    ):
+    """
+    Build the ballooning objective function.
+    """
+
+    curvature_grid = build_curvature_grid(
+        eq = eq,
+    )
+
+    objective = ObjectiveFunction(
+        (
+            BallooningStability(
+                eq = eq,
+                rho = np.array(
+                    [
+                        0.8,
+                    ]
+                ),
+                alpha = alpha,
+                nturns = nturns,
+                nzetaperturn = nzetaperturn,
+                weight = 2,
+            ),
+            AspectRatio(
+                eq = eq,
+                bounds = (
+                    8,
+                    11,
+                ),
+                weight = 1,
+            ),
+            GenericObjective(
+                f = "curvature_k2_rho",
+                thing = eq,
+                grid = curvature_grid,
+                bounds = (
+                    -np.inf,
+                    0,
+                ),
+                weight = 2,
+            ),
+        )
+    )
+
+    objective = append_free_objectives(
+        objective = objective,
+        free_objectives = free_objectives,
+    )
+
+    return objective
+
+
+
+
+
+def build_balloon_constraints(
+        eq,
+        free_pressure = False,
+    ):
+    """
+    Build FXD or FREE pressure constraints for the ballooning optimization.
+    """
+
+    modes_R, modes_Z = build_balloon_modes(
+        eq = eq,
+    )
+
+    if free_pressure:
+        free_objectives, free_constraints = build_free_extension(
+            eq = eq,
+            eq_initial = eq.copy(),
+        )
+
+        constraints = (
+            ForceBalance(eq = eq),
+            FixBoundaryR(
+                eq = eq,
+                modes = modes_R,
+            ),
+            FixBoundaryZ(
+                eq = eq,
+                modes = modes_Z,
+            ),
+            FixIota(eq = eq),
+            FixPsi(eq = eq),
+        ) + tuple(free_constraints)
+
+    else:
+        free_objectives = ()
+
+        constraints = (
+            ForceBalance(eq = eq),
+            FixBoundaryR(
+                eq = eq,
+                modes = modes_R,
+            ),
+            FixBoundaryZ(
+                eq = eq,
+                modes = modes_Z,
+            ),
+            FixPressure(eq = eq),
+            FixIota(eq = eq),
+            FixPsi(eq = eq),
+        )
+
+    return constraints, free_objectives
+
+
+
+
+
+def run_balloon_optimization(
+        eq_initial,
+        output_path,
+        label,
+        tolerance_case,
+        free_pressure = False,
+    ):
+    """
+    Run one ballooning optimization for one tolerance case.
+    """
+
+    eq = eq_initial.copy()
+
+    constraints, free_objectives = build_balloon_constraints(
+        eq = eq,
+        free_pressure = free_pressure,
+    )
+
+    objective = build_balloon_objective(
+        eq = eq,
+        free_objectives = free_objectives,
+    )
+
+    tolerances = tolerance_case["tolerances"]
+
+    eq, result = optimize_save_report(
+        eq = eq,
+        objective = objective,
+        constraints = constraints,
+        optimizer = optimizer,
+        output_path = output_path,
+        label = label,
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
+        maxiter = maxiter,
+        options = tolerance_case["options"],
+        copy = False,
+        verbose = 3,
+        x_scale = x_scale,
+        tolerance_case = tolerance_case,
+    )
+
+    return eq, result
+
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# TOLERANCE SWEEP
+#========================================================================================================================================
+for tolerance_case in iter_tolerance_cases(
+        ftol_orders = FTOL_ORDERS,
+        xtol_orders = XTOL_ORDERS,
+        gtol_orders = GTOL_ORDERS,
+        initial_trust_ratio_orders = INITIAL_TRUST_RATIO_ORDERS,
+        base_options = BASE_OPTIONS,
+    ):
+
+    case_dir, tolerance_report_path = prepare_tolerance_case_dir(
+        output_dir = OUTPUT_DIR,
+        tolerance_case = tolerance_case,
+    )
+
+    print_tolerance_case_header(
+        tolerance_case = tolerance_case,
+        case_dir = case_dir,
+    )
+
+    INITIAL_PATH = case_dir / f"{fname}_initial.h5"
+
+    BALLOON_FXD_PATH = case_dir / f"{fname}_optimized_FXD.h5"
+
+    BALLOON_FREE_PATH = case_dir / f"{fname}_optimized_FREE.h5"
+
+    eq0.save(
+        str(INITIAL_PATH)
+    )
+
+    print("")
+    print(f"Tolerance report written to: {tolerance_report_path}")
+    print("")
+
+
+
+
+    #========================================================================================================================================
+    # OPTIMIZING BALLOONING STABILITY - FXD PRESSURE
+    #========================================================================================================================================
+    eq_balloon_FXD, result_FXD = run_balloon_optimization(
+        eq_initial = eq0,
+        output_path = BALLOON_FXD_PATH,
+        label = "balloon_optimized_FXD",
+        tolerance_case = tolerance_case,
+        free_pressure = False,
+    )
+
+
+
+
+    #========================================================================================================================================
+    # OPTIMIZING BALLOONING STABILITY - FREE PRESSURE
+    #========================================================================================================================================
+    eq_balloon_FREE, result_FREE = run_balloon_optimization(
+        eq_initial = eq0,
+        output_path = BALLOON_FREE_PATH,
+        label = "balloon_optimized_FREE",
+        tolerance_case = tolerance_case,
+        free_pressure = True,
+    )

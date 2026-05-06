@@ -8,14 +8,20 @@ Write-up of the DESC Basic QS Optimization tutorial, minus plotting.
 #========================================================================================================================================
 # IMPORTS
 #========================================================================================================================================
+from copy import deepcopy
+from pathlib import Path
 from desc import set_device
 set_device("gpu")
+
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath("."))
 sys.path.append(os.path.abspath("../../../"))
+
 import numpy as np
 import desc.io
+
 from desc.grid import LinearGrid, ConcentricGrid
 from desc.objectives import (
     ObjectiveFunction,
@@ -33,7 +39,10 @@ from desc.optimize import Optimizer
 from helper import (
     append_free_objectives,
     build_free_extension,
+    iter_tolerance_cases,
     optimize_save_report,
+    prepare_tolerance_case_dir,
+    print_tolerance_case_header,
 )
 
 
@@ -50,27 +59,7 @@ from helper import (
 #========================================================================================================================================
 fname = "basic_qs"
 
-OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-TRIPLE_PRODUCT_FXD_PATH = os.path.join(
-    OUTPUT_DIR,
-    f"{fname}_T_FXD.h5",
-)
-
-TRIPLE_PRODUCT_FREE_PATH = os.path.join(
-    OUTPUT_DIR,
-    f"{fname}_T_FREE.h5",
-)
-
-TWO_TERM_FXD_PATH = os.path.join(
-    OUTPUT_DIR,
-    f"{fname}_C_FXD.h5",
-)
-
-TWO_TERM_FREE_PATH = os.path.join(
-    OUTPUT_DIR,
-    f"{fname}_C_FREE.h5",
-)
+OUTPUT_DIR = Path(__file__).resolve().parent
 
 
 
@@ -104,10 +93,15 @@ eq_init = desc.io.load(QS_INITIAL_GUESS_PATH)
 
 
 
+
+
+
+
+
+
 #===========================================================================================================================
 # CHECK INITIAL PRESSURE
 #=============================================================================================================================
-
 rho = np.linspace(
     0.0,
     1.0,
@@ -158,37 +152,45 @@ optimizer = Optimizer("proximal-lsq-exact")
 maxiter = 100
 x_scale = "auto"
 
-ftol_T = 1e-6
-xtol_T = 1e-6
-gtol_T = 1e-6
-options_T = {
+FTOL_ORDERS = range(
+    4,
+    8,
+)
+
+XTOL_ORDERS = range(
+    4,
+    8,
+)
+
+GTOL_ORDERS = range(
+    4,
+    8,
+)
+
+INITIAL_TRUST_RATIO_ORDERS = range(
+    1,
+    4,
+)
+
+BASE_OPTIONS_T = {
     "perturb_options": {
         "order": 2,
         "verbose": 0,
     },
     "max_nfev": 100,
     "solve_options": {
-        "ftol": 1e-6,
-        "xtol": 1e-8,
-        "gtol": 1e-8,
         "maxiter": maxiter,
         "verbose": 0,
     },
 }
 
-ftol_C = 1e-4
-xtol_C = 1e-4
-gtol_C = 1e-4
-options_C = {
+BASE_OPTIONS_C = {
     "perturb_options": {
         "order": 2,
         "verbose": 0,
     },
     "max_nfev": 100,
     "solve_options": {
-        "ftol": 1e-3,
-        "xtol": 1e-3,
-        "gtol": 1e-3,
         "maxiter": maxiter,
         "verbose": 0,
     },
@@ -267,200 +269,272 @@ grid_rho1 = LinearGrid(
 
 
 #========================================================================================================================================
-# OPTIMIZING FOR TRIPLE PRODUCT QS IN VOLUME - FXD PRESSURE
+# TOLERANCE HELPERS
 #========================================================================================================================================
-eq_qs_T_FXD = eq_init.copy()
+def build_basic_qs_options(
+        base_options,
+        tolerance_case,
+    ):
+    """
+    Build DESC optimizer options for one basic_qs tolerance case.
+    """
 
-constraints = (
-    ForceBalance(eq = eq_qs_T_FXD),
-    FixBoundaryR(eq = eq_qs_T_FXD, modes = R_modes),
-    FixBoundaryZ(eq = eq_qs_T_FXD, modes = Z_modes),
-    FixPressure(eq = eq_qs_T_FXD),
-    FixIota(eq = eq_qs_T_FXD),
-    FixPsi(eq = eq_qs_T_FXD),
-)
+    options = deepcopy(base_options)
 
-objective_fT = ObjectiveFunction(
-    QuasisymmetryTripleProduct(
+    tolerances = tolerance_case["tolerances"]
+
+    options["initial_trust_ratio"] = tolerances["initial_trust_ratio"]
+
+    options["solve_options"]["ftol"] = tolerances["ftol"]
+    options["solve_options"]["xtol"] = tolerances["xtol"]
+    options["solve_options"]["gtol"] = tolerances["gtol"]
+
+    return options
+
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# TOLERANCE SWEEP
+#========================================================================================================================================
+for tolerance_case in iter_tolerance_cases(
+        ftol_orders = FTOL_ORDERS,
+        xtol_orders = XTOL_ORDERS,
+        gtol_orders = GTOL_ORDERS,
+        initial_trust_ratio_orders = INITIAL_TRUST_RATIO_ORDERS,
+        base_options = {},
+    ):
+
+    case_dir, tolerance_report_path = prepare_tolerance_case_dir(
+        output_dir = OUTPUT_DIR,
+        tolerance_case = tolerance_case,
+    )
+
+    print_tolerance_case_header(
+        tolerance_case = tolerance_case,
+        case_dir = case_dir,
+    )
+
+    INITIAL_PATH = case_dir / f"{fname}_initial.h5"
+
+    TRIPLE_PRODUCT_FXD_PATH = case_dir / f"{fname}_T_FXD.h5"
+
+    TRIPLE_PRODUCT_FREE_PATH = case_dir / f"{fname}_T_FREE.h5"
+
+    TWO_TERM_FXD_PATH = case_dir / f"{fname}_C_FXD.h5"
+
+    TWO_TERM_FREE_PATH = case_dir / f"{fname}_C_FREE.h5"
+
+    eq_init.save(
+        str(INITIAL_PATH)
+    )
+
+    print("")
+    print(f"Tolerance report written to: {tolerance_report_path}")
+    print("")
+
+    tolerances = tolerance_case["tolerances"]
+
+    options_T = build_basic_qs_options(
+        base_options = BASE_OPTIONS_T,
+        tolerance_case = tolerance_case,
+    )
+
+    options_C = build_basic_qs_options(
+        base_options = BASE_OPTIONS_C,
+        tolerance_case = tolerance_case,
+    )
+
+
+
+
+    #========================================================================================================================================
+    # OPTIMIZING FOR TRIPLE PRODUCT QS IN VOLUME - FXD PRESSURE
+    #========================================================================================================================================
+    eq_qs_T_FXD = eq_init.copy()
+
+    constraints = (
+        ForceBalance(eq = eq_qs_T_FXD),
+        FixBoundaryR(eq = eq_qs_T_FXD, modes = R_modes),
+        FixBoundaryZ(eq = eq_qs_T_FXD, modes = Z_modes),
+        FixPressure(eq = eq_qs_T_FXD),
+        FixIota(eq = eq_qs_T_FXD),
+        FixPsi(eq = eq_qs_T_FXD),
+    )
+
+    objective_fT = ObjectiveFunction(
+        QuasisymmetryTripleProduct(
+            eq = eq_qs_T_FXD,
+            grid = grid_vol,
+        )
+    )
+
+    eq_qs_T_FXD, result_T_FXD = optimize_save_report(
         eq = eq_qs_T_FXD,
-        grid = grid_vol,
+        objective = objective_fT,
+        constraints = constraints,
+        optimizer = optimizer,
+        output_path = TRIPLE_PRODUCT_FXD_PATH,
+        label = "basic_qs_T_FXD",
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
+        maxiter = maxiter,
+        options = options_T,
+        copy = False,
+        verbose = 3,
+        x_scale = x_scale,
+        tolerance_case = tolerance_case,
     )
-)
-
-eq_qs_T_FXD, result_T_FXD = optimize_save_report(
-    eq = eq_qs_T_FXD,
-    objective = objective_fT,
-    constraints = constraints,
-    optimizer = optimizer,
-    output_path = TRIPLE_PRODUCT_FXD_PATH,
-    label = "basic_qs_T_FXD",
-    ftol = ftol_T,
-    xtol = xtol_T,
-    gtol = gtol_T,
-    maxiter = maxiter,
-    options = options_T,
-    copy = False,
-    verbose = 3,
-    x_scale = x_scale,
-)
 
 
 
 
+    #========================================================================================================================================
+    # OPTIMIZING FOR TRIPLE PRODUCT QS IN VOLUME - FREE PRESSURE
+    #========================================================================================================================================
+    eq_qs_T_FREE = eq_init.copy()
 
-
-
-
-
-
-#========================================================================================================================================
-# OPTIMIZING FOR TRIPLE PRODUCT QS IN VOLUME - FREE PRESSURE
-#========================================================================================================================================
-eq_qs_T_FREE = eq_init.copy()
-
-free_objectives_T, free_constraints_T = build_free_extension(
-    eq = eq_qs_T_FREE,
-    eq_initial = eq_qs_T_FREE.copy(),
-)
-
-constraints = (
-    ForceBalance(eq = eq_qs_T_FREE),
-    FixBoundaryR(eq = eq_qs_T_FREE, modes = R_modes),
-    FixBoundaryZ(eq = eq_qs_T_FREE, modes = Z_modes),
-    FixIota(eq = eq_qs_T_FREE),
-    FixPsi(eq = eq_qs_T_FREE),
-) + tuple(free_constraints_T)
-
-objective_fT_FREE = ObjectiveFunction(
-    QuasisymmetryTripleProduct(
+    free_objectives_T, free_constraints_T = build_free_extension(
         eq = eq_qs_T_FREE,
-        grid = grid_vol,
+        eq_initial = eq_qs_T_FREE.copy(),
     )
-)
 
-objective_fT_FREE = append_free_objectives(
-    objective = objective_fT_FREE,
-    free_objectives = free_objectives_T,
-)
+    constraints = (
+        ForceBalance(eq = eq_qs_T_FREE),
+        FixBoundaryR(eq = eq_qs_T_FREE, modes = R_modes),
+        FixBoundaryZ(eq = eq_qs_T_FREE, modes = Z_modes),
+        FixIota(eq = eq_qs_T_FREE),
+        FixPsi(eq = eq_qs_T_FREE),
+    ) + tuple(free_constraints_T)
 
-eq_qs_T_FREE, result_T_FREE = optimize_save_report(
-    eq = eq_qs_T_FREE,
-    objective = objective_fT_FREE,
-    constraints = constraints,
-    optimizer = optimizer,
-    output_path = TRIPLE_PRODUCT_FREE_PATH,
-    label = "basic_qs_T_FREE",
-    ftol = ftol_T,
-    xtol = xtol_T,
-    gtol = gtol_T,
-    maxiter = maxiter,
-    options = options_T,
-    copy = False,
-    verbose = 3,
-    x_scale = x_scale,
-)
+    objective_fT_FREE = ObjectiveFunction(
+        QuasisymmetryTripleProduct(
+            eq = eq_qs_T_FREE,
+            grid = grid_vol,
+        )
+    )
+
+    objective_fT_FREE = append_free_objectives(
+        objective = objective_fT_FREE,
+        free_objectives = free_objectives_T,
+    )
+
+    eq_qs_T_FREE, result_T_FREE = optimize_save_report(
+        eq = eq_qs_T_FREE,
+        objective = objective_fT_FREE,
+        constraints = constraints,
+        optimizer = optimizer,
+        output_path = TRIPLE_PRODUCT_FREE_PATH,
+        label = "basic_qs_T_FREE",
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
+        maxiter = maxiter,
+        options = options_T,
+        copy = False,
+        verbose = 3,
+        x_scale = x_scale,
+        tolerance_case = tolerance_case,
+    )
 
 
 
 
+    #========================================================================================================================================
+    # OPTIMIZING FOR TWO-TERM QH AT BOUNDARY SURFACE - FXD PRESSURE
+    #========================================================================================================================================
+    eq_qs_C_FXD = eq_init.copy()
 
+    constraints = (
+        ForceBalance(eq = eq_qs_C_FXD),
+        FixBoundaryR(eq = eq_qs_C_FXD, modes = R_modes),
+        FixBoundaryZ(eq = eq_qs_C_FXD, modes = Z_modes),
+        FixPressure(eq = eq_qs_C_FXD),
+        FixIota(eq = eq_qs_C_FXD),
+        FixPsi(eq = eq_qs_C_FXD),
+    )
 
+    objective_fC = ObjectiveFunction(
+        QuasisymmetryTwoTerm(
+            eq = eq_qs_C_FXD,
+            grid = grid_rho1,
+            helicity = (1, eq_init.NFP),
+        )
+    )
 
-
-
-
-#========================================================================================================================================
-# OPTIMIZING FOR TWO-TERM QH AT BOUNDARY SURFACE - FXD PRESSURE
-#========================================================================================================================================
-eq_qs_C_FXD = eq_init.copy()
-
-constraints = (
-    ForceBalance(eq = eq_qs_C_FXD),
-    FixBoundaryR(eq = eq_qs_C_FXD, modes = R_modes),
-    FixBoundaryZ(eq = eq_qs_C_FXD, modes = Z_modes),
-    FixPressure(eq = eq_qs_C_FXD),
-    FixIota(eq = eq_qs_C_FXD),
-    FixPsi(eq = eq_qs_C_FXD),
-)
-
-objective_fC = ObjectiveFunction(
-    QuasisymmetryTwoTerm(
+    eq_qs_C_FXD, result_C_FXD = optimize_save_report(
         eq = eq_qs_C_FXD,
-        grid = grid_rho1,
-        helicity = (1, eq_init.NFP),
+        objective = objective_fC,
+        constraints = constraints,
+        optimizer = optimizer,
+        output_path = TWO_TERM_FXD_PATH,
+        label = "basic_qs_C_FXD",
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
+        maxiter = maxiter,
+        options = options_C,
+        copy = False,
+        verbose = 3,
+        x_scale = x_scale,
+        tolerance_case = tolerance_case,
     )
-)
-
-eq_qs_C_FXD, result_C_FXD = optimize_save_report(
-    eq = eq_qs_C_FXD,
-    objective = objective_fC,
-    constraints = constraints,
-    optimizer = optimizer,
-    output_path = TWO_TERM_FXD_PATH,
-    label = "basic_qs_C_FXD",
-    ftol = ftol_C,
-    xtol = xtol_C,
-    gtol = gtol_C,
-    maxiter = maxiter,
-    options = options_C,
-    copy = False,
-    verbose = 3,
-    x_scale = x_scale,
-)
 
 
 
 
+    #========================================================================================================================================
+    # OPTIMIZING FOR TWO-TERM QH AT BOUNDARY SURFACE - FREE PRESSURE
+    #========================================================================================================================================
+    eq_qs_C_FREE = eq_init.copy()
 
-
-
-
-
-
-#========================================================================================================================================
-# OPTIMIZING FOR TWO-TERM QH AT BOUNDARY SURFACE - FREE PRESSURE
-#========================================================================================================================================
-eq_qs_C_FREE = eq_init.copy()
-
-free_objectives_C, free_constraints_C = build_free_extension(
-    eq = eq_qs_C_FREE,
-    eq_initial = eq_qs_C_FREE.copy(),
-)
-
-constraints = (
-    ForceBalance(eq = eq_qs_C_FREE),
-    FixBoundaryR(eq = eq_qs_C_FREE, modes = R_modes),
-    FixBoundaryZ(eq = eq_qs_C_FREE, modes = Z_modes),
-    FixIota(eq = eq_qs_C_FREE),
-    FixPsi(eq = eq_qs_C_FREE),
-) + tuple(free_constraints_C)
-
-objective_fC_FREE = ObjectiveFunction(
-    QuasisymmetryTwoTerm(
+    free_objectives_C, free_constraints_C = build_free_extension(
         eq = eq_qs_C_FREE,
-        grid = grid_rho1,
-        helicity = (1, eq_init.NFP),
+        eq_initial = eq_qs_C_FREE.copy(),
     )
-)
 
-objective_fC_FREE = append_free_objectives(
-    objective = objective_fC_FREE,
-    free_objectives = free_objectives_C,
-)
+    constraints = (
+        ForceBalance(eq = eq_qs_C_FREE),
+        FixBoundaryR(eq = eq_qs_C_FREE, modes = R_modes),
+        FixBoundaryZ(eq = eq_qs_C_FREE, modes = Z_modes),
+        FixIota(eq = eq_qs_C_FREE),
+        FixPsi(eq = eq_qs_C_FREE),
+    ) + tuple(free_constraints_C)
 
-eq_qs_C_FREE, result_C_FREE = optimize_save_report(
-    eq = eq_qs_C_FREE,
-    objective = objective_fC_FREE,
-    constraints = constraints,
-    optimizer = optimizer,
-    output_path = TWO_TERM_FREE_PATH,
-    label = "basic_qs_C_FREE",
-    ftol = ftol_C,
-    xtol = xtol_C,
-    gtol = gtol_C,
-    maxiter = maxiter,
-    options = options_C,
-    copy = False,
-    verbose = 3,
-    x_scale = x_scale,
-)
+    objective_fC_FREE = ObjectiveFunction(
+        QuasisymmetryTwoTerm(
+            eq = eq_qs_C_FREE,
+            grid = grid_rho1,
+            helicity = (1, eq_init.NFP),
+        )
+    )
+
+    objective_fC_FREE = append_free_objectives(
+        objective = objective_fC_FREE,
+        free_objectives = free_objectives_C,
+    )
+
+    eq_qs_C_FREE, result_C_FREE = optimize_save_report(
+        eq = eq_qs_C_FREE,
+        objective = objective_fC_FREE,
+        constraints = constraints,
+        optimizer = optimizer,
+        output_path = TWO_TERM_FREE_PATH,
+        label = "basic_qs_C_FREE",
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
+        maxiter = maxiter,
+        options = options_C,
+        copy = False,
+        verbose = 3,
+        x_scale = x_scale,
+        tolerance_case = tolerance_case,
+    )

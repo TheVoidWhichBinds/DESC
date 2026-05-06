@@ -71,6 +71,8 @@ from desc.objectives import (
 FXD_SUFFIX = "_FXD"
 FREE_SUFFIX = "_FREE"
 
+TOLERANCE_CASE_REPORT_NAME = "tolerance_case_report.json"
+
 
 
 
@@ -285,7 +287,7 @@ def find_h5_files(
         case_dir : Path,
     ):
     """
-    Find all FXD and FREE h5 files in the tutorial folder.
+    Find FXD and FREE h5 files in one output folder.
 
     Returns:
         {
@@ -301,7 +303,7 @@ def find_h5_files(
     """
 
     case_dir = Path(case_dir)
-    tutorial_name = case_dir.name
+    tutorial_name = case_dir.parent.name if case_dir.name.isdigit() else case_dir.name
 
     files = {}
 
@@ -316,9 +318,6 @@ def find_h5_files(
         ),
     ):
         matches = sorted(case_dir.glob(f"*{suffix}"))
-
-        if len(matches) == 0:
-            matches = sorted(case_dir.rglob(f"*{suffix}"))
 
         for path in matches:
             optimization_name = get_specific_optimization_name(
@@ -354,6 +353,35 @@ def find_tutorial_h5_files(
     return find_h5_files(
         case_dir = tutorial_dir,
     )
+
+
+
+
+
+
+
+def find_tutorial_case_h5_files(
+        tutorial,
+    ):
+    """
+    Find FXD and FREE h5 files for each output case of a tutorial.
+    """
+
+    tutorial_dir = get_tutorial_dir(
+        tutorial = tutorial,
+    )
+
+    case_dirs = get_output_case_dirs(
+        tutorial_dir = tutorial_dir,
+    )
+
+    return {
+        case_dir.name: find_h5_files(
+            case_dir = case_dir,
+        )
+        for case_dir in case_dirs
+    }
+
 
 
 
@@ -408,7 +436,277 @@ def resolve_source_file(
 
 
 
+#========================================================================================================================================
+# Tolerance sweep helpers
+#========================================================================================================================================
 
+def is_numbered_case_dir(
+        path,
+    ):
+    """
+    Return True for output folders named 001, 002, 003, ...
+    """
+
+    path = Path(path)
+
+    return path.is_dir() and path.name.isdigit()
+
+
+
+
+
+def find_numbered_case_dirs(
+        tutorial_dir,
+    ):
+    """
+    Return numbered tolerance-case folders in a tutorial directory.
+    """
+
+    tutorial_dir = Path(tutorial_dir)
+
+    return tuple(
+        sorted(
+            path
+            for path in tutorial_dir.iterdir()
+            if is_numbered_case_dir(
+                path = path,
+            )
+        )
+    )
+
+
+
+
+
+def get_output_case_dirs(
+        tutorial_dir,
+    ):
+    """
+    Return output case directories.
+
+    If numbered folders exist, return:
+        001/
+        002/
+        ...
+
+    Otherwise return the tutorial directory itself for backward compatibility.
+    """
+
+    tutorial_dir = Path(tutorial_dir)
+
+    numbered_case_dirs = find_numbered_case_dirs(
+        tutorial_dir = tutorial_dir,
+    )
+
+    if len(numbered_case_dirs) > 0:
+        return numbered_case_dirs
+
+    return (
+        tutorial_dir,
+    )
+
+
+
+
+
+def make_tolerance_case_label(
+        index,
+    ):
+    """
+    Convert a one-based tolerance-case index to 001, 002, ...
+    """
+
+    return f"{int(index):03d}"
+
+
+
+
+
+def make_tolerance_value(
+        order,
+    ):
+    """
+    Convert an order of magnitude to a tolerance value.
+
+    Example:
+        order = 6 -> 1e-6
+    """
+
+    return 10.0 ** (-int(order))
+
+
+
+
+
+def make_tolerance_case(
+        index,
+        ftol_order,
+        xtol_order,
+        gtol_order,
+        initial_trust_ratio_order,
+        base_options = None,
+    ):
+    """
+    Build one tolerance-case dictionary.
+    """
+
+    if base_options is None:
+        options = {}
+
+    else:
+        options = deepcopy(base_options)
+
+    ftol = make_tolerance_value(
+        order = ftol_order,
+    )
+
+    xtol = make_tolerance_value(
+        order = xtol_order,
+    )
+
+    gtol = make_tolerance_value(
+        order = gtol_order,
+    )
+
+    initial_trust_ratio = make_tolerance_value(
+        order = initial_trust_ratio_order,
+    )
+
+    options["initial_trust_ratio"] = initial_trust_ratio
+
+    return {
+        "case_index": int(index),
+        "case_label": make_tolerance_case_label(
+            index = index,
+        ),
+        "orders": {
+            "ftol_order": int(ftol_order),
+            "xtol_order": int(xtol_order),
+            "gtol_order": int(gtol_order),
+            "initial_trust_ratio_order": int(initial_trust_ratio_order),
+        },
+        "tolerances": {
+            "ftol": ftol,
+            "xtol": xtol,
+            "gtol": gtol,
+            "initial_trust_ratio": initial_trust_ratio,
+        },
+        "options": options,
+    }
+
+
+
+
+
+def iter_tolerance_cases(
+        ftol_orders,
+        xtol_orders,
+        gtol_orders,
+        initial_trust_ratio_orders,
+        base_options = None,
+    ):
+    """
+    Yield tolerance cases over all requested order-of-magnitude combinations.
+    """
+
+    index = 1
+
+    for ftol_order in ftol_orders:
+        for xtol_order in xtol_orders:
+            for gtol_order in gtol_orders:
+                for initial_trust_ratio_order in initial_trust_ratio_orders:
+
+                    yield make_tolerance_case(
+                        index = index,
+                        ftol_order = ftol_order,
+                        xtol_order = xtol_order,
+                        gtol_order = gtol_order,
+                        initial_trust_ratio_order = initial_trust_ratio_order,
+                        base_options = base_options,
+                    )
+
+                    index += 1
+
+
+
+
+
+def write_tolerance_case_report(
+        case_dir,
+        tolerance_case,
+    ):
+    """
+    Save the tolerance combination report for one numbered folder.
+    """
+
+    case_dir = Path(case_dir)
+
+    case_dir.mkdir(
+        parents = True,
+        exist_ok = True,
+    )
+
+    report_path = case_dir / TOLERANCE_CASE_REPORT_NAME
+
+    with open(report_path, "w") as file:
+        json.dump(
+            to_json_safe(
+                value = tolerance_case,
+            ),
+            file,
+            indent = 4,
+        )
+
+    return report_path
+
+
+
+
+
+def prepare_tolerance_case_dir(
+        output_dir,
+        tolerance_case,
+    ):
+    """
+    Create the numbered output folder and write its tolerance report.
+    """
+
+    output_dir = Path(output_dir)
+
+    case_dir = output_dir / tolerance_case["case_label"]
+
+    report_path = write_tolerance_case_report(
+        case_dir = case_dir,
+        tolerance_case = tolerance_case,
+    )
+
+    return case_dir, report_path
+
+
+
+
+
+def print_tolerance_case_header(
+        tolerance_case,
+        case_dir,
+    ):
+    """
+    Print the current tolerance case.
+    """
+
+    tolerances = tolerance_case["tolerances"]
+
+    print("")
+    print("================================================================================================================")
+    print(f"Running tolerance case {tolerance_case['case_label']}")
+    print("================================================================================================================")
+    print("")
+    print(f"Output folder: {case_dir}")
+    print(f"ftol: {tolerances['ftol']}")
+    print(f"xtol: {tolerances['xtol']}")
+    print(f"gtol: {tolerances['gtol']}")
+    print(f"initial_trust_ratio: {tolerances['initial_trust_ratio']}")
+    print("")
 
 
 
@@ -1250,12 +1548,13 @@ def make_optimization_summary(
         maxiter,
         options,
         x_scale,
+        tolerance_case = None,
     ):
     """
     Build a readable optimization summary.
     """
 
-    return {
+    summary = {
         "label": label,
         "equilibrium_output_path": str(output_path),
         "result_pickle_path": str(result_path),
@@ -1309,6 +1608,11 @@ def make_optimization_summary(
             "options": options,
         },
     }
+
+    if tolerance_case is not None:
+        summary["tolerance_case"] = tolerance_case
+
+    return summary
 
 
 
@@ -1380,6 +1684,7 @@ def save_optimization_result(
         maxiter,
         options,
         x_scale,
+        tolerance_case = None,
     ):
     """
     Save the full optimization result and a readable JSON summary.
@@ -1410,6 +1715,7 @@ def save_optimization_result(
         maxiter = maxiter,
         options = options,
         x_scale = x_scale,
+        tolerance_case = tolerance_case,
     )
 
     with open(summary_path, "w") as file:
@@ -1432,7 +1738,6 @@ def save_optimization_result(
 
 
 
-
 def optimize_save_report(
         eq,
         objective,
@@ -1448,6 +1753,7 @@ def optimize_save_report(
         copy = False,
         verbose = 3,
         x_scale = "auto",
+        tolerance_case = None,
     ):
     """
     Run one optimization, save the equilibrium, save the result, and print a summary.
@@ -1485,6 +1791,7 @@ def optimize_save_report(
         maxiter = maxiter,
         options = options,
         x_scale = x_scale,
+        tolerance_case = tolerance_case,
     )
 
     return eq, result
@@ -1740,7 +2047,9 @@ def run_file(
     """
     Run one tutorial source file.
 
-    The tutorial file itself is responsible for saving both FXD and FREE outputs.
+    The tutorial file itself is responsible for saving FXD and FREE outputs.
+    If the tutorial performs a tolerance sweep, outputs are expected inside
+    numbered folders.
     """
 
     source_file = resolve_source_file(
@@ -1760,11 +2069,23 @@ def run_file(
 
     tutorial_dir = source_file.parent
 
-    files = find_h5_files(
-        case_dir = tutorial_dir,
+    case_dirs = get_output_case_dirs(
+        tutorial_dir = tutorial_dir,
     )
 
-    if len(files) == 0:
+    files_by_case = {
+        case_dir.name: find_h5_files(
+            case_dir = case_dir,
+        )
+        for case_dir in case_dirs
+    }
+
+    has_files = any(
+        len(case_files) > 0
+        for case_files in files_by_case.values()
+    )
+
+    if not has_files:
         raise FileNotFoundError(
             f"No FXD or FREE output files were saved by tutorial source: {source_file}"
         )
@@ -1773,11 +2094,15 @@ def run_file(
     print("Saved tutorial files:")
     print("")
 
-    for optimization_name, group_files in files.items():
-        for variant, path in group_files.items():
-            if path is not None:
-                print(f"{optimization_name} {variant}: {path}")
+    for case_label, case_files in files_by_case.items():
 
-    print("")
+        print(f"Case: {case_label}")
 
-    return files
+        for optimization_name, group_files in case_files.items():
+            for variant, path in group_files.items():
+                if path is not None:
+                    print(f"    {optimization_name} {variant}: {path}")
+
+        print("")
+
+    return files_by_case

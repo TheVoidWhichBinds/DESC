@@ -10,14 +10,12 @@
 #==============================================================================================================
 
 import argparse
-
 import numpy as np
-
 from desc.grid import LinearGrid
-
 from helper import (
     compare_objective_set,
     find_h5_files,
+    get_output_case_dirs,
     get_tutorial_dir,
     write_table_csv,
 )
@@ -408,19 +406,14 @@ def tutorial_obj(
         tutorial : str,
     ):
     """
-    Compare tutorial-specific objective values between FXD, and FREE files.
+    Compare tutorial-specific objective values between FXD and FREE files.
+
+    If numbered tolerance-case folders exist, write one comparison CSV per
+    numbered folder.
     """
 
     tutorial_dir = get_tutorial_dir(
         tutorial = tutorial,
-    )
-
-    files = find_h5_files(
-        case_dir = tutorial_dir,
-    )
-
-    files = flatten_h5_file_map(
-        files = files,
     )
 
     objective_getter = TUTORIAL_OBJECTIVES.get(
@@ -433,19 +426,43 @@ def tutorial_obj(
             f"No tutorial objective registry entry found for tutorial = {tutorial}."
         )
 
-    rows = compare_objective_set(
-        files = files,
-        objective_getter = objective_getter,
+    case_dirs = get_output_case_dirs(
+        tutorial_dir = tutorial_dir,
     )
 
-    csv_path = tutorial_dir / f"{tutorial}_case_obj.csv"
+    rows_by_case = {}
+    csv_paths = {}
 
-    write_table_csv(
-        rows = rows,
-        path = csv_path,
-    )
+    for case_dir in case_dirs:
 
-    return rows, csv_path
+        files = find_h5_files(
+            case_dir = case_dir,
+        )
+
+        files = flatten_h5_file_map(
+            files = files,
+        )
+
+        rows = compare_objective_set(
+            files = files,
+            objective_getter = objective_getter,
+        )
+
+        if case_dir == tutorial_dir:
+            csv_path = tutorial_dir / f"{tutorial}_case_obj.csv"
+
+        else:
+            csv_path = case_dir / f"{tutorial}_{case_dir.name}_case_obj.csv"
+
+        write_table_csv(
+            rows = rows,
+            path = csv_path,
+        )
+
+        rows_by_case[case_dir.name] = rows
+        csv_paths[case_dir.name] = csv_path
+
+    return rows_by_case, csv_paths
 
 
 
@@ -490,14 +507,19 @@ def main():
     print(f"Comparing tutorial objectives for tutorial = {args.tutorial}")
     print("=" * 120 + "\n")
 
-    rows, csv_path = tutorial_obj(
+    rows_by_case, csv_paths = tutorial_obj(
         tutorial = args.tutorial,
     )
 
     print("")
     print("Finished tutorial-objective comparison.")
-    print(f"CSV written to: {csv_path}")
-    print()
+    print("CSV files written to:")
+    print("")
+
+    for case_label, csv_path in csv_paths.items():
+        print(f"{case_label}: {csv_path}")
+
+    print("")
 
 
 

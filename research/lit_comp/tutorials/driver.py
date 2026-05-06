@@ -3,9 +3,15 @@
 #
 # Top-level CLI for rerunning one DESC tutorial file.
 #
-# Each tutorial file now directly runs and saves both:
-#   1. FXD optimization with FixPressure
-#   2. FREE optimization with FREE pressure objectives/constraints replacing FixPressure
+# Each tutorial file handles its own optimization sweep and saves:
+#   1. FXD optimization outputs
+#   2. FREE optimization outputs
+#   3. one numbered output folder per tolerance combination:
+#
+#        001/
+#        002/
+#        003/
+#        ...
 #
 # Usage:
 #   cd research/lit_comp/tutorials
@@ -65,6 +71,9 @@ def run_comparison_outputs(
     ):
     """
     Run compare.py logic after the tutorial writes FXD and FREE files.
+
+    If the tutorial produced numbered tolerance-case folders, compare.py should
+    generate one comparison CSV per numbered folder.
     """
 
     print("")
@@ -101,7 +110,7 @@ def parse_args():
     """
 
     parser = argparse.ArgumentParser(
-        description = "Run one DESC tutorial case. Tutorial file handles both FXD and FREE outputs.",
+        description = "Run one DESC tutorial tolerance sweep. Tutorial file handles FXD and FREE outputs.",
     )
 
     parser.add_argument(
@@ -138,7 +147,7 @@ def main():
 
     print("")
     print("================================================================================================================")
-    print("DESC tutorial driver")
+    print("DESC tutorial tolerance-sweep driver")
     print("================================================================================================================")
     print("")
     print("Tutorial:")
@@ -158,7 +167,7 @@ def main():
     )
 
     print("")
-    print("Completed tutorial run:")
+    print("Completed tutorial sweep:")
     print("================================================================================================================")
     print(f"Output: {output}")
 

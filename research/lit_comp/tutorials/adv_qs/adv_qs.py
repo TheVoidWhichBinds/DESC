@@ -8,12 +8,17 @@ Write-up of the DESC Advanced QS Optimization tutorial, minus plotting.
 #========================================================================================================================================
 # IMPORTS
 #========================================================================================================================================
+from copy import deepcopy
+from pathlib import Path
 from desc import set_device
 set_device("gpu")
+
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath("."))
 sys.path.append(os.path.abspath("../../../"))
+
 import numpy as np
 
 from desc.continuation import solve_continuation_automatic
@@ -44,6 +49,9 @@ from helper import (
     build_free_extension,
     get_final_cost,
     get_result_value,
+    iter_tolerance_cases,
+    prepare_tolerance_case_dir,
+    print_tolerance_case_header,
     save_optimization_result,
 )
 
@@ -61,27 +69,7 @@ from helper import (
 #========================================================================================================================================
 fname = "adv_qs"
 
-OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-MULTIGRID_FXD_PATH = os.path.join(
-    OUTPUT_DIR,
-    f"{fname}_multigrid_FXD.h5",
-)
-
-MULTIGRID_FREE_PATH = os.path.join(
-    OUTPUT_DIR,
-    f"{fname}_multigrid_FREE.h5",
-)
-
-AUGLAG_FXD_PATH = os.path.join(
-    OUTPUT_DIR,
-    f"{fname}_auglag_FXD.h5",
-)
-
-AUGLAG_FREE_PATH = os.path.join(
-    OUTPUT_DIR,
-    f"{fname}_auglag_FREE.h5",
-)
+OUTPUT_DIR = Path(__file__).resolve().parent
 
 
 
@@ -131,27 +119,81 @@ eq0 = solve_continuation_automatic(
 
 
 
-
 #========================================================================================================================================
 # OPTIMIZATION HYPERPARAMETERS
 #========================================================================================================================================
 MULTIGRID_OPTIMIZER = "proximal-lsq-exact"
 MULTIGRID_MAXITER = 200
-MULTIGRID_FTOL = None
-MULTIGRID_XTOL = None
-MULTIGRID_GTOL = None
 MULTIGRID_X_SCALE = "auto"
-MULTIGRID_OPTIONS = {
-    "initial_trust_ratio": 0.1,
-}
+MULTIGRID_BASE_OPTIONS = {}
 
 AUGLAG_OPTIMIZER = "lsq-auglag"
 AUGLAG_MAXITER = 200
-AUGLAG_FTOL = None
-AUGLAG_XTOL = None
-AUGLAG_GTOL = None
 AUGLAG_X_SCALE = "auto"
-AUGLAG_OPTIONS = {}
+AUGLAG_BASE_OPTIONS = {}
+
+FTOL_ORDERS = range(
+    4,
+    8,
+)
+
+XTOL_ORDERS = range(
+    4,
+    8,
+)
+
+GTOL_ORDERS = range(
+    4,
+    8,
+)
+
+INITIAL_TRUST_RATIO_ORDERS = range(
+    1,
+    4,
+)
+
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# TOLERANCE HELPERS
+#========================================================================================================================================
+def build_multigrid_options(
+        tolerance_case,
+    ):
+    """
+    Build proximal-lsq-exact options for one tolerance case.
+    """
+
+    options = deepcopy(MULTIGRID_BASE_OPTIONS)
+
+    options["initial_trust_ratio"] = tolerance_case["tolerances"]["initial_trust_ratio"]
+
+    return options
+
+
+
+
+
+def build_auglag_options(
+        tolerance_case,
+    ):
+    """
+    Build lsq-auglag options for one tolerance case.
+
+    The tolerance case is still recorded in the result summary, but
+    initial_trust_ratio is not passed to lsq-auglag options.
+    """
+
+    options = deepcopy(AUGLAG_BASE_OPTIONS)
+
+    return options
 
 
 
@@ -256,6 +298,8 @@ def save_multigrid_result(
         histories,
         output_path,
         label,
+        tolerance_case,
+        options,
     ):
     """
     Save multigrid histories using the same sidecar files as the other tutorials.
@@ -265,17 +309,20 @@ def save_multigrid_result(
         histories = histories,
     )
 
+    tolerances = tolerance_case["tolerances"]
+
     return save_optimization_result(
         result = result,
         output_path = output_path,
         label = label,
         optimizer = MULTIGRID_OPTIMIZER,
-        ftol = MULTIGRID_FTOL,
-        xtol = MULTIGRID_XTOL,
-        gtol = MULTIGRID_GTOL,
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
         maxiter = MULTIGRID_MAXITER,
-        options = MULTIGRID_OPTIONS,
+        options = options,
         x_scale = MULTIGRID_X_SCALE,
+        tolerance_case = tolerance_case,
     )
 
 
@@ -327,7 +374,11 @@ def build_qh_modes(
 
     R_modes = np.vstack(
         (
-            [0, 0, 0],
+            [
+                0,
+                0,
+                0,
+            ],
             eq.surface.R_basis.modes[
                 np.max(
                     np.abs(eq.surface.R_basis.modes),
@@ -441,6 +492,7 @@ def build_qh_constraints(
 def run_qh_step(
         k,
         eq,
+        tolerance_case,
         free_pressure = False,
     ):
     """
@@ -460,14 +512,23 @@ def run_qh_step(
 
     optimizer = Optimizer(MULTIGRID_OPTIMIZER)
 
+    tolerances = tolerance_case["tolerances"]
+
+    options = build_multigrid_options(
+        tolerance_case = tolerance_case,
+    )
+
     eq_new, history = eq.optimize(
         objective = objective,
         constraints = constraints,
         optimizer = optimizer,
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
         maxiter = MULTIGRID_MAXITER,
         verbose = 3,
         copy = True,
-        options = MULTIGRID_OPTIONS,
+        options = options,
         x_scale = MULTIGRID_X_SCALE,
     )
 
@@ -477,103 +538,72 @@ def run_qh_step(
 
 
 
+def run_multigrid_sequence(
+        eq_initial,
+        output_path,
+        label,
+        tolerance_case,
+        free_pressure = False,
+    ):
+    """
+    Run the three-step multigrid QH optimization.
+    """
 
+    eq_multigrid_0 = eq_initial.copy()
+    eqfam_multigrid = EquilibriaFamily(eq_multigrid_0)
 
+    eq_multigrid_1, history_multigrid_1 = run_qh_step(
+        1,
+        eq_multigrid_0,
+        tolerance_case = tolerance_case,
+        free_pressure = free_pressure,
+    )
 
+    eqfam_multigrid.append(eq_multigrid_1)
 
+    eq_multigrid_2, history_multigrid_2 = run_qh_step(
+        2,
+        eq_multigrid_1,
+        tolerance_case = tolerance_case,
+        free_pressure = free_pressure,
+    )
 
-#========================================================================================================================================
-# RUN MULTIGRID STEPS - FXD PRESSURE
-#========================================================================================================================================
-eq_multigrid_FXD_0 = eq0.copy()
-eqfam_multigrid_FXD = EquilibriaFamily(eq_multigrid_FXD_0)
+    eqfam_multigrid.append(eq_multigrid_2)
 
-eq_multigrid_FXD_1, history_multigrid_FXD_1 = run_qh_step(
-    1,
-    eq_multigrid_FXD_0,
-    free_pressure = False,
-)
+    eq_multigrid_3, history_multigrid_3 = run_qh_step(
+        3,
+        eq_multigrid_2,
+        tolerance_case = tolerance_case,
+        free_pressure = free_pressure,
+    )
 
-eqfam_multigrid_FXD.append(eq_multigrid_FXD_1)
+    eqfam_multigrid.append(eq_multigrid_3)
 
-eq_multigrid_FXD_2, history_multigrid_FXD_2 = run_qh_step(
-    2,
-    eq_multigrid_FXD_1,
-    free_pressure = False,
-)
+    eqfam_multigrid.save(
+        str(output_path)
+    )
 
-eqfam_multigrid_FXD.append(eq_multigrid_FXD_2)
+    options = build_multigrid_options(
+        tolerance_case = tolerance_case,
+    )
 
-eq_multigrid_FXD_3, history_multigrid_FXD_3 = run_qh_step(
-    3,
-    eq_multigrid_FXD_2,
-    free_pressure = False,
-)
+    save_multigrid_result(
+        histories = (
+            history_multigrid_1,
+            history_multigrid_2,
+            history_multigrid_3,
+        ),
+        output_path = output_path,
+        label = label,
+        tolerance_case = tolerance_case,
+        options = options,
+    )
 
-eqfam_multigrid_FXD.append(eq_multigrid_FXD_3)
-
-eqfam_multigrid_FXD.save(MULTIGRID_FXD_PATH)
-
-save_multigrid_result(
-    histories = (
-        history_multigrid_FXD_1,
-        history_multigrid_FXD_2,
-        history_multigrid_FXD_3,
-    ),
-    output_path = MULTIGRID_FXD_PATH,
-    label = "adv_qs_multigrid_FXD",
-)
-
-
-
-
-
-
-
-
-
-
-#========================================================================================================================================
-# RUN MULTIGRID STEPS - FREE PRESSURE
-#========================================================================================================================================
-eq_multigrid_FREE_0 = eq0.copy()
-eqfam_multigrid_FREE = EquilibriaFamily(eq_multigrid_FREE_0)
-
-eq_multigrid_FREE_1, history_multigrid_FREE_1 = run_qh_step(
-    1,
-    eq_multigrid_FREE_0,
-    free_pressure = True,
-)
-
-eqfam_multigrid_FREE.append(eq_multigrid_FREE_1)
-
-eq_multigrid_FREE_2, history_multigrid_FREE_2 = run_qh_step(
-    2,
-    eq_multigrid_FREE_1,
-    free_pressure = True,
-)
-
-eqfam_multigrid_FREE.append(eq_multigrid_FREE_2)
-
-eq_multigrid_FREE_3, history_multigrid_FREE_3 = run_qh_step(
-    3,
-    eq_multigrid_FREE_2,
-    free_pressure = True,
-)
-
-eqfam_multigrid_FREE.append(eq_multigrid_FREE_3)
-
-eqfam_multigrid_FREE.save(MULTIGRID_FREE_PATH)
-
-save_multigrid_result(
-    histories = (
-        history_multigrid_FREE_1,
-        history_multigrid_FREE_2,
-        history_multigrid_FREE_3,
-    ),
-    output_path = MULTIGRID_FREE_PATH,
-    label = "adv_qs_multigrid_FREE",
-)
+    return eqfam_multigrid, (
+        history_multigrid_1,
+        history_multigrid_2,
+        history_multigrid_3,
+    )
 
 
 
@@ -705,7 +735,10 @@ def build_mirror_ratio_objective(
             N = eq.N_grid,
             NFP = eq.NFP,
         ),
-        bounds = (0.18, 0.22),
+        bounds = (
+            0.18,
+            0.22,
+        ),
         name = "my mirror ratio",
     )
 
@@ -737,11 +770,17 @@ def build_constrained_constraints(
             ForceBalance(eq = eq),
             AspectRatio(
                 eq = eq,
-                bounds = (7, 9),
+                bounds = (
+                    7,
+                    9,
+                ),
             ),
             Elongation(
                 eq = eq,
-                bounds = (0, 3),
+                bounds = (
+                    0,
+                    3,
+                ),
             ),
             Volume(
                 eq = eq,
@@ -755,7 +794,11 @@ def build_constrained_constraints(
             obj_mirror_ratio,
             FixBoundaryR(
                 eq = eq,
-                modes = [0, 0, 0],
+                modes = [
+                    0,
+                    0,
+                    0,
+                ],
             ),
             FixCurrent(eq = eq),
             FixPsi(eq = eq),
@@ -768,11 +811,17 @@ def build_constrained_constraints(
             ForceBalance(eq = eq),
             AspectRatio(
                 eq = eq,
-                bounds = (7, 9),
+                bounds = (
+                    7,
+                    9,
+                ),
             ),
             Elongation(
                 eq = eq,
-                bounds = (0, 3),
+                bounds = (
+                    0,
+                    3,
+                ),
             ),
             Volume(
                 eq = eq,
@@ -786,7 +835,11 @@ def build_constrained_constraints(
             obj_mirror_ratio,
             FixBoundaryR(
                 eq = eq,
-                modes = [0, 0, 0],
+                modes = [
+                    0,
+                    0,
+                    0,
+                ],
             ),
             FixPressure(eq = eq),
             FixCurrent(eq = eq),
@@ -801,6 +854,7 @@ def build_constrained_constraints(
 
 def run_constrained_optimization(
         eq,
+        tolerance_case,
         free_pressure = False,
     ):
     """
@@ -819,20 +873,29 @@ def run_constrained_optimization(
 
     optimizer = Optimizer(AUGLAG_OPTIMIZER)
 
+    tolerances = tolerance_case["tolerances"]
+
+    options = build_auglag_options(
+        tolerance_case = tolerance_case,
+    )
+
     eq_new, history = eq.optimize(
         objective = objective,
         constraints = constraints,
         optimizer = optimizer,
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
         maxiter = AUGLAG_MAXITER,
         copy = True,
         verbose = 3,
-        options = AUGLAG_OPTIONS,
+        options = options,
         x_scale = AUGLAG_X_SCALE,
     )
 
     eq_new.solve()
 
-    return eq_new, history
+    return eq_new, history, options
 
 
 
@@ -844,60 +907,134 @@ def run_constrained_optimization(
 
 
 #========================================================================================================================================
-# RUN CONSTRAINED OPTIMIZATION - FXD PRESSURE
+# TOLERANCE SWEEP
 #========================================================================================================================================
-eq_auglag_FXD = eq0.copy()
+for tolerance_case in iter_tolerance_cases(
+        ftol_orders = FTOL_ORDERS,
+        xtol_orders = XTOL_ORDERS,
+        gtol_orders = GTOL_ORDERS,
+        initial_trust_ratio_orders = INITIAL_TRUST_RATIO_ORDERS,
+        base_options = {},
+    ):
 
-eq_auglag_FXD, history_auglag_FXD = run_constrained_optimization(
-    eq = eq_auglag_FXD,
-    free_pressure = False,
-)
+    case_dir, tolerance_report_path = prepare_tolerance_case_dir(
+        output_dir = OUTPUT_DIR,
+        tolerance_case = tolerance_case,
+    )
 
-eq_auglag_FXD.save(AUGLAG_FXD_PATH)
+    print_tolerance_case_header(
+        tolerance_case = tolerance_case,
+        case_dir = case_dir,
+    )
 
-save_optimization_result(
-    result = history_auglag_FXD,
-    output_path = AUGLAG_FXD_PATH,
-    label = "adv_qs_auglag_FXD",
-    optimizer = AUGLAG_OPTIMIZER,
-    ftol = AUGLAG_FTOL,
-    xtol = AUGLAG_XTOL,
-    gtol = AUGLAG_GTOL,
-    maxiter = AUGLAG_MAXITER,
-    options = AUGLAG_OPTIONS,
-    x_scale = AUGLAG_X_SCALE,
-)
+    INITIAL_PATH = case_dir / f"{fname}_initial.h5"
+
+    MULTIGRID_FXD_PATH = case_dir / f"{fname}_multigrid_FXD.h5"
+
+    MULTIGRID_FREE_PATH = case_dir / f"{fname}_multigrid_FREE.h5"
+
+    AUGLAG_FXD_PATH = case_dir / f"{fname}_auglag_FXD.h5"
+
+    AUGLAG_FREE_PATH = case_dir / f"{fname}_auglag_FREE.h5"
+
+    eq0.save(
+        str(INITIAL_PATH)
+    )
+
+    print("")
+    print(f"Tolerance report written to: {tolerance_report_path}")
+    print("")
+
+    tolerances = tolerance_case["tolerances"]
 
 
 
 
+    #========================================================================================================================================
+    # RUN MULTIGRID STEPS - FXD PRESSURE
+    #========================================================================================================================================
+    eqfam_multigrid_FXD, histories_multigrid_FXD = run_multigrid_sequence(
+        eq_initial = eq0,
+        output_path = MULTIGRID_FXD_PATH,
+        label = "adv_qs_multigrid_FXD",
+        tolerance_case = tolerance_case,
+        free_pressure = False,
+    )
 
 
 
 
+    #========================================================================================================================================
+    # RUN MULTIGRID STEPS - FREE PRESSURE
+    #========================================================================================================================================
+    eqfam_multigrid_FREE, histories_multigrid_FREE = run_multigrid_sequence(
+        eq_initial = eq0,
+        output_path = MULTIGRID_FREE_PATH,
+        label = "adv_qs_multigrid_FREE",
+        tolerance_case = tolerance_case,
+        free_pressure = True,
+    )
 
 
-#========================================================================================================================================
-# RUN CONSTRAINED OPTIMIZATION - FREE PRESSURE
-#========================================================================================================================================
-eq_auglag_FREE = eq0.copy()
 
-eq_auglag_FREE, history_auglag_FREE = run_constrained_optimization(
-    eq = eq_auglag_FREE,
-    free_pressure = True,
-)
 
-eq_auglag_FREE.save(AUGLAG_FREE_PATH)
+    #========================================================================================================================================
+    # RUN CONSTRAINED OPTIMIZATION - FXD PRESSURE
+    #========================================================================================================================================
+    eq_auglag_FXD = eq0.copy()
 
-save_optimization_result(
-    result = history_auglag_FREE,
-    output_path = AUGLAG_FREE_PATH,
-    label = "adv_qs_auglag_FREE",
-    optimizer = AUGLAG_OPTIMIZER,
-    ftol = AUGLAG_FTOL,
-    xtol = AUGLAG_XTOL,
-    gtol = AUGLAG_GTOL,
-    maxiter = AUGLAG_MAXITER,
-    options = AUGLAG_OPTIONS,
-    x_scale = AUGLAG_X_SCALE,
-)
+    eq_auglag_FXD, history_auglag_FXD, options_auglag_FXD = run_constrained_optimization(
+        eq = eq_auglag_FXD,
+        tolerance_case = tolerance_case,
+        free_pressure = False,
+    )
+
+    eq_auglag_FXD.save(
+        str(AUGLAG_FXD_PATH)
+    )
+
+    save_optimization_result(
+        result = history_auglag_FXD,
+        output_path = AUGLAG_FXD_PATH,
+        label = "adv_qs_auglag_FXD",
+        optimizer = AUGLAG_OPTIMIZER,
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
+        maxiter = AUGLAG_MAXITER,
+        options = options_auglag_FXD,
+        x_scale = AUGLAG_X_SCALE,
+        tolerance_case = tolerance_case,
+    )
+
+
+
+
+    #========================================================================================================================================
+    # RUN CONSTRAINED OPTIMIZATION - FREE PRESSURE
+    #========================================================================================================================================
+    eq_auglag_FREE = eq0.copy()
+
+    eq_auglag_FREE, history_auglag_FREE, options_auglag_FREE = run_constrained_optimization(
+        eq = eq_auglag_FREE,
+        tolerance_case = tolerance_case,
+        free_pressure = True,
+    )
+
+    eq_auglag_FREE.save(
+        str(AUGLAG_FREE_PATH)
+    )
+
+    save_optimization_result(
+        result = history_auglag_FREE,
+        output_path = AUGLAG_FREE_PATH,
+        label = "adv_qs_auglag_FREE",
+        optimizer = AUGLAG_OPTIMIZER,
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
+        maxiter = AUGLAG_MAXITER,
+        options = options_auglag_FREE,
+        x_scale = AUGLAG_X_SCALE,
+        tolerance_case = tolerance_case,
+    )
