@@ -35,26 +35,26 @@ mkdir -p "${LOG_DIR}"
 
 case "${TUTORIAL}" in
     basic_qs)
-        DEFAULT_SWEEP_COUNT=36
-        DEFAULT_TIME="03:00:00"
+        DEFAULT_SWEEP_COUNT=36%2
+        DEFAULT_TIME="00:10:00"
         DEFAULT_MEM="30G"
         ;;
 
     adv_qs)
-        DEFAULT_SWEEP_COUNT=36
-        DEFAULT_TIME="04:00:00"
+        DEFAULT_SWEEP_COUNT=36%2
+        DEFAULT_TIME="00:10:00"
         DEFAULT_MEM="30G"
         ;;
 
     balloon)
-        DEFAULT_SWEEP_COUNT=36
-        DEFAULT_TIME="04:00:00"
+        DEFAULT_SWEEP_COUNT=36%2
+        DEFAULT_TIME="00:10:00"
         DEFAULT_MEM="30G"
         ;;
 
     neoclassical)
-        DEFAULT_SWEEP_COUNT=36
-        DEFAULT_TIME="04:00:00"
+        DEFAULT_SWEEP_COUNT=36%2
+        DEFAULT_TIME="00:10:00"
         DEFAULT_MEM="30G"
         ;;
 
