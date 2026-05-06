@@ -668,10 +668,39 @@ def prepare_tolerance_case_dir(
         tolerance_case,
     ):
     """
-    Create the numbered output folder and write its tolerance report.
+    Create the next available numbered output folder and write its tolerance report.
+
+    Numbering continues from existing output folders instead of restarting at 001
+    on each driver.py call.
     """
 
     output_dir = Path(output_dir)
+
+    output_dir.mkdir(
+        parents = True,
+        exist_ok = True,
+    )
+
+    existing_case_dirs = find_numbered_case_dirs(
+        tutorial_dir = output_dir,
+    )
+
+    if len(existing_case_dirs) == 0:
+        next_case_index = 1
+
+    else:
+        next_case_index = max(
+            int(path.name)
+            for path in existing_case_dirs
+        ) + 1
+
+    tolerance_case["sweep_case_index"] = tolerance_case.get("case_index")
+    tolerance_case["sweep_case_label"] = tolerance_case.get("case_label")
+
+    tolerance_case["case_index"] = next_case_index
+    tolerance_case["case_label"] = make_tolerance_case_label(
+        index = next_case_index,
+    )
 
     case_dir = output_dir / tolerance_case["case_label"]
 
@@ -1554,6 +1583,14 @@ def make_optimization_summary(
     Build a readable optimization summary.
     """
 
+    if options is None:
+        options = {}
+
+    solve_options = options.get(
+        "solve_options",
+        {},
+    )
+
     summary = {
         "label": label,
         "equilibrium_output_path": str(output_path),
@@ -1600,11 +1637,19 @@ def make_optimization_summary(
             "optimizer": get_optimizer_name(
                 optimizer = optimizer,
             ),
-            "ftol": ftol,
-            "xtol": xtol,
-            "gtol": gtol,
+            "outer_tolerances": {
+                "ftol": ftol,
+                "xtol": xtol,
+                "gtol": gtol,
+            },
+            "inner_solve_tolerances": {
+                "ftol": solve_options.get("ftol"),
+                "xtol": solve_options.get("xtol"),
+                "gtol": solve_options.get("gtol"),
+            },
             "maxiter": maxiter,
             "x_scale": x_scale,
+            "solve_options": solve_options,
             "options": options,
         },
     }
@@ -1628,6 +1673,16 @@ def print_optimization_summary(
     result = summary["result"]
     hyperparameters = summary["hyperparameters"]
 
+    outer_tolerances = hyperparameters.get(
+        "outer_tolerances",
+        {},
+    )
+
+    inner_solve_tolerances = hyperparameters.get(
+        "inner_solve_tolerances",
+        {},
+    )
+
     message = result.get("message")
 
     if message is None:
@@ -1649,12 +1704,31 @@ def print_optimization_summary(
     print("")
     print("Optimization hyperparameters:")
     print(f"optimizer: {hyperparameters.get('optimizer')}")
-    print(f"ftol: {hyperparameters.get('ftol')}")
-    print(f"xtol: {hyperparameters.get('xtol')}")
-    print(f"gtol: {hyperparameters.get('gtol')}")
+    print("")
+    print("Outer optimizer tolerances:")
+    print(f"ftol: {outer_tolerances.get('ftol')}")
+    print(f"xtol: {outer_tolerances.get('xtol')}")
+    print(f"gtol: {outer_tolerances.get('gtol')}")
+    print("")
+    print("Inner proximal solve tolerances:")
+    print(f"ftol: {inner_solve_tolerances.get('ftol')}")
+    print(f"xtol: {inner_solve_tolerances.get('xtol')}")
+    print(f"gtol: {inner_solve_tolerances.get('gtol')}")
+    print("")
     print(f"maxiter: {hyperparameters.get('maxiter')}")
     print(f"x_scale: {hyperparameters.get('x_scale')}")
-    print("options:")
+    print("")
+    print("solve_options:")
+    print(
+        json.dumps(
+            to_json_safe(
+                value = hyperparameters.get("solve_options"),
+            ),
+            indent = 4,
+        )
+    )
+    print("")
+    print("full options:")
     print(
         json.dumps(
             to_json_safe(

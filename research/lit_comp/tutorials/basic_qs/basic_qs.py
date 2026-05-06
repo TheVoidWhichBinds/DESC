@@ -145,6 +145,29 @@ for rho_i, dp_i in zip(grid_pressure.nodes[:, 0], dp_drho):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #========================================================================================================================================
 # OPTIMIZER
 #========================================================================================================================================
@@ -152,25 +175,14 @@ optimizer = Optimizer("proximal-lsq-exact")
 maxiter = 100
 x_scale = "auto"
 
-FTOL_ORDERS = range(
-    4,
-    7,
-)
+OUTER_FTOL = 1e-4
+OUTER_XTOL = 1e-4
+OUTER_GTOL = 1e-4
 
-XTOL_ORDERS = range(
-    5,
-    7,
-)
-
-GTOL_ORDERS = range(
-    5,
-    7,
-)
-
-INITIAL_TRUST_RATIO_ORDERS = range(
-    1,
-    3,
-)
+INNER_FTOL_ORDERS = range(4,7)
+INNER_XTOL_ORDERS = range(8)
+INNER_GTOL_ORDERS = range(8)
+INITIAL_TRUST_RATIO_ORDERS = range(3)
 
 BASE_OPTIONS_T = {
     "perturb_options": {
@@ -195,6 +207,29 @@ BASE_OPTIONS_C = {
         "verbose": 0,
     },
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -276,7 +311,7 @@ def build_basic_qs_options(
         tolerance_case,
     ):
     """
-    Build DESC optimizer options for one basic_qs tolerance case.
+    Build DESC optimizer options for one basic_qs inner proximal solve tolerance case.
     """
 
     options = deepcopy(base_options)
@@ -304,9 +339,9 @@ def build_basic_qs_options(
 # TOLERANCE SWEEP
 #========================================================================================================================================
 for tolerance_case in iter_tolerance_cases(
-        ftol_orders = FTOL_ORDERS,
-        xtol_orders = XTOL_ORDERS,
-        gtol_orders = GTOL_ORDERS,
+        ftol_orders = INNER_FTOL_ORDERS,
+        xtol_orders = INNER_XTOL_ORDERS,
+        gtol_orders = INNER_GTOL_ORDERS,
         initial_trust_ratio_orders = INITIAL_TRUST_RATIO_ORDERS,
         base_options = {},
     ):
@@ -338,8 +373,6 @@ for tolerance_case in iter_tolerance_cases(
     print("")
     print(f"Tolerance report written to: {tolerance_report_path}")
     print("")
-
-    tolerances = tolerance_case["tolerances"]
 
     options_T = build_basic_qs_options(
         base_options = BASE_OPTIONS_T,
@@ -382,9 +415,9 @@ for tolerance_case in iter_tolerance_cases(
         optimizer = optimizer,
         output_path = TRIPLE_PRODUCT_FXD_PATH,
         label = "basic_qs_T_FXD",
-        ftol = tolerances["ftol"],
-        xtol = tolerances["xtol"],
-        gtol = tolerances["gtol"],
+        ftol = OUTER_FTOL,
+        xtol = OUTER_XTOL,
+        gtol = OUTER_GTOL,
         maxiter = maxiter,
         options = options_T,
         copy = False,
@@ -433,9 +466,9 @@ for tolerance_case in iter_tolerance_cases(
         optimizer = optimizer,
         output_path = TRIPLE_PRODUCT_FREE_PATH,
         label = "basic_qs_T_FREE",
-        ftol = tolerances["ftol"],
-        xtol = tolerances["xtol"],
-        gtol = tolerances["gtol"],
+        ftol = OUTER_FTOL,
+        xtol = OUTER_XTOL,
+        gtol = OUTER_GTOL,
         maxiter = maxiter,
         options = options_T,
         copy = False,
@@ -476,9 +509,9 @@ for tolerance_case in iter_tolerance_cases(
         optimizer = optimizer,
         output_path = TWO_TERM_FXD_PATH,
         label = "basic_qs_C_FXD",
-        ftol = tolerances["ftol"],
-        xtol = tolerances["xtol"],
-        gtol = tolerances["gtol"],
+        ftol = OUTER_FTOL,
+        xtol = OUTER_XTOL,
+        gtol = OUTER_GTOL,
         maxiter = maxiter,
         options = options_C,
         copy = False,
@@ -528,9 +561,9 @@ for tolerance_case in iter_tolerance_cases(
         optimizer = optimizer,
         output_path = TWO_TERM_FREE_PATH,
         label = "basic_qs_C_FREE",
-        ftol = tolerances["ftol"],
-        xtol = tolerances["xtol"],
-        gtol = tolerances["gtol"],
+        ftol = OUTER_FTOL,
+        xtol = OUTER_XTOL,
+        gtol = OUTER_GTOL,
         maxiter = maxiter,
         options = options_C,
         copy = False,
