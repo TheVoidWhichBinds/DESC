@@ -395,28 +395,19 @@ objective_FREE = append_free_objectives(
     free_objectives = free_objectives,
 )
 
-(eq_balloon_FREE,), result_FREE = optimizer.optimize(
-    eq_balloon_FREE,
-    objective_FREE,
-    constraints,
-    ftol = 1e-4,
-    xtol = 1e-6,
-    gtol = 1e-6,
-    maxiter = 200,
+eq_balloon_FREE, result_FREE = optimize_save_report(
+    eq = eq_balloon_FREE,
+    objective = objective_FREE,
+    constraints = constraints,
+    optimizer = optimizer,
+    output_path = BALLOON_FREE_PATH,
+    label = "balloon_optimized_FREE",
+    ftol = ftol,
+    xtol = xtol,
+    gtol = gtol,
+    maxiter = maxiter,
+    options = options,
+    copy = False,
     verbose = 3,
-    options = {
-        "initial_trust_ratio": 2e-3,
-        "max_nfev": 200,
-        "solve_options": {
-            "ftol": 1e-2,
-            "xtol": 1e-3,
-            "gtol": 1e-4,
-            "verbose": 0,
-        },
-    },
+    x_scale = x_scale,
 )
-
-eq_balloon_FREE.save(str(BALLOON_FREE_PATH))
-
-
-
