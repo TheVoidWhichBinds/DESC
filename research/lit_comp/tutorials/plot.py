@@ -9,6 +9,7 @@
 #   python3 research/lit_comp/tutorials/plot.py --tutorial adv_qs
 #   python3 research/lit_comp/tutorials/plot.py --tutorial balloon
 #   python3 research/lit_comp/tutorials/plot.py --tutorial neoclassical
+#   python3 research/lit_comp/tutorials/plot.py --tutorial basic_qs --case 001
 #
 # This script:
 #   1. finds *_FXD.h5 and *_FREE.h5 files inside the requested tutorial folder
@@ -159,6 +160,70 @@ def get_output_case_dirs(
 
     return (
         tutorial_dir,
+    )
+
+
+
+
+
+def normalize_case_label(
+        case,
+    ):
+    """
+    Normalize a requested output folder label.
+
+    Examples:
+        1   -> 001
+        001 -> 001
+    """
+
+    if case is None:
+        return None
+
+    case = str(case)
+
+    if case.isdigit():
+        return f"{int(case):03d}"
+
+    return case
+
+
+
+
+
+def get_requested_case_dirs(
+        tutorial_dir,
+        case = None,
+    ):
+    """
+    Return either all output folders or one requested numbered output folder.
+    """
+
+    tutorial_dir = Path(tutorial_dir)
+
+    if case is None:
+        return get_output_case_dirs(
+            tutorial_dir = tutorial_dir,
+        )
+
+    case_label = normalize_case_label(
+        case = case,
+    )
+
+    case_dir = tutorial_dir / case_label
+
+    if not case_dir.exists():
+        raise FileNotFoundError(
+            f"Requested output folder does not exist: {case_dir}"
+        )
+
+    if not case_dir.is_dir():
+        raise NotADirectoryError(
+            f"Requested output folder is not a directory: {case_dir}"
+        )
+
+    return (
+        case_dir,
     )
 
 
@@ -1074,12 +1139,13 @@ PLOTTERS = {
 #========================================================================================================================================
 def plot_tutorial(
         tutorial,
+        case = None,
     ):
     """
-    Plot all relevant comparisons for one tutorial.
+    Plot relevant comparisons for one tutorial.
 
-    If numbered tolerance-case folders exist, plots are generated separately
-    inside each numbered folder.
+    If case is None, plots are generated for all numbered output folders.
+    If case is given, plots are generated only inside that requested folder.
     """
 
     tutorial_name = normalize_tutorial_name(
@@ -1090,8 +1156,9 @@ def plot_tutorial(
         tutorial = tutorial_name,
     )
 
-    case_dirs = get_output_case_dirs(
+    case_dirs = get_requested_case_dirs(
         tutorial_dir = tutorial_dir,
+        case = case,
     )
 
     plotter = PLOTTERS.get(
@@ -1159,6 +1226,12 @@ def parse_args():
         help = "Tutorial name, e.g. basic_qs, adv_qs, balloon, or neoclassical.",
     )
 
+    parser.add_argument(
+        "--case",
+        default = None,
+        help = "Optional numbered output folder to plot, e.g. 001 or 1. If omitted, all numbered folders are plotted.",
+    )
+
     return parser.parse_args()
 
 
@@ -1180,6 +1253,7 @@ def main():
 
     saved_paths = plot_tutorial(
         tutorial = args.tutorial,
+        case = args.case,
     )
 
     print("")

@@ -132,17 +132,32 @@ BASE_OPTIONS = {
 }
 
 
-FTOL_ORDERS = range(
+OUTER_FTOL_ORDERS = range(
     4,
     8,
 )
 
-XTOL_ORDERS = range(
+OUTER_XTOL_ORDERS = range(
     4,
     8,
 )
 
-GTOL_ORDERS = range(
+OUTER_GTOL_ORDERS = range(
+    4,
+    8,
+)
+
+INNER_FTOL_ORDERS = range(
+    4,
+    8,
+)
+
+INNER_XTOL_ORDERS = range(
+    4,
+    8,
+)
+
+INNER_GTOL_ORDERS = range(
     4,
     8,
 )
@@ -404,10 +419,13 @@ def run_balloon_optimization(
 # TOLERANCE SWEEP
 #========================================================================================================================================
 for tolerance_case in iter_tolerance_cases(
-        ftol_orders = FTOL_ORDERS,
-        xtol_orders = XTOL_ORDERS,
-        gtol_orders = GTOL_ORDERS,
+        ftol_orders = OUTER_FTOL_ORDERS,
+        xtol_orders = OUTER_XTOL_ORDERS,
+        gtol_orders = OUTER_GTOL_ORDERS,
         initial_trust_ratio_orders = INITIAL_TRUST_RATIO_ORDERS,
+        inner_ftol_orders = INNER_FTOL_ORDERS,
+        inner_xtol_orders = INNER_XTOL_ORDERS,
+        inner_gtol_orders = INNER_GTOL_ORDERS,
         base_options = BASE_OPTIONS,
     ):
 

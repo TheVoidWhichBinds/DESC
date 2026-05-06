@@ -132,17 +132,32 @@ AUGLAG_MAXITER = 200
 AUGLAG_X_SCALE = "auto"
 AUGLAG_BASE_OPTIONS = {}
 
-FTOL_ORDERS = range(
+OUTER_FTOL_ORDERS = range(
     4,
     8,
 )
 
-XTOL_ORDERS = range(
+OUTER_XTOL_ORDERS = range(
     4,
     8,
 )
 
-GTOL_ORDERS = range(
+OUTER_GTOL_ORDERS = range(
+    4,
+    8,
+)
+
+INNER_FTOL_ORDERS = range(
+    4,
+    8,
+)
+
+INNER_XTOL_ORDERS = range(
+    4,
+    8,
+)
+
+INNER_GTOL_ORDERS = range(
     4,
     8,
 )
@@ -173,7 +188,27 @@ def build_multigrid_options(
 
     options = deepcopy(MULTIGRID_BASE_OPTIONS)
 
-    options["initial_trust_ratio"] = tolerance_case["tolerances"]["initial_trust_ratio"]
+    outer_tolerances = tolerance_case["outer_tolerances"]
+    inner_tolerances = tolerance_case["inner_tolerances"]
+
+    options["initial_trust_ratio"] = outer_tolerances["initial_trust_ratio"]
+
+    solve_options = options.get(
+        "solve_options",
+        {},
+    )
+
+    if solve_options is None:
+        solve_options = {}
+
+    else:
+        solve_options = deepcopy(solve_options)
+
+    solve_options["ftol"] = inner_tolerances["ftol"]
+    solve_options["xtol"] = inner_tolerances["xtol"]
+    solve_options["gtol"] = inner_tolerances["gtol"]
+
+    options["solve_options"] = solve_options
 
     return options
 
@@ -910,10 +945,13 @@ def run_constrained_optimization(
 # TOLERANCE SWEEP
 #========================================================================================================================================
 for tolerance_case in iter_tolerance_cases(
-        ftol_orders = FTOL_ORDERS,
-        xtol_orders = XTOL_ORDERS,
-        gtol_orders = GTOL_ORDERS,
+        ftol_orders = OUTER_FTOL_ORDERS,
+        xtol_orders = OUTER_XTOL_ORDERS,
+        gtol_orders = OUTER_GTOL_ORDERS,
         initial_trust_ratio_orders = INITIAL_TRUST_RATIO_ORDERS,
+        inner_ftol_orders = INNER_FTOL_ORDERS,
+        inner_xtol_orders = INNER_XTOL_ORDERS,
+        inner_gtol_orders = INNER_GTOL_ORDERS,
         base_options = {},
     ):
 

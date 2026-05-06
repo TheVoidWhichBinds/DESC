@@ -6,6 +6,7 @@
 # Usage:
 #   python3 research/lit_comp/tutorials/compare.py --tutorial basic_qs
 #   python3 research/lit_comp/tutorials/compare.py --tutorial balloon
+#   python3 research/lit_comp/tutorials/compare.py --tutorial basic_qs --case 001
 #
 #==============================================================================================================
 
@@ -398,18 +399,86 @@ def flatten_h5_file_map(
 
 
 
+def normalize_case_label(
+        case,
+    ):
+    """
+    Normalize a requested output folder label.
+
+    Examples:
+        1   -> 001
+        001 -> 001
+    """
+
+    if case is None:
+        return None
+
+    case = str(case)
+
+    if case.isdigit():
+        return f"{int(case):03d}"
+
+    return case
+
+
+
+
+
+def get_requested_case_dirs(
+        tutorial_dir,
+        case = None,
+    ):
+    """
+    Return either all output folders or one requested numbered output folder.
+    """
+
+    if case is None:
+        return get_output_case_dirs(
+            tutorial_dir = tutorial_dir,
+        )
+
+    case_label = normalize_case_label(
+        case = case,
+    )
+
+    case_dir = tutorial_dir / case_label
+
+    if not case_dir.exists():
+        raise FileNotFoundError(
+            f"Requested output folder does not exist: {case_dir}"
+        )
+
+    if not case_dir.is_dir():
+        raise NotADirectoryError(
+            f"Requested output folder is not a directory: {case_dir}"
+        )
+
+    return (
+        case_dir,
+    )
+
+
+
+
+
+
+
+
+
+
 #==============================================================================================================
 # Tutorial Objective Comparison
 #==============================================================================================================
 
 def tutorial_obj(
         tutorial : str,
+        case = None,
     ):
     """
     Compare tutorial-specific objective values between FXD and FREE files.
 
-    If numbered tolerance-case folders exist, write one comparison CSV per
-    numbered folder.
+    If case is None, write one comparison CSV per numbered output folder.
+    If case is given, write only the CSV for that requested folder.
     """
 
     tutorial_dir = get_tutorial_dir(
@@ -426,8 +495,9 @@ def tutorial_obj(
             f"No tutorial objective registry entry found for tutorial = {tutorial}."
         )
 
-    case_dirs = get_output_case_dirs(
+    case_dirs = get_requested_case_dirs(
         tutorial_dir = tutorial_dir,
+        case = case,
     )
 
     rows_by_case = {}
@@ -490,6 +560,12 @@ def parse_args():
         help = "Tutorial name, e.g. basic_qs, adv_qs, balloon, or neoclassical.",
     )
 
+    parser.add_argument(
+        "--case",
+        default = None,
+        help = "Optional numbered output folder to compare, e.g. 001 or 1. If omitted, all numbered folders are compared.",
+    )
+
     return parser.parse_args()
 
 
@@ -509,6 +585,7 @@ def main():
 
     rows_by_case, csv_paths = tutorial_obj(
         tutorial = args.tutorial,
+        case = args.case,
     )
 
     print("")

@@ -39,7 +39,10 @@ from desc.optimize import Optimizer
 from helper import (
     append_free_objectives,
     build_free_extension,
+    iter_tolerance_cases,
     optimize_save_report,
+    prepare_tolerance_case_dir,
+    print_tolerance_case_header,
 )
 
 
@@ -58,12 +61,6 @@ fname = "neoclassical"
 
 OUTPUT_DIR = Path(__file__).resolve().parent
 
-INITIAL_PATH = OUTPUT_DIR / f"{fname}_initial.h5"
-
-NEOCLASSICAL_FXD_PATH = OUTPUT_DIR / f"{fname}_optimized_FXD.h5"
-
-NEOCLASSICAL_FREE_PATH = OUTPUT_DIR / f"{fname}_optimized_FREE.h5"
-
 
 
 
@@ -77,8 +74,6 @@ NEOCLASSICAL_FREE_PATH = OUTPUT_DIR / f"{fname}_optimized_FREE.h5"
 # INITIAL EQUILIBRIUM
 #========================================================================================================================================
 eq0 = get("HELIOTRON")
-
-eq0.save(str(INITIAL_PATH))
 
 
 
@@ -305,53 +300,43 @@ optimizer = Optimizer("proximal-lsq-exact")
 maxiter = 5
 x_scale = "auto"
 
-ftol = 1e-4
-xtol = 1e-6
-gtol = 1e-6
-options = {
-    "initial_trust_ratio": 2e-3,
+BASE_OPTIONS = {
+    "max_nfev": 100,
 }
 
-
-
-
-
-
-
-
-
-
-#========================================================================================================================================
-# RUN NEOCLASSICAL OPTIMIZATION - FXD PRESSURE
-#========================================================================================================================================
-eq_neoclassical_FXD = eq0.copy()
-
-constraints, free_objectives = build_neoclassical_constraints(
-    eq = eq_neoclassical_FXD,
-    k = k,
-    free_pressure = False,
+OUTER_FTOL_ORDERS = range(
+    4,
+    7,
 )
 
-objective_FXD = build_neoclassical_objective(
-    eq = eq_neoclassical_FXD,
-    free_objectives = free_objectives,
+OUTER_XTOL_ORDERS = range(
+    5,
+    7,
 )
 
-eq_neoclassical_FXD, result_FXD = optimize_save_report(
-    eq = eq_neoclassical_FXD,
-    objective = objective_FXD,
-    constraints = constraints,
-    optimizer = optimizer,
-    output_path = NEOCLASSICAL_FXD_PATH,
-    label = "neoclassical_optimized_FXD",
-    ftol = ftol,
-    xtol = xtol,
-    gtol = gtol,
-    maxiter = maxiter,
-    options = options,
-    copy = False,
-    verbose = 3,
-    x_scale = x_scale,
+OUTER_GTOL_ORDERS = range(
+    5,
+    7,
+)
+
+INNER_FTOL_ORDERS = range(
+    4,
+    7,
+)
+
+INNER_XTOL_ORDERS = range(
+    5,
+    7,
+)
+
+INNER_GTOL_ORDERS = range(
+    5,
+    7,
+)
+
+INITIAL_TRUST_RATIO_ORDERS = range(
+    3,
+    4,
 )
 
 
@@ -364,34 +349,125 @@ eq_neoclassical_FXD, result_FXD = optimize_save_report(
 
 
 #========================================================================================================================================
-# RUN NEOCLASSICAL OPTIMIZATION - FREE PRESSURE
+# OPTIMIZATION HELPER
 #========================================================================================================================================
-eq_neoclassical_FREE = eq0.copy()
+def run_neoclassical_optimization(
+        eq_initial,
+        output_path,
+        label,
+        tolerance_case,
+        free_pressure = False,
+    ):
+    """
+    Run one neoclassical optimization for one tolerance case.
+    """
 
-constraints, free_objectives = build_neoclassical_constraints(
-    eq = eq_neoclassical_FREE,
-    k = k,
-    free_pressure = True,
-)
+    eq = eq_initial.copy()
 
-objective_FREE = build_neoclassical_objective(
-    eq = eq_neoclassical_FREE,
-    free_objectives = free_objectives,
-)
+    constraints, free_objectives = build_neoclassical_constraints(
+        eq = eq,
+        k = k,
+        free_pressure = free_pressure,
+    )
 
-eq_neoclassical_FREE, result_FREE = optimize_save_report(
-    eq = eq_neoclassical_FREE,
-    objective = objective_FREE,
-    constraints = constraints,
-    optimizer = optimizer,
-    output_path = NEOCLASSICAL_FREE_PATH,
-    label = "neoclassical_optimized_FREE",
-    ftol = ftol,
-    xtol = xtol,
-    gtol = gtol,
-    maxiter = maxiter,
-    options = options,
-    copy = False,
-    verbose = 3,
-    x_scale = x_scale,
-)
+    objective = build_neoclassical_objective(
+        eq = eq,
+        free_objectives = free_objectives,
+    )
+
+    tolerances = tolerance_case["outer_tolerances"]
+
+    eq, result = optimize_save_report(
+        eq = eq,
+        objective = objective,
+        constraints = constraints,
+        optimizer = optimizer,
+        output_path = output_path,
+        label = label,
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
+        maxiter = maxiter,
+        options = tolerance_case["options"],
+        copy = False,
+        verbose = 3,
+        x_scale = x_scale,
+        tolerance_case = tolerance_case,
+    )
+
+    return eq, result
+
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# TOLERANCE SWEEP
+#========================================================================================================================================
+for tolerance_case in iter_tolerance_cases(
+        ftol_orders = OUTER_FTOL_ORDERS,
+        xtol_orders = OUTER_XTOL_ORDERS,
+        gtol_orders = OUTER_GTOL_ORDERS,
+        initial_trust_ratio_orders = INITIAL_TRUST_RATIO_ORDERS,
+        inner_ftol_orders = INNER_FTOL_ORDERS,
+        inner_xtol_orders = INNER_XTOL_ORDERS,
+        inner_gtol_orders = INNER_GTOL_ORDERS,
+        base_options = BASE_OPTIONS,
+    ):
+
+    case_dir, tolerance_report_path = prepare_tolerance_case_dir(
+        output_dir = OUTPUT_DIR,
+        tolerance_case = tolerance_case,
+    )
+
+    print_tolerance_case_header(
+        tolerance_case = tolerance_case,
+        case_dir = case_dir,
+    )
+
+    INITIAL_PATH = case_dir / f"{fname}_initial.h5"
+
+    NEOCLASSICAL_FXD_PATH = case_dir / f"{fname}_optimized_FXD.h5"
+
+    NEOCLASSICAL_FREE_PATH = case_dir / f"{fname}_optimized_FREE.h5"
+
+    eq0.save(
+        str(INITIAL_PATH)
+    )
+
+    print("")
+    print(f"Tolerance report written to: {tolerance_report_path}")
+    print("")
+
+
+
+
+    #========================================================================================================================================
+    # RUN NEOCLASSICAL OPTIMIZATION - FXD PRESSURE
+    #========================================================================================================================================
+    eq_neoclassical_FXD, result_FXD = run_neoclassical_optimization(
+        eq_initial = eq0,
+        output_path = NEOCLASSICAL_FXD_PATH,
+        label = "neoclassical_optimized_FXD",
+        tolerance_case = tolerance_case,
+        free_pressure = False,
+    )
+
+
+
+
+    #========================================================================================================================================
+    # RUN NEOCLASSICAL OPTIMIZATION - FREE PRESSURE
+    #========================================================================================================================================
+    eq_neoclassical_FREE, result_FREE = run_neoclassical_optimization(
+        eq_initial = eq0,
+        output_path = NEOCLASSICAL_FREE_PATH,
+        label = "neoclassical_optimized_FREE",
+        tolerance_case = tolerance_case,
+        free_pressure = True,
+    )

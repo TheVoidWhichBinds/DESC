@@ -464,6 +464,9 @@ def find_numbered_case_dirs(
 
     tutorial_dir = Path(tutorial_dir)
 
+    if not tutorial_dir.exists():
+        return ()
+
     return tuple(
         sorted(
             path
@@ -473,6 +476,47 @@ def find_numbered_case_dirs(
             )
         )
     )
+
+
+
+
+
+def get_largest_numbered_case_index(
+        tutorial_dir,
+    ):
+    """
+    Return the largest existing numbered output-folder index.
+    """
+
+    numbered_case_dirs = find_numbered_case_dirs(
+        tutorial_dir = tutorial_dir,
+    )
+
+    if len(numbered_case_dirs) == 0:
+        return 0
+
+    return max(
+        int(path.name)
+        for path in numbered_case_dirs
+    )
+
+
+
+
+
+def get_next_numbered_case_index(
+        tutorial_dir,
+    ):
+    """
+    Return the next numbered output-folder index.
+
+    This makes repeated driver.py calls continue from the largest existing
+    folder number instead of starting over at 001.
+    """
+
+    return get_largest_numbered_case_index(
+        tutorial_dir = tutorial_dir,
+    ) + 1
 
 
 
@@ -538,17 +582,66 @@ def make_tolerance_value(
 
 
 
+def update_options_with_inner_tolerances(
+        options,
+        inner_tolerances,
+    ):
+    """
+    Add inner proximal-solve tolerances to a DESC optimizer options dictionary.
+    """
+
+    options = deepcopy(options)
+
+    solve_options = options.get(
+        "solve_options",
+        {},
+    )
+
+    if solve_options is None:
+        solve_options = {}
+
+    else:
+        solve_options = deepcopy(solve_options)
+
+    solve_options["ftol"] = inner_tolerances["ftol"]
+    solve_options["xtol"] = inner_tolerances["xtol"]
+    solve_options["gtol"] = inner_tolerances["gtol"]
+
+    options["solve_options"] = solve_options
+
+    return options
+
+
+
+
+
 def make_tolerance_case(
         index,
         ftol_order,
         xtol_order,
         gtol_order,
         initial_trust_ratio_order,
+        inner_ftol_order = None,
+        inner_xtol_order = None,
+        inner_gtol_order = None,
         base_options = None,
     ):
     """
     Build one tolerance-case dictionary.
+
+    The outer tolerances are passed directly to eq.optimize(...). The inner
+    tolerances are passed through options["solve_options"] for the inner
+    proximal solve.
     """
+
+    if inner_ftol_order is None:
+        inner_ftol_order = ftol_order
+
+    if inner_xtol_order is None:
+        inner_xtol_order = xtol_order
+
+    if inner_gtol_order is None:
+        inner_gtol_order = gtol_order
 
     if base_options is None:
         options = {}
@@ -556,25 +649,56 @@ def make_tolerance_case(
     else:
         options = deepcopy(base_options)
 
-    ftol = make_tolerance_value(
+    outer_ftol = make_tolerance_value(
         order = ftol_order,
     )
 
-    xtol = make_tolerance_value(
+    outer_xtol = make_tolerance_value(
         order = xtol_order,
     )
 
-    gtol = make_tolerance_value(
+    outer_gtol = make_tolerance_value(
         order = gtol_order,
+    )
+
+    inner_ftol = make_tolerance_value(
+        order = inner_ftol_order,
+    )
+
+    inner_xtol = make_tolerance_value(
+        order = inner_xtol_order,
+    )
+
+    inner_gtol = make_tolerance_value(
+        order = inner_gtol_order,
     )
 
     initial_trust_ratio = make_tolerance_value(
         order = initial_trust_ratio_order,
     )
 
+    outer_tolerances = {
+        "ftol": outer_ftol,
+        "xtol": outer_xtol,
+        "gtol": outer_gtol,
+        "initial_trust_ratio": initial_trust_ratio,
+    }
+
+    inner_tolerances = {
+        "ftol": inner_ftol,
+        "xtol": inner_xtol,
+        "gtol": inner_gtol,
+    }
+
+    options = update_options_with_inner_tolerances(
+        options = options,
+        inner_tolerances = inner_tolerances,
+    )
+
     options["initial_trust_ratio"] = initial_trust_ratio
 
     return {
+        "sweep_index": int(index),
         "case_index": int(index),
         "case_label": make_tolerance_case_label(
             index = index,
@@ -583,14 +707,17 @@ def make_tolerance_case(
             "ftol_order": int(ftol_order),
             "xtol_order": int(xtol_order),
             "gtol_order": int(gtol_order),
+            "outer_ftol_order": int(ftol_order),
+            "outer_xtol_order": int(xtol_order),
+            "outer_gtol_order": int(gtol_order),
+            "inner_ftol_order": int(inner_ftol_order),
+            "inner_xtol_order": int(inner_xtol_order),
+            "inner_gtol_order": int(inner_gtol_order),
             "initial_trust_ratio_order": int(initial_trust_ratio_order),
         },
-        "tolerances": {
-            "ftol": ftol,
-            "xtol": xtol,
-            "gtol": gtol,
-            "initial_trust_ratio": initial_trust_ratio,
-        },
+        "tolerances": outer_tolerances,
+        "outer_tolerances": outer_tolerances,
+        "inner_tolerances": inner_tolerances,
         "options": options,
     }
 
@@ -603,29 +730,47 @@ def iter_tolerance_cases(
         xtol_orders,
         gtol_orders,
         initial_trust_ratio_orders,
+        inner_ftol_orders = None,
+        inner_xtol_orders = None,
+        inner_gtol_orders = None,
         base_options = None,
     ):
     """
-    Yield tolerance cases over all requested order-of-magnitude combinations.
+    Yield tolerance cases over all requested outer and inner combinations.
     """
+
+    if inner_ftol_orders is None:
+        inner_ftol_orders = ftol_orders
+
+    if inner_xtol_orders is None:
+        inner_xtol_orders = xtol_orders
+
+    if inner_gtol_orders is None:
+        inner_gtol_orders = gtol_orders
 
     index = 1
 
     for ftol_order in ftol_orders:
         for xtol_order in xtol_orders:
             for gtol_order in gtol_orders:
-                for initial_trust_ratio_order in initial_trust_ratio_orders:
+                for inner_ftol_order in inner_ftol_orders:
+                    for inner_xtol_order in inner_xtol_orders:
+                        for inner_gtol_order in inner_gtol_orders:
+                            for initial_trust_ratio_order in initial_trust_ratio_orders:
 
-                    yield make_tolerance_case(
-                        index = index,
-                        ftol_order = ftol_order,
-                        xtol_order = xtol_order,
-                        gtol_order = gtol_order,
-                        initial_trust_ratio_order = initial_trust_ratio_order,
-                        base_options = base_options,
-                    )
+                                yield make_tolerance_case(
+                                    index = index,
+                                    ftol_order = ftol_order,
+                                    xtol_order = xtol_order,
+                                    gtol_order = gtol_order,
+                                    initial_trust_ratio_order = initial_trust_ratio_order,
+                                    inner_ftol_order = inner_ftol_order,
+                                    inner_xtol_order = inner_xtol_order,
+                                    inner_gtol_order = inner_gtol_order,
+                                    base_options = base_options,
+                                )
 
-                    index += 1
+                                index += 1
 
 
 
@@ -668,10 +813,7 @@ def prepare_tolerance_case_dir(
         tolerance_case,
     ):
     """
-    Create the next available numbered output folder and write its tolerance report.
-
-    Numbering continues from existing output folders instead of restarting at 001
-    on each driver.py call.
+    Create the next numbered output folder and write its tolerance report.
     """
 
     output_dir = Path(output_dir)
@@ -681,28 +823,18 @@ def prepare_tolerance_case_dir(
         exist_ok = True,
     )
 
-    existing_case_dirs = find_numbered_case_dirs(
+    case_index = get_next_numbered_case_index(
         tutorial_dir = output_dir,
     )
 
-    if len(existing_case_dirs) == 0:
-        next_case_index = 1
-
-    else:
-        next_case_index = max(
-            int(path.name)
-            for path in existing_case_dirs
-        ) + 1
-
-    tolerance_case["sweep_case_index"] = tolerance_case.get("case_index")
-    tolerance_case["sweep_case_label"] = tolerance_case.get("case_label")
-
-    tolerance_case["case_index"] = next_case_index
-    tolerance_case["case_label"] = make_tolerance_case_label(
-        index = next_case_index,
+    case_label = make_tolerance_case_label(
+        index = case_index,
     )
 
-    case_dir = output_dir / tolerance_case["case_label"]
+    tolerance_case["case_index"] = int(case_index)
+    tolerance_case["case_label"] = case_label
+
+    case_dir = output_dir / case_label
 
     report_path = write_tolerance_case_report(
         case_dir = case_dir,
@@ -723,18 +855,34 @@ def print_tolerance_case_header(
     Print the current tolerance case.
     """
 
-    tolerances = tolerance_case["tolerances"]
+    outer_tolerances = tolerance_case.get(
+        "outer_tolerances",
+        tolerance_case["tolerances"],
+    )
+
+    inner_tolerances = tolerance_case.get(
+        "inner_tolerances",
+        {},
+    )
 
     print("")
     print("================================================================================================================")
     print(f"Running tolerance case {tolerance_case['case_label']}")
     print("================================================================================================================")
     print("")
+    print(f"Sweep index: {tolerance_case.get('sweep_index', tolerance_case['case_index'])}")
     print(f"Output folder: {case_dir}")
-    print(f"ftol: {tolerances['ftol']}")
-    print(f"xtol: {tolerances['xtol']}")
-    print(f"gtol: {tolerances['gtol']}")
-    print(f"initial_trust_ratio: {tolerances['initial_trust_ratio']}")
+    print("")
+    print("Outer optimizer tolerances:")
+    print(f"ftol: {outer_tolerances['ftol']}")
+    print(f"xtol: {outer_tolerances['xtol']}")
+    print(f"gtol: {outer_tolerances['gtol']}")
+    print(f"initial_trust_ratio: {outer_tolerances['initial_trust_ratio']}")
+    print("")
+    print("Inner proximal-solve tolerances:")
+    print(f"solve_options.ftol: {inner_tolerances.get('ftol')}")
+    print(f"solve_options.xtol: {inner_tolerances.get('xtol')}")
+    print(f"solve_options.gtol: {inner_tolerances.get('gtol')}")
     print("")
 
 
@@ -1583,14 +1731,6 @@ def make_optimization_summary(
     Build a readable optimization summary.
     """
 
-    if options is None:
-        options = {}
-
-    solve_options = options.get(
-        "solve_options",
-        {},
-    )
-
     summary = {
         "label": label,
         "equilibrium_output_path": str(output_path),
@@ -1637,24 +1777,34 @@ def make_optimization_summary(
             "optimizer": get_optimizer_name(
                 optimizer = optimizer,
             ),
-            "outer_tolerances": {
-                "ftol": ftol,
-                "xtol": xtol,
-                "gtol": gtol,
-            },
-            "inner_solve_tolerances": {
-                "ftol": solve_options.get("ftol"),
-                "xtol": solve_options.get("xtol"),
-                "gtol": solve_options.get("gtol"),
-            },
+            "ftol": ftol,
+            "xtol": xtol,
+            "gtol": gtol,
             "maxiter": maxiter,
             "x_scale": x_scale,
-            "solve_options": solve_options,
             "options": options,
         },
     }
 
     if tolerance_case is not None:
+        summary["hyperparameters"]["outer_tolerances"] = tolerance_case.get(
+            "outer_tolerances",
+            tolerance_case.get(
+                "tolerances",
+                None,
+            ),
+        )
+
+        summary["hyperparameters"]["inner_tolerances"] = tolerance_case.get(
+            "inner_tolerances",
+            None,
+        )
+
+        summary["hyperparameters"]["solve_options"] = options.get(
+            "solve_options",
+            None,
+        ) if isinstance(options, dict) else None
+
         summary["tolerance_case"] = tolerance_case
 
     return summary
@@ -1672,16 +1822,6 @@ def print_optimization_summary(
 
     result = summary["result"]
     hyperparameters = summary["hyperparameters"]
-
-    outer_tolerances = hyperparameters.get(
-        "outer_tolerances",
-        {},
-    )
-
-    inner_solve_tolerances = hyperparameters.get(
-        "inner_solve_tolerances",
-        {},
-    )
 
     message = result.get("message")
 
@@ -1704,31 +1844,12 @@ def print_optimization_summary(
     print("")
     print("Optimization hyperparameters:")
     print(f"optimizer: {hyperparameters.get('optimizer')}")
-    print("")
-    print("Outer optimizer tolerances:")
-    print(f"ftol: {outer_tolerances.get('ftol')}")
-    print(f"xtol: {outer_tolerances.get('xtol')}")
-    print(f"gtol: {outer_tolerances.get('gtol')}")
-    print("")
-    print("Inner proximal solve tolerances:")
-    print(f"ftol: {inner_solve_tolerances.get('ftol')}")
-    print(f"xtol: {inner_solve_tolerances.get('xtol')}")
-    print(f"gtol: {inner_solve_tolerances.get('gtol')}")
-    print("")
+    print(f"ftol: {hyperparameters.get('ftol')}")
+    print(f"xtol: {hyperparameters.get('xtol')}")
+    print(f"gtol: {hyperparameters.get('gtol')}")
     print(f"maxiter: {hyperparameters.get('maxiter')}")
     print(f"x_scale: {hyperparameters.get('x_scale')}")
-    print("")
-    print("solve_options:")
-    print(
-        json.dumps(
-            to_json_safe(
-                value = hyperparameters.get("solve_options"),
-            ),
-            indent = 4,
-        )
-    )
-    print("")
-    print("full options:")
+    print("options:")
     print(
         json.dumps(
             to_json_safe(

@@ -145,29 +145,6 @@ for rho_i, dp_i in zip(grid_pressure.nodes[:, 0], dp_drho):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #========================================================================================================================================
 # OPTIMIZER
 #========================================================================================================================================
@@ -175,14 +152,20 @@ optimizer = Optimizer("proximal-lsq-exact")
 maxiter = 100
 x_scale = "auto"
 
-OUTER_FTOL = 1e-4
-OUTER_XTOL = 1e-4
-OUTER_GTOL = 1e-4
+OUTER_FTOL_ORDERS = range(2,7,2)
 
-INNER_FTOL_ORDERS = range(4,7)
-INNER_XTOL_ORDERS = range(8)
-INNER_GTOL_ORDERS = range(8)
+OUTER_XTOL_ORDERS = range(6)
+
+OUTER_GTOL_ORDERS = range(3,7)
+
+INNER_FTOL_ORDERS = range(2,7,2)
+
+INNER_XTOL_ORDERS = range(6)
+
+INNER_GTOL_ORDERS = range(3,7)
+
 INITIAL_TRUST_RATIO_ORDERS = range(3)
+
 
 BASE_OPTIONS_T = {
     "perturb_options": {
@@ -207,29 +190,6 @@ BASE_OPTIONS_C = {
         "verbose": 0,
     },
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -311,18 +271,22 @@ def build_basic_qs_options(
         tolerance_case,
     ):
     """
-    Build DESC optimizer options for one basic_qs inner proximal solve tolerance case.
+    Build DESC optimizer options for one basic_qs tolerance case.
     """
 
     options = deepcopy(base_options)
 
-    tolerances = tolerance_case["tolerances"]
+    outer_tolerances = tolerance_case["outer_tolerances"]
+    inner_tolerances = tolerance_case["inner_tolerances"]
 
-    options["initial_trust_ratio"] = tolerances["initial_trust_ratio"]
+    options["initial_trust_ratio"] = outer_tolerances["initial_trust_ratio"]
 
-    options["solve_options"]["ftol"] = tolerances["ftol"]
-    options["solve_options"]["xtol"] = tolerances["xtol"]
-    options["solve_options"]["gtol"] = tolerances["gtol"]
+    if "solve_options" not in options or options["solve_options"] is None:
+        options["solve_options"] = {}
+
+    options["solve_options"]["ftol"] = inner_tolerances["ftol"]
+    options["solve_options"]["xtol"] = inner_tolerances["xtol"]
+    options["solve_options"]["gtol"] = inner_tolerances["gtol"]
 
     return options
 
@@ -339,10 +303,13 @@ def build_basic_qs_options(
 # TOLERANCE SWEEP
 #========================================================================================================================================
 for tolerance_case in iter_tolerance_cases(
-        ftol_orders = INNER_FTOL_ORDERS,
-        xtol_orders = INNER_XTOL_ORDERS,
-        gtol_orders = INNER_GTOL_ORDERS,
+        ftol_orders = OUTER_FTOL_ORDERS,
+        xtol_orders = OUTER_XTOL_ORDERS,
+        gtol_orders = OUTER_GTOL_ORDERS,
         initial_trust_ratio_orders = INITIAL_TRUST_RATIO_ORDERS,
+        inner_ftol_orders = INNER_FTOL_ORDERS,
+        inner_xtol_orders = INNER_XTOL_ORDERS,
+        inner_gtol_orders = INNER_GTOL_ORDERS,
         base_options = {},
     ):
 
@@ -373,6 +340,8 @@ for tolerance_case in iter_tolerance_cases(
     print("")
     print(f"Tolerance report written to: {tolerance_report_path}")
     print("")
+
+    tolerances = tolerance_case["tolerances"]
 
     options_T = build_basic_qs_options(
         base_options = BASE_OPTIONS_T,
@@ -415,9 +384,9 @@ for tolerance_case in iter_tolerance_cases(
         optimizer = optimizer,
         output_path = TRIPLE_PRODUCT_FXD_PATH,
         label = "basic_qs_T_FXD",
-        ftol = OUTER_FTOL,
-        xtol = OUTER_XTOL,
-        gtol = OUTER_GTOL,
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
         maxiter = maxiter,
         options = options_T,
         copy = False,
@@ -466,9 +435,9 @@ for tolerance_case in iter_tolerance_cases(
         optimizer = optimizer,
         output_path = TRIPLE_PRODUCT_FREE_PATH,
         label = "basic_qs_T_FREE",
-        ftol = OUTER_FTOL,
-        xtol = OUTER_XTOL,
-        gtol = OUTER_GTOL,
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
         maxiter = maxiter,
         options = options_T,
         copy = False,
@@ -509,9 +478,9 @@ for tolerance_case in iter_tolerance_cases(
         optimizer = optimizer,
         output_path = TWO_TERM_FXD_PATH,
         label = "basic_qs_C_FXD",
-        ftol = OUTER_FTOL,
-        xtol = OUTER_XTOL,
-        gtol = OUTER_GTOL,
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
         maxiter = maxiter,
         options = options_C,
         copy = False,
@@ -561,9 +530,9 @@ for tolerance_case in iter_tolerance_cases(
         optimizer = optimizer,
         output_path = TWO_TERM_FREE_PATH,
         label = "basic_qs_C_FREE",
-        ftol = OUTER_FTOL,
-        xtol = OUTER_XTOL,
-        gtol = OUTER_GTOL,
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
         maxiter = maxiter,
         options = options_C,
         copy = False,
