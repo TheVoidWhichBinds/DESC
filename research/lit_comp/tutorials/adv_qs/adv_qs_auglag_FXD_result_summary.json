@@ -1,0 +1,26 @@
+{
+    "label": "adv_qs_auglag_FXD",
+    "equilibrium_output_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/adv_qs/adv_qs_auglag_FXD.h5",
+    "result_pickle_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/adv_qs/adv_qs_auglag_FXD_result.pkl",
+    "summary_json_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/adv_qs/adv_qs_auglag_FXD_result_summary.json",
+    "result": {
+        "final_cost": 0.0005079605513251651,
+        "message": "Maximum number of iterations has been exceeded.",
+        "termination_message": null,
+        "success": false,
+        "status": null,
+        "nfev": 275,
+        "njev": 201,
+        "nit": 200,
+        "optimality": "Array(0.00110882, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "lsq-auglag",
+        "ftol": null,
+        "xtol": null,
+        "gtol": null,
+        "maxiter": 200,
+        "x_scale": "auto",
+        "options": {}
+    }
+}

@@ -136,7 +136,7 @@ eq0 = solve_continuation_automatic(
 # OPTIMIZATION HYPERPARAMETERS
 #========================================================================================================================================
 MULTIGRID_OPTIMIZER = "proximal-lsq-exact"
-MULTIGRID_MAXITER = 20
+MULTIGRID_MAXITER = 200
 MULTIGRID_FTOL = None
 MULTIGRID_XTOL = None
 MULTIGRID_GTOL = None

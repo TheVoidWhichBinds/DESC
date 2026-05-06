@@ -1,0 +1,26 @@
+{
+    "label": "adv_qs_multigrid_FREE",
+    "equilibrium_output_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/adv_qs/adv_qs_multigrid_FREE.h5",
+    "result_pickle_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/adv_qs/adv_qs_multigrid_FREE_result.pkl",
+    "summary_json_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/adv_qs/adv_qs_multigrid_FREE_result_summary.json",
+    "result": {
+        "final_cost": 26.98744527272843,
+        "message": "Optimization terminated successfully.\n`ftol` condition satisfied. (ftol=1.00e-02)",
+        "termination_message": null,
+        "success": true,
+        "status": null,
+        "nfev": 86,
+        "njev": 40,
+        "nit": 38,
+        "optimality": "Array(0.4491673, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "proximal-lsq-exact",
+        "ftol": null,
+        "xtol": null,
+        "gtol": null,
+        "maxiter": 200,
+        "x_scale": "auto",
+        "options": {}
+    }
+}

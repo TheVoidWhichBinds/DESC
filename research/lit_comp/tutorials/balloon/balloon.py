@@ -144,7 +144,7 @@ nzetaperturn = 200
 k = 2
 
 optimizer = Optimizer("proximal-lsq-exact")
-maxiter = 200
+maxiter = 50
 x_scale = "auto"
 
 ftol = 1e-4
@@ -417,3 +417,6 @@ objective_FREE = append_free_objectives(
 )
 
 eq_balloon_FREE.save(str(BALLOON_FREE_PATH))
+
+
+
