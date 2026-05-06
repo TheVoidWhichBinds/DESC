@@ -152,17 +152,17 @@ optimizer = Optimizer("proximal-lsq-exact")
 maxiter = 100
 x_scale = "auto"
 
-OUTER_FTOL_ORDERS = range(2,7,2)
+OUTER_FTOL_ORDERS = range(2)#,7,2)
 
 OUTER_XTOL_ORDERS = range(6)
 
-OUTER_GTOL_ORDERS = range(3,7)
+OUTER_GTOL_ORDERS = range(3)#,7)
 
-INNER_FTOL_ORDERS = range(2,7,2)
+INNER_FTOL_ORDERS = range(2)#,7,2)
 
 INNER_XTOL_ORDERS = range(6)
 
-INNER_GTOL_ORDERS = range(3,7)
+INNER_GTOL_ORDERS = range(3)#,7)
 
 INITIAL_TRUST_RATIO_ORDERS = range(3)
 
