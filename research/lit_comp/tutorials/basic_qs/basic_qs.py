@@ -153,19 +153,21 @@ optimizer = Optimizer("proximal-lsq-exact")
 maxiter = 100
 x_scale = "auto"
 
-OUTER_FTOL_ORDERS = [2]#,4,6]
+OUTER_FTOL_ORDERS = [2,4,6]
 
 OUTER_XTOL_ORDERS = [6]
 
-OUTER_GTOL_ORDERS = [3]#,6]
+OUTER_GTOL_ORDERS = [3,6]
 
-INNER_FTOL_ORDERS = [2]#,4,6]
+INNER_FTOL_ORDERS = [4,6]
 
 INNER_XTOL_ORDERS = [6]
 
-INNER_GTOL_ORDERS = [3]#,6]
+INNER_GTOL_ORDERS = [6]
 
 INITIAL_TRUST_RATIO_ORDERS = [3]
+
+
 
 
 BASE_OPTIONS_T = {
