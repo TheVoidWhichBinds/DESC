@@ -1,0 +1,19 @@
+{
+    "case_index": 9,
+    "case_label": "009",
+    "orders": {
+        "ftol_order": 5,
+        "xtol_order": 5,
+        "gtol_order": 5,
+        "initial_trust_ratio_order": 1
+    },
+    "tolerances": {
+        "ftol": 1e-05,
+        "xtol": 1e-05,
+        "gtol": 1e-05,
+        "initial_trust_ratio": 0.1
+    },
+    "options": {
+        "initial_trust_ratio": 0.1
+    }
+}

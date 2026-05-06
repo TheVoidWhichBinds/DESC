@@ -154,22 +154,22 @@ x_scale = "auto"
 
 FTOL_ORDERS = range(
     4,
-    8,
+    7,
 )
 
 XTOL_ORDERS = range(
-    4,
-    8,
+    5,
+    7,
 )
 
 GTOL_ORDERS = range(
-    4,
-    8,
+    5,
+    7,
 )
 
 INITIAL_TRUST_RATIO_ORDERS = range(
     1,
-    4,
+    3,
 )
 
 BASE_OPTIONS_T = {

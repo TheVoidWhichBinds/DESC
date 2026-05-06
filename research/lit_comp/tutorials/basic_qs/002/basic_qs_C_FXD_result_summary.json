@@ -1,0 +1,45 @@
+{
+    "label": "basic_qs_C_FXD",
+    "equilibrium_output_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/basic_qs/002/basic_qs_C_FXD.h5",
+    "result_pickle_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/basic_qs/002/basic_qs_C_FXD_result.pkl",
+    "summary_json_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/basic_qs/002/basic_qs_C_FXD_result_summary.json",
+    "result": {
+        "final_cost": 4009.558392319651,
+        "message": "Optimization terminated successfully.\n`ftol` condition satisfied. (ftol=1.00e-04)",
+        "termination_message": null,
+        "success": true,
+        "status": null,
+        "nfev": 12,
+        "njev": 12,
+        "nit": 11,
+        "optimality": "Array(0.07180949, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "proximal-lsq-exact",
+        "ftol": 0.0001,
+        "xtol": 1e-05,
+        "gtol": 1e-05,
+        "maxiter": 100,
+        "x_scale": "auto",
+        "options": {}
+    },
+    "tolerance_case": {
+        "case_index": 2,
+        "case_label": "002",
+        "orders": {
+            "ftol_order": 4,
+            "xtol_order": 5,
+            "gtol_order": 5,
+            "initial_trust_ratio_order": 2
+        },
+        "tolerances": {
+            "ftol": 0.0001,
+            "xtol": 1e-05,
+            "gtol": 1e-05,
+            "initial_trust_ratio": 0.01
+        },
+        "options": {
+            "initial_trust_ratio": 0.01
+        }
+    }
+}
