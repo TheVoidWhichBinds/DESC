@@ -157,7 +157,7 @@ for rho_i, dp_i in zip(grid_pressure.nodes[:, 0], dp_drho):
 # OPTIMIZER
 #========================================================================================================================================
 optimizer = Optimizer("proximal-lsq-exact")
-maxiter = 100
+maxiter = 500
 x_scale = "auto"
 
 OUTER_FTOL_ORDERS = [2,4,6]
@@ -182,7 +182,7 @@ BASE_OPTIONS_T = {
         "order": 2,
         "verbose": 0,
     },
-    "max_nfev": 100,
+    "max_nfev": 500,
     "solve_options": {
         "maxiter": maxiter,
         "verbose": 0,

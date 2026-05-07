@@ -1,0 +1,80 @@
+{
+    "label": "adv_qs_auglag_FREE",
+    "equilibrium_output_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/adv_qs/auglag/006/adv_qs_auglag_FREE.h5",
+    "result_pickle_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/adv_qs/auglag/006/adv_qs_auglag_FREE_result.pkl",
+    "summary_json_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/adv_qs/auglag/006/adv_qs_auglag_FREE_result_summary.json",
+    "result": {
+        "final_cost": 0.08523800891355016,
+        "message": "Maximum number of iterations has been exceeded.",
+        "termination_message": null,
+        "success": false,
+        "status": null,
+        "nfev": 791,
+        "njev": 526,
+        "nit": 500,
+        "optimality": "Array(0.00163828, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "lsq-auglag",
+        "ftol": 0.0001,
+        "xtol": 1e-06,
+        "gtol": 0.001,
+        "maxiter": 500,
+        "x_scale": "auto",
+        "options": {},
+        "outer_tolerances": {
+            "ftol": 0.0001,
+            "xtol": 1e-06,
+            "gtol": 0.001,
+            "initial_trust_ratio": 0.001
+        },
+        "inner_tolerances": {
+            "ftol": 1e-06,
+            "xtol": 1e-06,
+            "gtol": 1e-06
+        },
+        "solve_options": null
+    },
+    "tolerance_case": {
+        "sweep_index": 6,
+        "case_index": 6,
+        "case_label": "006",
+        "orders": {
+            "ftol_order": 4,
+            "xtol_order": 6,
+            "gtol_order": 3,
+            "outer_ftol_order": 4,
+            "outer_xtol_order": 6,
+            "outer_gtol_order": 3,
+            "inner_ftol_order": 6,
+            "inner_xtol_order": 6,
+            "inner_gtol_order": 6,
+            "initial_trust_ratio_order": 3
+        },
+        "tolerances": {
+            "ftol": 0.0001,
+            "xtol": 1e-06,
+            "gtol": 0.001,
+            "initial_trust_ratio": 0.001
+        },
+        "outer_tolerances": {
+            "ftol": 0.0001,
+            "xtol": 1e-06,
+            "gtol": 0.001,
+            "initial_trust_ratio": 0.001
+        },
+        "inner_tolerances": {
+            "ftol": 1e-06,
+            "xtol": 1e-06,
+            "gtol": 1e-06
+        },
+        "options": {
+            "solve_options": {
+                "ftol": 1e-06,
+                "xtol": 1e-06,
+                "gtol": 1e-06
+            },
+            "initial_trust_ratio": 0.001
+        }
+    }
+}
