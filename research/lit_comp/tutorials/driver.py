@@ -1,28 +1,15 @@
 # driver.py
 #==============================================================================================================
 #
-# Top-level CLI for rerunning one DESC tutorial file.
+# Top-level CLI for rerunning one DESC tutorial file on CPU.
 #
-# Each tutorial file handles its own optimization sweep and saves:
-#   1. FXD optimization outputs
-#   2. FREE optimization outputs
-#   3. one numbered output folder per tolerance combination:
+# Each tutorial file handles its own tolerance sweep and saves FXD/FREE outputs into
+# one numbered output folder per optimization and tolerance combination.
 #
-#        001/
-#        002/
-#        003/
-#        ...
-#
-# Serial usage:
+# Examples:
 #   cd research/lit_comp/tutorials
 #   python3 driver.py --tutorial basic_qs
-#
-# Single sweep-case usage:
-#   cd research/lit_comp/tutorials
 #   python3 driver.py --tutorial basic_qs --sweep-index 1
-#
-# SLURM array usage:
-#   sbatch basic_qs_gpu_array.sbatch
 #
 # Or from DESC root:
 #   python3 research/lit_comp/tutorials/driver.py --tutorial basic_qs
@@ -30,14 +17,13 @@
 #==============================================================================================================
 
 import os
-os.environ["JAX_PLATFORMS"] = "cuda,cpu"
-os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["JAX_PLATFORMS"] = "cpu"
 
 if "JAX_PLATFORM_NAME" in os.environ:
     del os.environ["JAX_PLATFORM_NAME"]
 
 from desc import set_device
-set_device("gpu")
+set_device("cpu")
 
 import argparse
 
@@ -81,20 +67,20 @@ def resolve_sweep_index(
 
     Priority:
         1. explicit --sweep-index
-        2. SLURM_ARRAY_TASK_ID
+        2. existing DESC_SWEEP_INDEX
         3. None, meaning run every sweep case serially
     """
 
     if args.sweep_index is not None:
         return int(args.sweep_index)
 
-    slurm_array_task_id = os.environ.get(
-        "SLURM_ARRAY_TASK_ID",
+    requested_sweep_index = os.environ.get(
+        "DESC_SWEEP_INDEX",
         None,
     )
 
-    if slurm_array_task_id is not None:
-        return int(slurm_array_task_id)
+    if requested_sweep_index is not None:
+        return int(requested_sweep_index)
 
     return None
 
@@ -102,12 +88,14 @@ def resolve_sweep_index(
 
 
 
-def configure_parallel_environment(
+def configure_cpu_environment(
         args,
     ):
     """
     Export environment variables consumed by the tutorial files.
     """
+
+    os.environ["JAX_PLATFORMS"] = "cpu"
 
     sweep_index = resolve_sweep_index(
         args = args,
@@ -142,10 +130,6 @@ def run_comparison_outputs(
     ):
     """
     Run compare.py logic after the tutorial writes FXD and FREE files.
-
-    If case is given, compare.py generates only that numbered folder CSV.
-    This is the safe mode for SLURM array jobs, because each array task only
-    compares the folder it just finished.
     """
 
     print("")
@@ -160,16 +144,22 @@ def run_comparison_outputs(
     print("================================================================================================================")
     print("")
 
-    rows, csv_path = tutorial_obj(
+    rows, csv_paths = tutorial_obj(
         tutorial = tutorial,
         case = case,
     )
 
     print("")
     print("Finished tutorial-objective comparison.")
-    print(f"CSV written to: {csv_path}")
+    print("CSV files written to:")
+    print("")
 
-    return rows, csv_path
+    for case_label, csv_path in csv_paths.items():
+        print(f"{case_label}: {csv_path}")
+
+    print("")
+
+    return rows, csv_paths
 
 
 
@@ -181,20 +171,17 @@ def run_comparison_outputs(
 
 
 #==============================================================================================================
-# Command-Line Interface
+# CLI
 #==============================================================================================================
 def parse_args():
     """
     Parse command-line arguments.
     """
 
-    parser = argparse.ArgumentParser(
-        description = "Run one DESC tutorial tolerance sweep. Tutorial file handles FXD and FREE outputs.",
-    )
+    parser = argparse.ArgumentParser()
 
     parser.add_argument(
         "--tutorial",
-        type = str,
         required = True,
         help = "Tutorial name, e.g. basic_qs, adv_qs, balloon, or neoclassical.",
     )
@@ -203,20 +190,20 @@ def parse_args():
         "--sweep-index",
         type = int,
         default = None,
-        help = "Optional one-based tolerance-sweep index. If omitted, SLURM_ARRAY_TASK_ID is used when present.",
+        help = "Optional one-based tolerance-sweep index. If omitted, every sweep case runs serially.",
     )
 
     parser.add_argument(
         "--case-start-index",
         type = int,
         default = None,
-        help = "Optional first numbered output folder for sweep-index 1. Mostly used by the GPU-array submit wrapper.",
+        help = "Optional first numbered output folder index for deterministic case labels.",
     )
 
     parser.add_argument(
         "--skip-compare",
         action = "store_true",
-        help = "Skip case_obj.csv generation after optimization.",
+        help = "Skip comparison CSV generation after the tutorial run.",
     )
 
     return parser.parse_args()
@@ -225,22 +212,14 @@ def parse_args():
 
 
 
-
-
-
-
-
-#==============================================================================================================
-# Main
-#==============================================================================================================
 def main():
     """
-    Command-line entry point.
+    Run one tutorial file and generate comparison CSV files.
     """
 
     args = parse_args()
 
-    sweep_index = configure_parallel_environment(
+    sweep_index = configure_cpu_environment(
         args = args,
     )
 
@@ -250,49 +229,43 @@ def main():
 
     print("")
     print("================================================================================================================")
-    print("DESC tutorial tolerance-sweep driver")
-    print("================================================================================================================")
-    print("")
-    print("Tutorial:")
-    print(tutorial_name)
-    print("")
-    print("Source file:")
-    print(source_file)
+    print(f"Running tutorial = {tutorial_name}")
+    print(f"Source file: {source_file}")
 
-    if sweep_index is not None:
-        print("")
-        print("Parallel sweep mode:")
-        print(f"sweep_index: {sweep_index}")
-        print(f"case_start_index: {os.environ.get('DESC_CASE_START_INDEX', 'atomic-next-folder')}")
+    if sweep_index is None:
+        print("Sweep mode: all tolerance cases serially")
 
-    print("")
-    print("================================================================================================================")
-    print("Running tutorial file")
+    else:
+        print(f"Sweep mode: single tolerance case, sweep index = {sweep_index}")
+
+    print("Backend: CPU")
     print("================================================================================================================")
     print("")
 
-    output = run_file(
-        source_file = source_file,
+    previous_skip_compare = os.environ.get(
+        "DESC_SKIP_TUTORIAL_COMPARE",
+        None,
     )
 
-    print("")
-    print("Completed tutorial sweep:")
-    print("================================================================================================================")
-    print(f"Output: {output}")
+    os.environ["DESC_SKIP_TUTORIAL_COMPARE"] = "1"
 
-    if args.skip_compare:
-        print("")
-        print("Skipping comparison CSV generation.")
-        print("")
-        return
+    try:
+        run_file(
+            source_file,
+        )
 
-    for case_label in output.keys():
-        comparison_case = case_label if str(case_label).isdigit() else None
+    finally:
+        if previous_skip_compare is None:
+            del os.environ["DESC_SKIP_TUTORIAL_COMPARE"]
 
+        else:
+            os.environ["DESC_SKIP_TUTORIAL_COMPARE"] = previous_skip_compare
+
+    if not args.skip_compare:
         run_comparison_outputs(
             tutorial = tutorial_name,
-            case = comparison_case,
         )
+
 
 
 

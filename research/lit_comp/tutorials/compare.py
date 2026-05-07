@@ -333,67 +333,17 @@ TUTORIAL_OBJECTIVES = {
 
 
 #==============================================================================================================
-# Multiple-Optimization File Helpers
+# Nested Output Folder Helpers
 #==============================================================================================================
 
-def flatten_h5_file_map(
-        files,
+def is_numbered_case_dir(
+        path,
     ):
     """
-    Flatten the h5 file map.
-
-    New helper.find_h5_files format:
-
-        {
-            "C": {
-                "FXD": Path(...),
-                "FREE": Path(...),
-            },
-            "T": {
-                "FXD": Path(...),
-                "FREE": Path(...),
-            },
-        }
-
-    Flattened format expected by compare_objective_set:
-
-        {
-            "C_FXD": Path(...),
-            "C_FREE": Path(...),
-            "T_FXD": Path(...),
-            "T_FREE": Path(...),
-        }
-
-    Also supports the older flat format:
-
-        {
-            "FXD": Path(...),
-            "FREE": Path(...),
-        }
+    Return True for output folders named 001, 002, 003, ...
     """
 
-    if len(files) == 0:
-        return {}
-
-    first_value = next(iter(files.values()))
-
-    if not isinstance(first_value, dict):
-        return files
-
-    flattened_files = {}
-
-    for optimization_name, variant_files in files.items():
-        for variant_name, path in variant_files.items():
-            flattened_label = f"{optimization_name}_{variant_name}"
-
-            flattened_files[flattened_label] = path
-
-    return flattened_files
-
-
-
-
-
+    return path.is_dir() and path.name.isdigit()
 
 
 
@@ -424,16 +374,110 @@ def normalize_case_label(
 
 
 
+def get_optimization_dirs(
+        tutorial_dir,
+    ):
+    """
+    Return tutorial-local optimization folders.
+
+    New layout:
+        basic_qs/tripleQS/001
+        basic_qs/twotermQH/001
+        adv_qs/multigrid/001
+        adv_qs/auglag/001
+        balloon/balloon/001
+        neoclassical/neoclassical/001
+    """
+
+    optimization_dirs = []
+
+    for path in sorted(tutorial_dir.iterdir()):
+        if not path.is_dir():
+            continue
+
+        if path.name.startswith("__"):
+            continue
+
+        numbered_children = [
+            child
+            for child in path.iterdir()
+            if is_numbered_case_dir(
+                path = child,
+            )
+        ]
+
+        if len(numbered_children) > 0:
+            optimization_dirs.append(path)
+
+    return tuple(optimization_dirs)
+
+
+
+
+
+def get_nested_output_case_dirs(
+        tutorial_dir,
+    ):
+    """
+    Return all numbered case folders in the new optimization-subfolder layout.
+    """
+
+    case_dirs = []
+
+    for optimization_dir in get_optimization_dirs(
+            tutorial_dir = tutorial_dir,
+        ):
+
+        case_dirs.extend(
+            sorted(
+                path
+                for path in optimization_dir.iterdir()
+                if is_numbered_case_dir(
+                    path = path,
+                )
+            )
+        )
+
+    return tuple(case_dirs)
+
+
+
+
+
+def get_all_output_case_dirs(
+        tutorial_dir,
+    ):
+    """
+    Return output case folders for either the new or old layout.
+    """
+
+    nested_case_dirs = get_nested_output_case_dirs(
+        tutorial_dir = tutorial_dir,
+    )
+
+    if len(nested_case_dirs) > 0:
+        return nested_case_dirs
+
+    direct_case_dirs = get_output_case_dirs(
+        tutorial_dir = tutorial_dir,
+    )
+
+    return direct_case_dirs
+
+
+
+
+
 def get_requested_case_dirs(
         tutorial_dir,
         case = None,
     ):
     """
-    Return either all output folders or one requested numbered output folder.
+    Return either all output folders or every optimization folder for one case label.
     """
 
     if case is None:
-        return get_output_case_dirs(
+        return get_all_output_case_dirs(
             tutorial_dir = tutorial_dir,
         )
 
@@ -441,21 +485,148 @@ def get_requested_case_dirs(
         case = case,
     )
 
-    case_dir = tutorial_dir / case_label
+    requested_case_dirs = []
 
-    if not case_dir.exists():
+    direct_case_dir = tutorial_dir / case_label
+
+    if direct_case_dir.exists() and direct_case_dir.is_dir():
+        requested_case_dirs.append(direct_case_dir)
+
+    for optimization_dir in get_optimization_dirs(
+            tutorial_dir = tutorial_dir,
+        ):
+
+        case_dir = optimization_dir / case_label
+
+        if case_dir.exists() and case_dir.is_dir():
+            requested_case_dirs.append(case_dir)
+
+    if len(requested_case_dirs) == 0:
         raise FileNotFoundError(
-            f"Requested output folder does not exist: {case_dir}"
+            f"Requested output folder does not exist for case {case_label} under {tutorial_dir}."
         )
 
-    if not case_dir.is_dir():
-        raise NotADirectoryError(
-            f"Requested output folder is not a directory: {case_dir}"
-        )
+    return tuple(requested_case_dirs)
 
-    return (
+
+
+
+
+def get_optimization_label_from_case_dir(
+        tutorial_dir,
         case_dir,
+    ):
+    """
+    Return the optimization folder label for a case directory.
+    """
+
+    tutorial_dir = tutorial_dir.resolve()
+    case_dir = case_dir.resolve()
+
+    if case_dir.parent == tutorial_dir:
+        return "main"
+
+    return case_dir.parent.name
+
+
+
+
+
+def make_csv_case_key(
+        tutorial_dir,
+        case_dir,
+    ):
+    """
+    Return a stable key for rows_by_case and csv_paths.
+    """
+
+    optimization_label = get_optimization_label_from_case_dir(
+        tutorial_dir = tutorial_dir,
+        case_dir = case_dir,
     )
+
+    if optimization_label == "main":
+        return case_dir.name
+
+    return f"{optimization_label}/{case_dir.name}"
+
+
+
+
+
+def flatten_h5_file_map(
+        files,
+    ):
+    """
+    Flatten helper.find_h5_files output for folders containing multiple optimizations.
+    """
+
+    if len(files) == 0:
+        return {}
+
+    first_value = next(iter(files.values()))
+
+    if not isinstance(first_value, dict):
+        return files
+
+    flattened_files = {}
+
+    for optimization_name, variant_files in files.items():
+        for variant_name, path in variant_files.items():
+            flattened_label = f"{optimization_name}_{variant_name}"
+
+            flattened_files[flattened_label] = path
+
+    return flattened_files
+
+
+
+
+
+def collapse_single_optimization_h5_file_map(
+        files,
+    ):
+    """
+    Collapse a one-optimization folder into FXD/FREE columns.
+    """
+
+    if len(files) != 1:
+        return flatten_h5_file_map(
+            files = files,
+        )
+
+    first_value = next(iter(files.values()))
+
+    if not isinstance(first_value, dict):
+        return files
+
+    return first_value
+
+
+
+
+
+def make_case_csv_path(
+        tutorial,
+        tutorial_dir,
+        case_dir,
+    ):
+    """
+    Build the comparison CSV path for one output case folder.
+    """
+
+    optimization_label = get_optimization_label_from_case_dir(
+        tutorial_dir = tutorial_dir,
+        case_dir = case_dir,
+    )
+
+    if case_dir == tutorial_dir:
+        return tutorial_dir / f"{tutorial}_case_obj.csv"
+
+    if optimization_label == "main":
+        return case_dir / f"{tutorial}_{case_dir.name}_case_obj.csv"
+
+    return case_dir / f"{tutorial}_{optimization_label}_{case_dir.name}_case_obj.csv"
 
 
 
@@ -477,8 +648,9 @@ def tutorial_obj(
     """
     Compare tutorial-specific objective values between FXD and FREE files.
 
-    If case is None, write one comparison CSV per numbered output folder.
-    If case is given, write only the CSV for that requested folder.
+    New layout writes one CSV inside each optimization/case folder.
+    If case is None, every numbered folder is compared.
+    If case is given, every optimization folder with that case label is compared.
     """
 
     tutorial_dir = get_tutorial_dir(
@@ -509,28 +681,39 @@ def tutorial_obj(
             case_dir = case_dir,
         )
 
-        files = flatten_h5_file_map(
+        files = collapse_single_optimization_h5_file_map(
             files = files,
         )
+
+        if len(files) == 0:
+            print("")
+            print(f"No *_FXD.h5 or *_FREE.h5 files were found in: {case_dir}")
+            print("")
+            continue
 
         rows = compare_objective_set(
             files = files,
             objective_getter = objective_getter,
         )
 
-        if case_dir == tutorial_dir:
-            csv_path = tutorial_dir / f"{tutorial}_case_obj.csv"
-
-        else:
-            csv_path = case_dir / f"{tutorial}_{case_dir.name}_case_obj.csv"
+        csv_path = make_case_csv_path(
+            tutorial = tutorial,
+            tutorial_dir = tutorial_dir,
+            case_dir = case_dir,
+        )
 
         write_table_csv(
             rows = rows,
             path = csv_path,
         )
 
-        rows_by_case[case_dir.name] = rows
-        csv_paths[case_dir.name] = csv_path
+        case_key = make_csv_case_key(
+            tutorial_dir = tutorial_dir,
+            case_dir = case_dir,
+        )
+
+        rows_by_case[case_key] = rows
+        csv_paths[case_key] = csv_path
 
     return rows_by_case, csv_paths
 

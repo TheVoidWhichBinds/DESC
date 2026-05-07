@@ -9,7 +9,7 @@ Write-up of the DESC ideal ballooning stability tutorial, minus plotting.
 # IMPORTS
 #========================================================================================================================================
 from desc import set_device
-set_device("gpu")
+set_device("cpu")
 
 import os
 import sys
@@ -46,6 +46,9 @@ from helper import (
     print_tolerance_case_header,
     should_run_tolerance_case,
 )
+from compare import (
+    tutorial_obj,
+)
 
 
 
@@ -62,6 +65,8 @@ from helper import (
 fname = "balloon"
 
 OUTPUT_DIR = Path(__file__).resolve().parent
+
+BALLOON_OUTPUT_DIR = OUTPUT_DIR / "balloon"
 
 
 
@@ -420,7 +425,7 @@ for tolerance_case in iter_tolerance_cases(
     ran_tolerance_case = True
 
     case_dir, tolerance_report_path = prepare_tolerance_case_dir(
-        output_dir = OUTPUT_DIR,
+        output_dir = BALLOON_OUTPUT_DIR,
         tolerance_case = tolerance_case,
     )
 
@@ -483,3 +488,25 @@ if not ran_tolerance_case:
     raise ValueError(
         f"No balloon tolerance case matched DESC_SWEEP_INDEX = {requested_sweep_index}."
     )
+
+
+
+
+if os.environ.get(
+        "DESC_SKIP_TUTORIAL_COMPARE",
+        "0",
+    ) != "1":
+
+    rows_by_case, csv_paths = tutorial_obj(
+        tutorial = fname,
+    )
+
+    print("")
+    print("Finished balloon comparison CSV generation.")
+    print("CSV files written to:")
+    print("")
+
+    for case_label, csv_path in csv_paths.items():
+        print(f"{case_label}: {csv_path}")
+
+    print("")

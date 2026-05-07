@@ -11,7 +11,7 @@ Write-up of the DESC Basic QS Optimization tutorial, minus plotting.
 from copy import deepcopy
 from pathlib import Path
 from desc import set_device
-set_device("gpu")
+set_device("cpu")
 
 import os
 import sys
@@ -45,6 +45,9 @@ from helper import (
     print_tolerance_case_header,
     should_run_tolerance_case,
 )
+from compare import (
+    tutorial_obj,
+)
 
 
 
@@ -61,6 +64,10 @@ from helper import (
 fname = "basic_qs"
 
 OUTPUT_DIR = Path(__file__).resolve().parent
+
+TRIPLE_QS_OUTPUT_DIR = OUTPUT_DIR / "tripleQS"
+
+TWO_TERM_QH_OUTPUT_DIR = OUTPUT_DIR / "twotermQH"
 
 
 
@@ -325,44 +332,71 @@ for tolerance_case in iter_tolerance_cases(
 
     ran_tolerance_case = True
 
-    case_dir, tolerance_report_path = prepare_tolerance_case_dir(
-        output_dir = OUTPUT_DIR,
-        tolerance_case = tolerance_case,
+    triple_tolerance_case = deepcopy(
+        tolerance_case,
+    )
+
+    two_term_tolerance_case = deepcopy(
+        tolerance_case,
+    )
+
+    triple_case_dir, triple_tolerance_report_path = prepare_tolerance_case_dir(
+        output_dir = TRIPLE_QS_OUTPUT_DIR,
+        tolerance_case = triple_tolerance_case,
     )
 
     print_tolerance_case_header(
-        tolerance_case = tolerance_case,
-        case_dir = case_dir,
+        tolerance_case = triple_tolerance_case,
+        case_dir = triple_case_dir,
     )
 
-    INITIAL_PATH = case_dir / f"{fname}_initial.h5"
+    two_term_case_dir, two_term_tolerance_report_path = prepare_tolerance_case_dir(
+        output_dir = TWO_TERM_QH_OUTPUT_DIR,
+        tolerance_case = two_term_tolerance_case,
+    )
 
-    TRIPLE_PRODUCT_FXD_PATH = case_dir / f"{fname}_T_FXD.h5"
+    print_tolerance_case_header(
+        tolerance_case = two_term_tolerance_case,
+        case_dir = two_term_case_dir,
+    )
 
-    TRIPLE_PRODUCT_FREE_PATH = case_dir / f"{fname}_T_FREE.h5"
+    TRIPLE_INITIAL_PATH = triple_case_dir / f"{fname}_tripleQS_initial.h5"
 
-    TWO_TERM_FXD_PATH = case_dir / f"{fname}_C_FXD.h5"
+    TRIPLE_PRODUCT_FXD_PATH = triple_case_dir / f"{fname}_T_FXD.h5"
 
-    TWO_TERM_FREE_PATH = case_dir / f"{fname}_C_FREE.h5"
+    TRIPLE_PRODUCT_FREE_PATH = triple_case_dir / f"{fname}_T_FREE.h5"
+
+    TWO_TERM_INITIAL_PATH = two_term_case_dir / f"{fname}_twotermQH_initial.h5"
+
+    TWO_TERM_FXD_PATH = two_term_case_dir / f"{fname}_C_FXD.h5"
+
+    TWO_TERM_FREE_PATH = two_term_case_dir / f"{fname}_C_FREE.h5"
 
     eq_init.save(
-        str(INITIAL_PATH)
+        str(TRIPLE_INITIAL_PATH)
+    )
+
+    eq_init.save(
+        str(TWO_TERM_INITIAL_PATH)
     )
 
     print("")
-    print(f"Tolerance report written to: {tolerance_report_path}")
+    print(f"Triple Product tolerance report written to: {triple_tolerance_report_path}")
+    print(f"Two-Term QH tolerance report written to: {two_term_tolerance_report_path}")
     print("")
 
-    tolerances = tolerance_case["tolerances"]
+    triple_tolerances = triple_tolerance_case["tolerances"]
+
+    two_term_tolerances = two_term_tolerance_case["tolerances"]
 
     options_T = build_basic_qs_options(
         base_options = BASE_OPTIONS_T,
-        tolerance_case = tolerance_case,
+        tolerance_case = triple_tolerance_case,
     )
 
     options_C = build_basic_qs_options(
         base_options = BASE_OPTIONS_C,
-        tolerance_case = tolerance_case,
+        tolerance_case = two_term_tolerance_case,
     )
 
 
@@ -396,15 +430,15 @@ for tolerance_case in iter_tolerance_cases(
         optimizer = optimizer,
         output_path = TRIPLE_PRODUCT_FXD_PATH,
         label = "basic_qs_T_FXD",
-        ftol = tolerances["ftol"],
-        xtol = tolerances["xtol"],
-        gtol = tolerances["gtol"],
+        ftol = triple_tolerances["ftol"],
+        xtol = triple_tolerances["xtol"],
+        gtol = triple_tolerances["gtol"],
         maxiter = maxiter,
         options = options_T,
         copy = False,
         verbose = 3,
         x_scale = x_scale,
-        tolerance_case = tolerance_case,
+        tolerance_case = triple_tolerance_case,
     )
 
 
@@ -447,15 +481,15 @@ for tolerance_case in iter_tolerance_cases(
         optimizer = optimizer,
         output_path = TRIPLE_PRODUCT_FREE_PATH,
         label = "basic_qs_T_FREE",
-        ftol = tolerances["ftol"],
-        xtol = tolerances["xtol"],
-        gtol = tolerances["gtol"],
+        ftol = triple_tolerances["ftol"],
+        xtol = triple_tolerances["xtol"],
+        gtol = triple_tolerances["gtol"],
         maxiter = maxiter,
         options = options_T,
         copy = False,
         verbose = 3,
         x_scale = x_scale,
-        tolerance_case = tolerance_case,
+        tolerance_case = triple_tolerance_case,
     )
 
 
@@ -490,15 +524,15 @@ for tolerance_case in iter_tolerance_cases(
         optimizer = optimizer,
         output_path = TWO_TERM_FXD_PATH,
         label = "basic_qs_C_FXD",
-        ftol = tolerances["ftol"],
-        xtol = tolerances["xtol"],
-        gtol = tolerances["gtol"],
+        ftol = two_term_tolerances["ftol"],
+        xtol = two_term_tolerances["xtol"],
+        gtol = two_term_tolerances["gtol"],
         maxiter = maxiter,
         options = options_C,
         copy = False,
         verbose = 3,
         x_scale = x_scale,
-        tolerance_case = tolerance_case,
+        tolerance_case = two_term_tolerance_case,
     )
 
 
@@ -542,15 +576,15 @@ for tolerance_case in iter_tolerance_cases(
         optimizer = optimizer,
         output_path = TWO_TERM_FREE_PATH,
         label = "basic_qs_C_FREE",
-        ftol = tolerances["ftol"],
-        xtol = tolerances["xtol"],
-        gtol = tolerances["gtol"],
+        ftol = two_term_tolerances["ftol"],
+        xtol = two_term_tolerances["xtol"],
+        gtol = two_term_tolerances["gtol"],
         maxiter = maxiter,
         options = options_C,
         copy = False,
         verbose = 3,
         x_scale = x_scale,
-        tolerance_case = tolerance_case,
+        tolerance_case = two_term_tolerance_case,
     )
 
 
@@ -565,3 +599,25 @@ if not ran_tolerance_case:
     raise ValueError(
         f"No basic_qs tolerance case matched DESC_SWEEP_INDEX = {requested_sweep_index}."
     )
+
+
+
+
+if os.environ.get(
+        "DESC_SKIP_TUTORIAL_COMPARE",
+        "0",
+    ) != "1":
+
+    rows_by_case, csv_paths = tutorial_obj(
+        tutorial = fname,
+    )
+
+    print("")
+    print("Finished basic_qs comparison CSV generation.")
+    print("CSV files written to:")
+    print("")
+
+    for case_label, csv_path in csv_paths.items():
+        print(f"{case_label}: {csv_path}")
+
+    print("")

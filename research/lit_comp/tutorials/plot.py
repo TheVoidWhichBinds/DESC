@@ -11,12 +11,13 @@
 #   python3 research/lit_comp/tutorials/plot.py --tutorial neoclassical
 #   python3 research/lit_comp/tutorials/plot.py --tutorial basic_qs --case 001
 #
-# This script:
-#   1. finds *_FXD.h5 and *_FREE.h5 files inside the requested tutorial folder
-#   2. plots all pressure profiles together in one tutorial-level figure
-#   3. plots all iota profiles together in one tutorial-level figure
-#   4. plots all toroidal cross-sections together in one tutorial-level figure
-#   5. saves all plots into that same tutorial folder
+# New output layout:
+#   tutorials/basic_qs/tripleQS/001/
+#   tutorials/basic_qs/twotermQH/001/
+#   tutorials/adv_qs/multigrid/001/
+#   tutorials/adv_qs/auglag/001/
+#   tutorials/balloon/balloon/001/
+#   tutorials/neoclassical/neoclassical/001/
 #
 #==============================================================================================================
 
@@ -32,8 +33,8 @@ import numpy as np
 
 from desc.grid import LinearGrid
 from desc.io import load
-from desc.plotting import plot_comparison
 from desc.plotting import plot_surfaces
+
 
 
 
@@ -97,6 +98,7 @@ def get_tutorial_dir(
 
 
 
+
 def is_numbered_case_dir(
         path,
     ):
@@ -116,7 +118,7 @@ def find_numbered_case_dirs(
         tutorial_dir,
     ):
     """
-    Return numbered tolerance-case folders in a tutorial directory.
+    Return numbered tolerance-case folders directly under a folder.
     """
 
     tutorial_dir = Path(tutorial_dir)
@@ -135,28 +137,61 @@ def find_numbered_case_dirs(
 
 
 
+def get_optimization_dirs(
+        tutorial_dir,
+    ):
+    """
+    Return tutorial-local optimization folders in the new nested layout.
+    """
+
+    optimization_dirs = []
+
+    for path in sorted(tutorial_dir.iterdir()):
+        if not path.is_dir():
+            continue
+
+        if path.name.startswith("__"):
+            continue
+
+        if len(find_numbered_case_dirs(path)) > 0:
+            optimization_dirs.append(path)
+
+    return tuple(optimization_dirs)
+
+
+
+
+
 def get_output_case_dirs(
         tutorial_dir,
     ):
     """
-    Return output case directories.
-
-    If numbered folders exist, return:
-        001/
-        002/
-        ...
-
-    Otherwise return the tutorial directory itself for backward compatibility.
+    Return output case directories for the new layout, with old-layout fallback.
     """
 
     tutorial_dir = Path(tutorial_dir)
 
-    numbered_case_dirs = find_numbered_case_dirs(
+    nested_case_dirs = []
+
+    for optimization_dir in get_optimization_dirs(
+            tutorial_dir = tutorial_dir,
+        ):
+
+        nested_case_dirs.extend(
+            find_numbered_case_dirs(
+                tutorial_dir = optimization_dir,
+            )
+        )
+
+    if len(nested_case_dirs) > 0:
+        return tuple(nested_case_dirs)
+
+    direct_case_dirs = find_numbered_case_dirs(
         tutorial_dir = tutorial_dir,
     )
 
-    if len(numbered_case_dirs) > 0:
-        return numbered_case_dirs
+    if len(direct_case_dirs) > 0:
+        return direct_case_dirs
 
     return (
         tutorial_dir,
@@ -196,7 +231,7 @@ def get_requested_case_dirs(
         case = None,
     ):
     """
-    Return either all output folders or one requested numbered output folder.
+    Return either all output folders or every optimization folder for one case label.
     """
 
     tutorial_dir = Path(tutorial_dir)
@@ -210,21 +245,28 @@ def get_requested_case_dirs(
         case = case,
     )
 
-    case_dir = tutorial_dir / case_label
+    requested_case_dirs = []
 
-    if not case_dir.exists():
+    direct_case_dir = tutorial_dir / case_label
+
+    if direct_case_dir.exists() and direct_case_dir.is_dir():
+        requested_case_dirs.append(direct_case_dir)
+
+    for optimization_dir in get_optimization_dirs(
+            tutorial_dir = tutorial_dir,
+        ):
+
+        case_dir = optimization_dir / case_label
+
+        if case_dir.exists() and case_dir.is_dir():
+            requested_case_dirs.append(case_dir)
+
+    if len(requested_case_dirs) == 0:
         raise FileNotFoundError(
-            f"Requested output folder does not exist: {case_dir}"
+            f"Requested output folder does not exist for case {case_label} under {tutorial_dir}."
         )
 
-    if not case_dir.is_dir():
-        raise NotADirectoryError(
-            f"Requested output folder is not a directory: {case_dir}"
-        )
-
-    return (
-        case_dir,
-    )
+    return tuple(requested_case_dirs)
 
 
 
@@ -260,12 +302,6 @@ def get_specific_optimization_name(
     ):
     """
     Extract the specific optimization name from a file name.
-
-    Examples:
-        basic_qs_C_FXD.h5   -> C
-        basic_qs_T_FREE.h5  -> T
-        balloon_FXD.h5      -> main
-        balloon_FREE.h5     -> main
     """
 
     stem = Path(path).stem
@@ -296,31 +332,68 @@ def get_specific_optimization_name(
 
 
 
+def is_nested_optimization_case_dir(
+        case_dir,
+    ):
+    """
+    Return True for paths like basic_qs/tripleQS/001.
+    """
+
+    case_dir = Path(case_dir)
+
+    if not case_dir.name.isdigit():
+        return False
+
+    return case_dir.parent.parent == TUTORIALS_DIR / case_dir.parent.parent.name
+
+
+
+
+
+def get_optimization_label_from_case_dir(
+        tutorial_name,
+        case_dir,
+    ):
+    """
+    Return the optimization label for an output case folder.
+    """
+
+    case_dir = Path(case_dir)
+
+    tutorial_dir = TUTORIALS_DIR / tutorial_name
+
+    if case_dir.parent == tutorial_dir:
+        return "main"
+
+    if case_dir.parent.parent == tutorial_dir:
+        return case_dir.parent.name
+
+    return "main"
+
+
+
+
+
 def find_h5_files(
         tutorial_dir,
     ):
     """
     Find FXD and FREE files in one output folder.
-
-    Returns:
-        {
-            "main": {
-                "FXD": Path(...),
-                "FREE": Path(...),
-            },
-            "C": {
-                "FXD": Path(...),
-                "FREE": Path(...),
-            },
-            "T": {
-                "FXD": Path(...),
-                "FREE": Path(...),
-            },
-        }
     """
 
-    tutorial_dir = Path(tutorial_dir)
-    tutorial_name = tutorial_dir.parent.name if tutorial_dir.name.isdigit() else tutorial_dir.name
+    case_dir = Path(tutorial_dir)
+
+    if case_dir.name.isdigit() and case_dir.parent.parent == TUTORIALS_DIR:
+        tutorial_name = case_dir.parent.name
+        optimization_label = None
+
+    elif case_dir.name.isdigit():
+        tutorial_name = case_dir.parent.parent.name
+        optimization_label = case_dir.parent.name
+
+    else:
+        tutorial_name = case_dir.name
+        optimization_label = None
 
     files = {}
 
@@ -328,25 +401,27 @@ def find_h5_files(
         ("FXD", "_FXD.h5"),
         ("FREE", "_FREE.h5"),
     ):
-        matches = sorted(tutorial_dir.glob(f"*{suffix}"))
+        matches = sorted(case_dir.glob(f"*{suffix}"))
 
         for path in matches:
-            optimization_name = get_specific_optimization_name(
-                tutorial_name = tutorial_name,
-                path = path,
-            )
+            if optimization_label is None:
+                group_name = get_specific_optimization_name(
+                    tutorial_name = tutorial_name,
+                    path = path,
+                )
 
-            if optimization_name not in files:
-                files[optimization_name] = {
+            else:
+                group_name = optimization_label
+
+            if group_name not in files:
+                files[group_name] = {
                     "FXD": None,
                     "FREE": None,
                 }
 
-            files[optimization_name][variant] = path
+            files[group_name][variant] = path
 
     return files
-
-
 
 
 
@@ -1145,7 +1220,7 @@ def plot_tutorial(
     Plot relevant comparisons for one tutorial.
 
     If case is None, plots are generated for all numbered output folders.
-    If case is given, plots are generated only inside that requested folder.
+    If case is given, plots are generated for every optimization folder with that case label.
     """
 
     tutorial_name = normalize_tutorial_name(
