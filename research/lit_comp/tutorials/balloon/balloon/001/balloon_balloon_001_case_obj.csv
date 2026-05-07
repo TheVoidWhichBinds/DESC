@@ -1,0 +1,25 @@
+objective,metric,FXD,FREE
+ForceBalance,size,234,234
+ForceBalance,l2,798668.808376582,1227552.0639644882
+ForceBalance,max_abs,221806.4034333986,297060.4682320511
+ForceBalance,mean_abs,38601.911174905086,61436.722186909814
+ForceBalance,rms,52210.61331807805,80247.58882187211
+ForceBalance,status,ok,ok
+BallooningStability,size,1,1
+BallooningStability,l2,4.14689424906199,0.7307174199638856
+BallooningStability,max_abs,4.14689424906199,0.7307174199638856
+BallooningStability,mean_abs,4.14689424906199,0.7307174199638856
+BallooningStability,rms,4.14689424906199,0.7307174199638856
+BallooningStability,status,ok,ok
+AspectRatio,size,1,1
+AspectRatio,l2,10.510465584882619,10.445063556950286
+AspectRatio,max_abs,10.510465584882619,10.445063556950286
+AspectRatio,mean_abs,10.510465584882619,10.445063556950286
+AspectRatio,rms,10.510465584882619,10.445063556950286
+AspectRatio,status,ok,ok
+GenericObjective curvature_k2_rho,size,117,117
+GenericObjective curvature_k2_rho,l2,22.943264632284375,25.240907749181897
+GenericObjective curvature_k2_rho,max_abs,8.920388355090394,9.479532321068884
+GenericObjective curvature_k2_rho,mean_abs,1.5443874734072702,1.5636665963153966
+GenericObjective curvature_k2_rho,rms,2.121105565595917,2.333522746895684
+GenericObjective curvature_k2_rho,status,ok,ok

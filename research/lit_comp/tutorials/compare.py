@@ -13,6 +13,7 @@
 import argparse
 import numpy as np
 from desc.grid import LinearGrid
+from desc.integrals import surface_max, surface_min
 from helper import (
     compare_objective_set,
     find_h5_files,
@@ -31,7 +32,7 @@ from helper import (
 
 
 #==============================================================================================================
-# Tutorial Objective Helpers
+# Shared Objective Helpers
 #==============================================================================================================
 
 def objective_spec(
@@ -57,17 +58,12 @@ def objective_spec(
 
 
 
-def basic_qs_objectives(
+def build_force_balance_grid(
         eq,
     ):
     """
-    Return non-Fix objectives specific to the basic_qs tutorial.
+    Build the shared force-balance comparison grid.
     """
-
-    from desc.objectives import (
-        ForceBalance,
-        QuasisymmetryBoozer,
-    )
 
     grid = LinearGrid(
         M = eq.M_grid,
@@ -76,11 +72,252 @@ def basic_qs_objectives(
         sym = eq.sym,
     )
 
-    boozer_grid = LinearGrid(
-        M = eq.M_grid,
-        N = eq.N_grid,
-        NFP = eq.NFP,
-        sym = False,
+    return grid
+
+
+
+
+
+def build_surface_grid(
+        eq,
+        rho,
+        sym = None,
+        axis = None,
+    ):
+    """
+    Build a tutorial comparison grid on one or more flux surfaces.
+    """
+
+    if sym is None:
+        sym = eq.sym
+
+    kwargs = {
+        "M": eq.M_grid,
+        "N": eq.N_grid,
+        "NFP": eq.NFP,
+        "rho": np.atleast_1d(rho),
+        "sym": sym,
+    }
+
+    if axis is not None:
+        kwargs["axis"] = axis
+
+    grid = LinearGrid(
+        **kwargs,
+    )
+
+    return grid
+
+
+
+
+
+def get_reference_volume(
+        eq,
+        reference_eq = None,
+    ):
+    """
+    Return the run-reference volume when available.
+    """
+
+    if reference_eq is None:
+        reference_eq = eq
+
+    return reference_eq.compute("V")["V"]
+
+
+
+
+
+def find_reference_h5_file(
+        case_dir,
+    ):
+    """
+    Find the run-local initial equilibrium file when it exists.
+    """
+
+    candidates = sorted(
+        case_dir.glob("*_initial.h5")
+    )
+
+    if len(candidates) == 0:
+        return None
+
+    return candidates[0]
+
+
+
+
+
+def normalize_loaded_equilibrium(
+        loaded,
+    ):
+    """
+    Convert a loaded DESC object into one representative equilibrium.
+    """
+
+    if hasattr(
+            loaded,
+            "equilibria",
+        ):
+        equilibria = loaded.equilibria
+
+        if len(equilibria) > 0:
+            return equilibria[-1]
+
+    try:
+        return loaded[-1]
+
+    except Exception:
+        return loaded
+
+
+
+
+
+def load_reference_equilibrium(
+        case_dir,
+    ):
+    """
+    Load the run-local initial equilibrium when available.
+    """
+
+    reference_path = find_reference_h5_file(
+        case_dir = case_dir,
+    )
+
+    if reference_path is None:
+        return None
+
+    try:
+        from desc.equilibrium import Equilibrium
+
+        loaded = Equilibrium.load(
+            str(reference_path),
+        )
+
+        return normalize_loaded_equilibrium(
+            loaded = loaded,
+        )
+
+    except Exception:
+        pass
+
+    try:
+        from desc.equilibrium import EquilibriaFamily
+
+        loaded = EquilibriaFamily.load(
+            str(reference_path),
+        )
+
+        return normalize_loaded_equilibrium(
+            loaded = loaded,
+        )
+
+    except Exception:
+        return None
+
+
+
+
+
+def wrap_objective_getter(
+        objective_builder,
+        case_dir,
+    ):
+    """
+    Build the one-argument getter expected by helper.compare_objective_set.
+    """
+
+    reference_eq = load_reference_equilibrium(
+        case_dir = case_dir,
+    )
+
+    def objective_getter(
+            eq,
+        ):
+        return objective_builder(
+            eq = eq,
+            reference_eq = reference_eq,
+        )
+
+    return objective_getter
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
+# User Objective Helpers
+#==============================================================================================================
+
+def fun_mirror_ratio(
+        grid,
+        data,
+    ):
+    """
+    Compute the mirror ratio from |B|.
+    """
+
+    max_tz_B = surface_max(
+        grid = grid,
+        x = data["|B|"],
+        surface_label = "rho",
+    )
+
+    min_tz_B = surface_min(
+        grid = grid,
+        x = data["|B|"],
+        surface_label = "rho",
+    )
+
+    max_tz_B = grid.compress(
+        max_tz_B,
+        surface_label = "rho",
+    )
+
+    min_tz_B = grid.compress(
+        min_tz_B,
+        surface_label = "rho",
+    )
+
+    mirror_ratio = (max_tz_B - min_tz_B) / (min_tz_B + max_tz_B)
+
+    return mirror_ratio
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
+# Basic QS Objective Builders
+#==============================================================================================================
+
+def basic_qs_tripleqs_objectives(
+        eq,
+        reference_eq = None,
+    ):
+    """
+    Return comparison rows for the basic_qs/tripleQS optimization.
+    """
+
+    from desc.objectives import (
+        ForceBalance,
+        QuasisymmetryTripleProduct,
+    )
+
+    grid = build_force_balance_grid(
+        eq = eq,
     )
 
     return [
@@ -92,13 +329,254 @@ def basic_qs_objectives(
             ),
         ),
         objective_spec(
-            name = "QuasisymmetryBoozer",
-            objective = QuasisymmetryBoozer(
+            name = "QuasisymmetryTripleProduct",
+            objective = QuasisymmetryTripleProduct(
                 eq = eq,
                 helicity = (1, eq.NFP),
-                M_booz = 2 * eq.M,
-                N_booz = 2 * eq.N,
-                grid = boozer_grid,
+                grid = grid,
+            ),
+        ),
+    ]
+
+
+
+
+
+def basic_qs_twotermqh_objectives(
+        eq,
+        reference_eq = None,
+    ):
+    """
+    Return comparison rows for the basic_qs/twotermQH optimization.
+    """
+
+    from desc.objectives import (
+        ForceBalance,
+        QuasisymmetryTwoTerm,
+    )
+
+    grid = build_force_balance_grid(
+        eq = eq,
+    )
+
+    return [
+        objective_spec(
+            name = "ForceBalance",
+            objective = ForceBalance(
+                eq = eq,
+                grid = grid,
+            ),
+        ),
+        objective_spec(
+            name = "QuasisymmetryTwoTerm",
+            objective = QuasisymmetryTwoTerm(
+                eq = eq,
+                helicity = (1, eq.NFP),
+                grid = grid,
+            ),
+        ),
+    ]
+
+
+
+
+
+def basic_qs_objectives(
+        eq,
+        reference_eq = None,
+    ):
+    """
+    Backward-compatible basic_qs objective list for old direct-run folders.
+    """
+
+    return basic_qs_tripleqs_objectives(
+        eq = eq,
+        reference_eq = reference_eq,
+    )
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
+# Advanced QS Objective Builders
+#==============================================================================================================
+
+def adv_qs_multigrid_objectives(
+        eq,
+        reference_eq = None,
+    ):
+    """
+    Return comparison rows for the adv_qs/multigrid optimization.
+    """
+
+    from desc.objectives import (
+        AspectRatio,
+        ForceBalance,
+        QuasisymmetryTwoTerm,
+    )
+
+    force_grid = build_force_balance_grid(
+        eq = eq,
+    )
+
+    qh_grid = build_surface_grid(
+        eq = eq,
+        rho = np.array(
+            [
+                0.6,
+                0.8,
+                1.0,
+            ]
+        ),
+        sym = True,
+    )
+
+    return [
+        objective_spec(
+            name = "ForceBalance",
+            objective = ForceBalance(
+                eq = eq,
+                grid = force_grid,
+            ),
+        ),
+        objective_spec(
+            name = "QuasisymmetryTwoTerm",
+            objective = QuasisymmetryTwoTerm(
+                eq = eq,
+                helicity = (1, eq.NFP),
+                grid = qh_grid,
+            ),
+        ),
+        objective_spec(
+            name = "AspectRatio",
+            objective = AspectRatio(
+                eq = eq,
+                target = 8,
+                weight = 100,
+            ),
+        ),
+    ]
+
+
+
+
+
+def adv_qs_auglag_objectives(
+        eq,
+        reference_eq = None,
+    ):
+    """
+    Return comparison rows for the adv_qs/auglag optimization.
+    """
+
+    from desc.objectives import (
+        AspectRatio,
+        Elongation,
+        ForceBalance,
+        GenericObjective,
+        ObjectiveFromUser,
+        RotationalTransform,
+        Volume,
+    )
+
+    force_grid = build_force_balance_grid(
+        eq = eq,
+    )
+
+    qh_grid = build_surface_grid(
+        eq = eq,
+        rho = np.array(
+            [
+                0.6,
+                0.8,
+                1.0,
+            ]
+        ),
+        sym = True,
+    )
+
+    mirror_grid = LinearGrid(
+        rho = 1.0,
+        M = eq.M_grid,
+        N = eq.N_grid,
+        NFP = eq.NFP,
+    )
+
+    return [
+        objective_spec(
+            name = "ForceBalance",
+            objective = ForceBalance(
+                eq = eq,
+                grid = force_grid,
+            ),
+        ),
+        objective_spec(
+            name = "QS Two-Term",
+            objective = GenericObjective(
+                f = "f_C",
+                thing = eq,
+                grid = qh_grid,
+                compute_kwargs = {
+                    "helicity": (1, eq.NFP),
+                },
+                name = "QS Two-Term",
+            ),
+        ),
+        objective_spec(
+            name = "AspectRatio",
+            objective = AspectRatio(
+                eq = eq,
+                bounds = (
+                    7,
+                    9,
+                ),
+            ),
+        ),
+        objective_spec(
+            name = "Elongation",
+            objective = Elongation(
+                eq = eq,
+                bounds = (
+                    0,
+                    3,
+                ),
+            ),
+        ),
+        objective_spec(
+            name = "Volume",
+            objective = Volume(
+                eq = eq,
+                target = get_reference_volume(
+                    eq = eq,
+                    reference_eq = reference_eq,
+                ),
+            ),
+        ),
+        objective_spec(
+            name = "RotationalTransform",
+            objective = RotationalTransform(
+                eq = eq,
+                target = 1.1,
+                loss_function = "mean",
+            ),
+        ),
+        objective_spec(
+            name = "MirrorRatio",
+            objective = ObjectiveFromUser(
+                fun = fun_mirror_ratio,
+                thing = eq,
+                grid = mirror_grid,
+                bounds = (
+                    0.18,
+                    0.22,
+                ),
+                name = "MirrorRatio",
             ),
         ),
     ]
@@ -109,68 +587,45 @@ def basic_qs_objectives(
 
 def adv_qs_objectives(
         eq,
+        reference_eq = None,
     ):
     """
-    Return non-Fix objectives specific to the adv_qs tutorial.
+    Backward-compatible adv_qs objective list for old direct-run folders.
     """
 
-    from desc.objectives import (
-        ForceBalance,
-        QuasisymmetryBoozer,
+    return adv_qs_multigrid_objectives(
+        eq = eq,
+        reference_eq = reference_eq,
     )
 
-    grid = LinearGrid(
-        M = eq.M_grid,
-        N = eq.N_grid,
-        NFP = eq.NFP,
-        sym = eq.sym,
-    )
-
-    boozer_grid = LinearGrid(
-        M = eq.M_grid,
-        N = eq.N_grid,
-        NFP = eq.NFP,
-        sym = False,
-    )
-
-    return [
-        objective_spec(
-            name = "ForceBalance",
-            objective = ForceBalance(
-                eq = eq,
-                grid = grid,
-            ),
-        ),
-        objective_spec(
-            name = "QuasisymmetryBoozer",
-            objective = QuasisymmetryBoozer(
-                eq = eq,
-                helicity = (1, eq.NFP),
-                M_booz = 2 * eq.M,
-                N_booz = 2 * eq.N,
-                grid = boozer_grid,
-            ),
-        ),
-    ]
 
 
 
 
+
+
+
+
+
+#==============================================================================================================
+# Ballooning Objective Builders
+#==============================================================================================================
 
 def balloon_objectives(
         eq,
+        reference_eq = None,
     ):
     """
-    Return non-Fix objectives specific to the ballooning tutorial.
+    Return comparison rows for the ballooning optimization.
 
     FixIota, FixPressure, FixPsi, FixBoundaryR, and FixBoundaryZ are intentionally
     omitted because they are linear constraints and should not be compared.
     """
 
     from desc.objectives import (
-        ForceBalance,
         AspectRatio,
         BallooningStability,
+        ForceBalance,
         GenericObjective,
     )
 
@@ -181,22 +636,17 @@ def balloon_objectives(
         endpoint = False,
     )
 
-    grid = LinearGrid(
-        M = eq.M_grid,
-        N = eq.N_grid,
-        NFP = eq.NFP,
-        sym = eq.sym,
+    force_grid = build_force_balance_grid(
+        eq = eq,
     )
 
-    curvature_grid = LinearGrid(
-        M = eq.M_grid,
-        N = eq.N_grid,
+    curvature_grid = build_surface_grid(
+        eq = eq,
         rho = np.array(
             [
                 1.0,
             ]
         ),
-        NFP = eq.NFP,
         sym = eq.sym,
         axis = False,
     )
@@ -206,7 +656,7 @@ def balloon_objectives(
             name = "ForceBalance",
             objective = ForceBalance(
                 eq = eq,
-                grid = grid,
+                grid = force_grid,
             ),
         ),
         objective_spec(
@@ -259,27 +709,33 @@ def balloon_objectives(
 
 
 
+#==============================================================================================================
+# Neoclassical Objective Builders
+#==============================================================================================================
+
 def neoclassical_objectives(
         eq,
+        reference_eq = None,
     ):
     """
-    Return non-Fix objectives specific to the neoclassical tutorial.
+    Return comparison rows for the neoclassical optimization.
     """
 
     from desc.objectives import (
-        ForceBalance,
         EffectiveRipple,
+        ForceBalance,
     )
 
-    grid = LinearGrid(
-        M = eq.M_grid,
-        N = eq.N_grid,
-        NFP = eq.NFP,
-        sym = eq.sym,
+    force_grid = build_force_balance_grid(
+        eq = eq,
     )
 
     neoclassical_grid = LinearGrid(
-        rho = np.linspace(0.1, 1.0, 10),
+        rho = np.linspace(
+            0.1,
+            1.0,
+            10,
+        ),
         M = eq.M_grid,
         N = eq.N_grid,
         NFP = eq.NFP,
@@ -291,7 +747,7 @@ def neoclassical_objectives(
             name = "ForceBalance",
             objective = ForceBalance(
                 eq = eq,
-                grid = grid,
+                grid = force_grid,
             ),
         ),
         objective_spec(
@@ -316,12 +772,62 @@ def neoclassical_objectives(
 # Tutorial Objective Registry
 #==============================================================================================================
 
-TUTORIAL_OBJECTIVES = {
+TUTORIAL_OPTIMIZATION_OBJECTIVES = {
+    ("basic_qs", "main"): basic_qs_objectives,
+    ("basic_qs", "tripleQS"): basic_qs_tripleqs_objectives,
+    ("basic_qs", "twotermQH"): basic_qs_twotermqh_objectives,
+    ("adv_qs", "main"): adv_qs_objectives,
+    ("adv_qs", "multigrid"): adv_qs_multigrid_objectives,
+    ("adv_qs", "auglag"): adv_qs_auglag_objectives,
+    ("balloon", "main"): balloon_objectives,
+    ("balloon", "balloon"): balloon_objectives,
+    ("neoclassical", "main"): neoclassical_objectives,
+    ("neoclassical", "neoclassical"): neoclassical_objectives,
+}
+
+TUTORIAL_DEFAULT_OBJECTIVES = {
     "basic_qs": basic_qs_objectives,
     "adv_qs": adv_qs_objectives,
     "balloon": balloon_objectives,
     "neoclassical": neoclassical_objectives,
 }
+
+
+
+
+
+def get_objective_builder(
+        tutorial,
+        optimization_label,
+    ):
+    """
+    Return the objective builder for a tutorial/optimization folder pair.
+    """
+
+    key = (
+        tutorial,
+        optimization_label,
+    )
+
+    objective_builder = TUTORIAL_OPTIMIZATION_OBJECTIVES.get(
+        key,
+        None,
+    )
+
+    if objective_builder is not None:
+        return objective_builder
+
+    objective_builder = TUTORIAL_DEFAULT_OBJECTIVES.get(
+        tutorial,
+        None,
+    )
+
+    if objective_builder is not None:
+        return objective_builder
+
+    raise ValueError(
+        f"No tutorial objective registry entry found for tutorial = {tutorial}."
+    )
 
 
 
@@ -657,12 +1163,7 @@ def tutorial_obj(
         tutorial = tutorial,
     )
 
-    objective_getter = TUTORIAL_OBJECTIVES.get(
-        tutorial,
-        None,
-    )
-
-    if objective_getter is None:
+    if tutorial not in TUTORIAL_DEFAULT_OBJECTIVES:
         raise ValueError(
             f"No tutorial objective registry entry found for tutorial = {tutorial}."
         )
@@ -676,6 +1177,21 @@ def tutorial_obj(
     csv_paths = {}
 
     for case_dir in case_dirs:
+
+        optimization_label = get_optimization_label_from_case_dir(
+            tutorial_dir = tutorial_dir,
+            case_dir = case_dir,
+        )
+
+        objective_builder = get_objective_builder(
+            tutorial = tutorial,
+            optimization_label = optimization_label,
+        )
+
+        objective_getter = wrap_objective_getter(
+            objective_builder = objective_builder,
+            case_dir = case_dir,
+        )
 
         files = find_h5_files(
             case_dir = case_dir,
