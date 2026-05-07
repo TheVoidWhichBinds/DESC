@@ -126,10 +126,10 @@ nturns = 3
 nzetaperturn = 200
 mode_cutoff = 2
 optimizer = Optimizer("proximal-lsq-exact")
-maxiter = 200
+maxiter = 500
 x_scale = "auto"
 BASE_OPTIONS = {
-    "max_nfev": 200,
+    "max_nfev": 500,
 }
 
 

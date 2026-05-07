@@ -124,12 +124,12 @@ eq0 = solve_continuation_automatic(
 # OPTIMIZATION HYPERPARAMETERS
 #========================================================================================================================================
 MULTIGRID_OPTIMIZER = "proximal-lsq-exact"
-MULTIGRID_MAXITER = 200
+MULTIGRID_MAXITER = 500
 MULTIGRID_X_SCALE = "auto"
 MULTIGRID_BASE_OPTIONS = {}
 
 AUGLAG_OPTIMIZER = "lsq-auglag"
-AUGLAG_MAXITER = 200
+AUGLAG_MAXITER = 500
 AUGLAG_X_SCALE = "auto"
 AUGLAG_BASE_OPTIONS = {}
 

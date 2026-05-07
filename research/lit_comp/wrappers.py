@@ -99,15 +99,15 @@ FREE_CONFIG = {
                 "weight": barrier,
             },
         },
-        # {
-        #     "name": "FREE_grad_pressure_edge",
-        #     "fun": FREE_grad_pressure_edge,
-        #     "target": 0,
-        #     "wrapper": "linear",
-        #     "kwargs": {
-        #         "thing": None,
-        #         "weight": barrier,
-        #     },
-        # },
+        {
+            "name": "FREE_grad_pressure_edge",
+            "fun": FREE_grad_pressure_edge,
+            "target": 0,
+            "wrapper": "linear",
+            "kwargs": {
+                "thing": None,
+                "weight": barrier,
+            },
+        },
     ),
 }

@@ -298,11 +298,11 @@ def build_neoclassical_constraints(
 k = 1
 
 optimizer = Optimizer("proximal-lsq-exact")
-maxiter = 5
+maxiter = 500
 x_scale = "auto"
 
 BASE_OPTIONS = {
-    "max_nfev": 100,
+    "max_nfev": 500,
 }
 
 OUTER_FTOL_ORDERS = [2,4,6]
