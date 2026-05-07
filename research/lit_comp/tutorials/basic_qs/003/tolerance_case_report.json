@@ -1,0 +1,42 @@
+{
+    "sweep_index": 3,
+    "case_index": 3,
+    "case_label": "003",
+    "orders": {
+        "ftol_order": 2,
+        "xtol_order": 6,
+        "gtol_order": 6,
+        "outer_ftol_order": 2,
+        "outer_xtol_order": 6,
+        "outer_gtol_order": 6,
+        "inner_ftol_order": 4,
+        "inner_xtol_order": 6,
+        "inner_gtol_order": 6,
+        "initial_trust_ratio_order": 3
+    },
+    "tolerances": {
+        "ftol": 0.01,
+        "xtol": 1e-06,
+        "gtol": 1e-06,
+        "initial_trust_ratio": 0.001
+    },
+    "outer_tolerances": {
+        "ftol": 0.01,
+        "xtol": 1e-06,
+        "gtol": 1e-06,
+        "initial_trust_ratio": 0.001
+    },
+    "inner_tolerances": {
+        "ftol": 0.0001,
+        "xtol": 1e-06,
+        "gtol": 1e-06
+    },
+    "options": {
+        "solve_options": {
+            "ftol": 0.0001,
+            "xtol": 1e-06,
+            "gtol": 1e-06
+        },
+        "initial_trust_ratio": 0.001
+    }
+}
