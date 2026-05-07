@@ -1,0 +1,13 @@
+objective,metric,FXD,FREE
+ForceBalance,size,578,578
+ForceBalance,l2,771408.5477482048,771154.3290088152
+ForceBalance,max_abs,168067.6303319437,168223.2850136265
+ForceBalance,mean_abs,24045.169278004123,23972.32838346941
+ForceBalance,rms,32086.365598707187,32075.79149314678
+ForceBalance,status,ok,ok
+QuasisymmetryTripleProduct,size,1377,1377
+QuasisymmetryTripleProduct,l2,1790.8875255791154,1790.1489467081467
+QuasisymmetryTripleProduct,max_abs,473.0143246083969,473.3361147317913
+QuasisymmetryTripleProduct,mean_abs,16.29881012321611,16.294469422594684
+QuasisymmetryTripleProduct,rms,48.26155837623361,48.24165485533261
+QuasisymmetryTripleProduct,status,ok,ok

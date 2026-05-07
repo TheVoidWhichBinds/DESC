@@ -12,7 +12,7 @@
 
 import argparse
 import numpy as np
-from desc.grid import LinearGrid
+from desc.grid import LinearGrid, ConcentricGrid
 from desc.integrals import surface_max, surface_min
 from helper import (
     compare_objective_set,
@@ -316,8 +316,16 @@ def basic_qs_tripleqs_objectives(
         QuasisymmetryTripleProduct,
     )
 
-    grid = build_force_balance_grid(
+    force_grid = build_force_balance_grid(
         eq = eq,
+    )
+
+    qs_grid = ConcentricGrid(
+        L = eq.L_grid,
+        M = eq.M_grid,
+        N = eq.N_grid,
+        NFP = eq.NFP,
+        sym = eq.sym,
     )
 
     return [
@@ -325,15 +333,14 @@ def basic_qs_tripleqs_objectives(
             name = "ForceBalance",
             objective = ForceBalance(
                 eq = eq,
-                grid = grid,
+                grid = force_grid,
             ),
         ),
         objective_spec(
             name = "QuasisymmetryTripleProduct",
             objective = QuasisymmetryTripleProduct(
                 eq = eq,
-                helicity = (1, eq.NFP),
-                grid = grid,
+                grid = qs_grid,
             ),
         ),
     ]
@@ -355,8 +362,16 @@ def basic_qs_twotermqh_objectives(
         QuasisymmetryTwoTerm,
     )
 
-    grid = build_force_balance_grid(
+    force_grid = build_force_balance_grid(
         eq = eq,
+    )
+
+    qs_grid = LinearGrid(
+        M = eq.M_grid,
+        N = eq.N_grid,
+        NFP = eq.NFP,
+        sym = eq.sym,
+        rho = np.array(1.0),
     )
 
     return [
@@ -364,7 +379,7 @@ def basic_qs_twotermqh_objectives(
             name = "ForceBalance",
             objective = ForceBalance(
                 eq = eq,
-                grid = grid,
+                grid = force_grid,
             ),
         ),
         objective_spec(
@@ -372,7 +387,7 @@ def basic_qs_twotermqh_objectives(
             objective = QuasisymmetryTwoTerm(
                 eq = eq,
                 helicity = (1, eq.NFP),
-                grid = grid,
+                grid = qs_grid,
             ),
         ),
     ]
@@ -722,19 +737,33 @@ def neoclassical_objectives(
     """
 
     from desc.objectives import (
+        AspectRatio,
         EffectiveRipple,
         ForceBalance,
+        GenericObjective,
     )
 
     force_grid = build_force_balance_grid(
         eq = eq,
     )
 
-    neoclassical_grid = LinearGrid(
+    ripple_grid = LinearGrid(
         rho = np.linspace(
-            0.1,
-            1.0,
-            10,
+            0.2,
+            1,
+            3,
+        ),
+        M = eq.M_grid,
+        N = eq.N_grid,
+        NFP = eq.NFP,
+        sym = False,
+    )
+
+    curvature_grid = LinearGrid(
+        rho = np.array(
+            [
+                1.0,
+            ]
         ),
         M = eq.M_grid,
         N = eq.N_grid,
@@ -753,8 +782,40 @@ def neoclassical_objectives(
         objective_spec(
             name = "EffectiveRipple",
             objective = EffectiveRipple(
-                eq = eq,
-                grid = neoclassical_grid,
+                eq,
+                grid = ripple_grid,
+                X = 16,
+                Y = 32,
+                Y_B = 133,
+                num_transit = 10,
+                num_well = 25 * 10,
+                num_quad = 32,
+                num_pitch = 45,
+                jac_chunk_size = 1,
+            ),
+        ),
+        objective_spec(
+            name = "AspectRatio",
+            objective = AspectRatio(
+                eq,
+                bounds = (
+                    8,
+                    11,
+                ),
+                weight = 1e3,
+            ),
+        ),
+        objective_spec(
+            name = "GenericObjective curvature_k2_rho",
+            objective = GenericObjective(
+                "curvature_k2_rho",
+                eq,
+                grid = curvature_grid,
+                bounds = (
+                    -128,
+                    10,
+                ),
+                weight = 2e3,
             ),
         ),
     ]

@@ -313,6 +313,7 @@ def build_basic_qs_options(
 # TOLERANCE SWEEP
 #========================================================================================================================================
 ran_tolerance_case = False
+completed_case_labels = set()
 
 for tolerance_case in iter_tolerance_cases(
         ftol_orders = OUTER_FTOL_ORDERS,
@@ -588,6 +589,15 @@ for tolerance_case in iter_tolerance_cases(
     )
 
 
+    completed_case_labels.add(
+        triple_case_dir.name
+    )
+
+    completed_case_labels.add(
+        two_term_case_dir.name
+    )
+
+
 
 
 if not ran_tolerance_case:
@@ -608,9 +618,25 @@ if os.environ.get(
         "0",
     ) != "1":
 
-    rows_by_case, csv_paths = tutorial_obj(
-        tutorial = fname,
-    )
+    rows_by_case = {}
+    csv_paths = {}
+
+    for case_label in sorted(
+            completed_case_labels,
+        ):
+
+        case_rows_by_case, case_csv_paths = tutorial_obj(
+            tutorial = fname,
+            case = case_label,
+        )
+
+        rows_by_case.update(
+            case_rows_by_case
+        )
+
+        csv_paths.update(
+            case_csv_paths
+        )
 
     print("")
     print("Finished basic_qs comparison CSV generation.")

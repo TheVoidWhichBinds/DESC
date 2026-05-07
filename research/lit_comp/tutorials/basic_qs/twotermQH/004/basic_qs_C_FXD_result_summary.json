@@ -1,0 +1,80 @@
+{
+    "label": "basic_qs_C_FXD",
+    "equilibrium_output_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/basic_qs/twotermQH/004/basic_qs_C_FXD.h5",
+    "result_pickle_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/basic_qs/twotermQH/004/basic_qs_C_FXD_result.pkl",
+    "summary_json_path": "/Users/macdaddi/DESC/research/lit_comp/tutorials/basic_qs/twotermQH/004/basic_qs_C_FXD_result_summary.json",
+    "result": {
+        "final_cost": 51152.75408824719,
+        "message": "Optimization terminated successfully.\n`ftol` condition satisfied. (ftol=1.00e-02)",
+        "termination_message": null,
+        "success": true,
+        "status": null,
+        "nfev": 3,
+        "njev": 3,
+        "nit": 2,
+        "optimality": "Array(261.76060232, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "proximal-lsq-exact",
+        "ftol": 0.01,
+        "xtol": 1e-06,
+        "gtol": 1e-06,
+        "maxiter": 500,
+        "x_scale": "auto",
+        "options": {},
+        "outer_tolerances": {
+            "ftol": 0.01,
+            "xtol": 1e-06,
+            "gtol": 1e-06,
+            "initial_trust_ratio": 0.001
+        },
+        "inner_tolerances": {
+            "ftol": 1e-06,
+            "xtol": 1e-06,
+            "gtol": 1e-06
+        },
+        "solve_options": null
+    },
+    "tolerance_case": {
+        "sweep_index": 4,
+        "case_index": 4,
+        "case_label": "004",
+        "orders": {
+            "ftol_order": 2,
+            "xtol_order": 6,
+            "gtol_order": 6,
+            "outer_ftol_order": 2,
+            "outer_xtol_order": 6,
+            "outer_gtol_order": 6,
+            "inner_ftol_order": 6,
+            "inner_xtol_order": 6,
+            "inner_gtol_order": 6,
+            "initial_trust_ratio_order": 3
+        },
+        "tolerances": {
+            "ftol": 0.01,
+            "xtol": 1e-06,
+            "gtol": 1e-06,
+            "initial_trust_ratio": 0.001
+        },
+        "outer_tolerances": {
+            "ftol": 0.01,
+            "xtol": 1e-06,
+            "gtol": 1e-06,
+            "initial_trust_ratio": 0.001
+        },
+        "inner_tolerances": {
+            "ftol": 1e-06,
+            "xtol": 1e-06,
+            "gtol": 1e-06
+        },
+        "options": {
+            "solve_options": {
+                "ftol": 1e-06,
+                "xtol": 1e-06,
+                "gtol": 1e-06
+            },
+            "initial_trust_ratio": 0.001
+        }
+    }
+}
