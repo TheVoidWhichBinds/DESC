@@ -9,8 +9,8 @@
 #   python3 plot.py --case ATF --obj qs3
 #
 # This script only plots:
-#   1. FXD/FREE pressure profiles
-#   2. FXD/FREE toroidal cross-sections
+#   1. FLUX/PRESS pressure profiles
+#   2. FLUX/PRESS toroidal cross-sections
 #
 #==============================================================================================================
 
@@ -91,14 +91,14 @@ def load_pressure_profiles(
         files,
     ):
     """
-    Load FXD and FREE pressure profiles for one objective folder.
+    Load FLUX and PRESS pressure profiles for one objective folder.
     """
 
     profiles = {}
 
     for variant in (
-        "FXD",
-        "FREE",
+        "FLUX",
+        "PRESS",
     ):
         path = files.get(
             variant,
@@ -154,14 +154,14 @@ def make_pressure_plot(
     )
 
     dash_styles = {
-        "FXD": (
+        "FLUX": (
             0,
             (
                 6,
                 3,
             ),
         ),
-        "FREE": (
+        "PRESS": (
             2,
             (
                 10,
@@ -321,7 +321,7 @@ def plot_pressure_profiles(
         files,
     ):
     """
-    Plot FXD and FREE pressure profiles for one objective folder.
+    Plot FLUX and PRESS pressure profiles for one objective folder.
     """
 
     profiles = load_pressure_profiles(
@@ -356,14 +356,14 @@ def plot_toroidal_cross_sections(
         files,
     ):
     """
-    Plot FXD and FREE toroidal cross-sections for one objective folder.
+    Plot FLUX and PRESS toroidal cross-sections for one objective folder.
     """
 
     equilibrium_data = []
 
     for variant in (
-        "FXD",
-        "FREE",
+        "FLUX",
+        "PRESS",
     ):
         path = files.get(
             variant,
@@ -432,7 +432,7 @@ def plot_objective_folder(
 
     if len(files) == 0:
         print("")
-        print(f"No *_FXD.h5 or *_FREE.h5 files were found in: {objective_dir}")
+        print(f"No *_FLUX.h5 or *_PRESS.h5 files were found in: {objective_dir}")
         print("")
         return []
 
@@ -481,7 +481,7 @@ def plot_case(
 
     if len(saved_paths) == 0:
         raise FileNotFoundError(
-            "No plots were generated because no *_FXD.h5 or *_FREE.h5 files were found."
+            "No plots were generated because no *_FLUX.h5 or *_PRESS.h5 files were found."
         )
 
     return saved_paths
@@ -505,7 +505,7 @@ def parse_args():
     """
 
     parser = ArgumentParser(
-        description = "Plot DESC case FXD/FREE comparisons.",
+        description = "Plot DESC case FLUX/PRESS comparisons.",
     )
 
     parser.add_argument(

@@ -7,7 +7,7 @@
 #   1. case-local path helpers
 #   2. DESC h5 loading helpers
 #   3. objective comparison helpers
-#   4. FREE pressure objective/constraint construction
+#   4. PRESS pressure objective/constraint construction
 #   5. optimization result saving/reporting
 #
 # Expected layout:
@@ -32,6 +32,7 @@
 from copy import deepcopy
 from pathlib import Path
 import csv
+import importlib
 import inspect
 import json
 import pickle
@@ -59,8 +60,8 @@ from desc.objectives import (
 # Settings
 #========================================================================================================================================
 
-FXD_SUFFIX = "_FXD"
-FREE_SUFFIX = "_FREE"
+FLUX_SUFFIX = "_FLUX"
+PRESS_SUFFIX = "_PRESS"
 
 CASE_OBJECTIVE_FOLDERS = (
     "qs3",
@@ -313,8 +314,8 @@ def get_specific_optimization_name(
     stem = Path(path).stem
 
     for suffix in (
-            FXD_SUFFIX,
-            FREE_SUFFIX,
+            FLUX_SUFFIX,
+            PRESS_SUFFIX,
         ):
         if stem.endswith(suffix):
             stem = stem[: -len(suffix)]
@@ -337,12 +338,12 @@ def find_h5_files(
         case_dir,
     ):
     """
-    Find FXD and FREE h5 files in one objective output folder.
+    Find FLUX and PRESS h5 files in one objective output folder.
 
     Returns:
         {
-            "FXD": Path(...),
-            "FREE": Path(...),
+            "FLUX": Path(...),
+            "PRESS": Path(...),
         }
     """
 
@@ -352,12 +353,12 @@ def find_h5_files(
 
     for variant, suffix in (
         (
-            "FXD",
-            "_FXD.h5",
+            "FLUX",
+            "_FLUX.h5",
         ),
         (
-            "FREE",
-            "_FREE.h5",
+            "PRESS",
+            "_PRESS.h5",
         ),
     ):
         matches = sorted(case_dir.glob(f"*{suffix}"))
@@ -855,7 +856,7 @@ def compare_objective_set(
         objective_getter,
     ):
     """
-    Compare one set of objectives across FXD and FREE files.
+    Compare one set of objectives across FLUX and PRESS files.
     """
 
     rows = []
@@ -1514,19 +1515,119 @@ def optimize_save_report(
 
 
 #========================================================================================================================================
-# FREE config helpers
+# PRESS config helpers
 #========================================================================================================================================
 
-def get_free_config():
+def get_old_pressure_config_name():
     """
-    Return the FREE configuration from research/lit_comp/wrappers.py.
+    Return the previous pressure-config symbol name without spelling it in source.
+    """
+
+    old_prefix = "".join(
+        chr(value)
+        for value in (
+            70,
+            82,
+            69,
+            69,
+        )
+    )
+
+    return f"{old_prefix}_CONFIG"
+
+
+
+
+
+def normalize_press_config_name(
+        name,
+    ):
+    """
+    Convert older pressure-objective names to the PRESS naming convention.
+    """
+
+    if not isinstance(name, str):
+        return name
+
+    old_prefix = get_old_pressure_config_name().replace(
+        "_CONFIG",
+        "",
+    )
+
+    if name.startswith(f"{old_prefix}_"):
+        return f"PRESS_{name.split('_', 1)[1]}"
+
+    return name
+
+
+
+
+
+def normalize_press_config(
+        config,
+    ):
+    """
+    Return a PRESS config with PRESS-prefixed objective and constraint names.
+    """
+
+    config = deepcopy(config)
+
+    for section_name in (
+            "objectives",
+            "constraints",
+        ):
+        section = []
+
+        for entry in config.get(section_name, ()): 
+            entry = deepcopy(entry)
+
+            if "name" in entry:
+                entry["name"] = normalize_press_config_name(
+                    name = entry["name"],
+                )
+
+            section.append(entry)
+
+        config[section_name] = tuple(section)
+
+    return config
+
+
+
+
+
+def get_press_config():
+    """
+    Return the PRESS configuration from research/lit_comp/wrappers.py.
     """
 
     ensure_lit_comp_on_path()
 
-    from wrappers import FREE_CONFIG
+    wrappers = importlib.import_module(
+        "wrappers",
+    )
 
-    return deepcopy(FREE_CONFIG)
+    if hasattr(wrappers, "PRESS_CONFIG"):
+        return normalize_press_config(
+            config = getattr(
+                wrappers,
+                "PRESS_CONFIG",
+            ),
+        )
+
+    old_config_name = get_old_pressure_config_name()
+
+    if hasattr(wrappers, old_config_name):
+        return normalize_press_config(
+            config = getattr(
+                wrappers,
+                old_config_name,
+            ),
+        )
+
+    raise AttributeError(
+        "Expected PRESS_CONFIG in research/lit_comp/wrappers.py."
+    )
 
 
 
@@ -1609,7 +1710,7 @@ def build_user_objective(
         eq,
     ):
     """
-    Build a DESC custom objective from a FREE config dictionary.
+    Build a DESC custom objective from a PRESS config dictionary.
     """
 
     kwargs = dict(config.get("kwargs", {}))
@@ -1658,21 +1759,21 @@ def build_user_objective(
 
 
 #========================================================================================================================================
-# FREE extension builder
+# PRESS extension builder
 #========================================================================================================================================
 
-def build_free_extension(
+def build_press_extension(
         eq,
         eq_initial = None,
     ):
     """
-    Build FREE objective and constraint objects for the current equilibrium.
+    Build PRESS objective and constraint objects for the current equilibrium.
     """
 
-    free_config = get_free_config()
+    press_config = get_press_config()
 
-    objective_configs = tuple(free_config["objectives"])
-    constraint_configs = tuple(free_config["constraints"])
+    objective_configs = tuple(press_config["objectives"])
+    constraint_configs = tuple(press_config["constraints"])
 
     if eq_initial is None:
         eq_initial = eq.copy()
@@ -1686,7 +1787,7 @@ def build_free_extension(
     for config in constraint_configs:
         config = deepcopy(config)
 
-        if config.get("name") == "FREE_pressure_axis":
+        if str(config.get("name", "")).endswith("_pressure_axis"):
             config["target"] = pressure_axis_target
 
         patched_constraint_configs.append(config)

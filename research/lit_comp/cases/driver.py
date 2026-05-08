@@ -1,7 +1,7 @@
 # driver.py
 #==============================================================================================================
 #
-# Top-level CLI for running DESC case optimizations with FXD/FREE pressure pairs.
+# Top-level CLI for running DESC case optimizations with FLUX/PRESS pressure pairs.
 #
 # Usage:
 #   cd research/lit_comp/cases
@@ -13,19 +13,13 @@
 #
 #==============================================================================================================
 
-import os
-os.environ["JAX_PLATFORMS"] = "cpu"
-
-if "JAX_PLATFORM_NAME" in os.environ:
-    del os.environ["JAX_PLATFORM_NAME"]
 
 from desc import set_device
-set_device("cpu")
-
+set_device("gpu")
+import os 
 import argparse
-
+import json
 import numpy as np
-
 import desc.examples
 from desc.grid import ConcentricGrid, LinearGrid
 from desc.objectives import (
@@ -52,7 +46,7 @@ try:
         optimize_save_report,
         remove_file_if_present,
         resolve_requested_objectives,
-        build_free_extension,
+        build_press_extension,
     )
 
 except ImportError:
@@ -65,7 +59,7 @@ except ImportError:
         optimize_save_report,
         remove_file_if_present,
         resolve_requested_objectives,
-        build_free_extension,
+        build_press_extension,
     )
 
 
@@ -81,9 +75,9 @@ except ImportError:
 # HYPERPARAMETERS
 #==============================================================================================================
 
-OPTIMIZER = "proximal-lsq-exact"
+OPTIMIZER = "lsq-auglag"
 
-FTOL = 1e-6
+FTOL = 1e-4
 XTOL = 1e-6
 GTOL = 1e-6
 
@@ -120,6 +114,9 @@ BALLOON_ALPHA = np.linspace(
 BALLOON_NTURNS = 3
 BALLOON_NZETA_PER_TURN = 200
 
+BOUNDARY_MODE_CUTOFF = 2
+FIX_MAJOR_RADIUS_MODE = True
+
 
 
 
@@ -145,6 +142,321 @@ def get_grid_resolution(
         "M": 2 * int(eq.M),
         "N": 2 * int(eq.N),
     }
+
+
+
+
+
+def get_boundary_basis_modes(
+        eq,
+        basis_name,
+    ):
+    """
+    Return the boundary basis modes for R or Z boundary coefficients.
+    """
+
+    surface = getattr(
+        eq,
+        "surface",
+        None,
+    )
+
+    if surface is None:
+        raise AttributeError(
+            "Equilibrium does not expose eq.surface, so boundary modes cannot be selected."
+        )
+
+    basis = getattr(
+        surface,
+        basis_name,
+        None,
+    )
+
+    if basis is None or not hasattr(basis, "modes"):
+        raise AttributeError(
+            f"Equilibrium surface does not expose surface.{basis_name}.modes."
+        )
+
+    modes = np.asarray(
+        basis.modes,
+        dtype = int,
+    )
+
+    if modes.ndim != 2 or modes.shape[1] < 2:
+        raise ValueError(
+            f"Expected surface.{basis_name}.modes to have at least two columns, got shape {modes.shape}."
+        )
+
+    return modes
+
+
+
+
+
+def get_boundary_mode_mn_columns(
+        modes,
+    ):
+    """
+    Return m and n columns from a boundary mode table.
+    """
+
+    if modes.shape[1] == 2:
+        return modes[:, 0], modes[:, 1]
+
+    return modes[:, -2], modes[:, -1]
+
+
+
+
+
+def get_low_order_boundary_mode_indices(
+        eq,
+        basis_name,
+        mode_cutoff = BOUNDARY_MODE_CUTOFF,
+    ):
+    """
+    Return indices of boundary modes left free during optimization.
+    """
+
+    modes = get_boundary_basis_modes(
+        eq = eq,
+        basis_name = basis_name,
+    )
+
+    m_modes, n_modes = get_boundary_mode_mn_columns(
+        modes = modes,
+    )
+
+    free_mode_mask = (np.abs(m_modes) <= mode_cutoff) & (np.abs(n_modes) <= mode_cutoff)
+
+    return np.where(free_mode_mask)[0]
+
+
+
+
+
+def get_free_boundary_modes(
+        eq,
+        basis_name,
+        mode_cutoff = BOUNDARY_MODE_CUTOFF,
+    ):
+    """
+    Return boundary modes excluded from FixBoundaryR/FixBoundaryZ.
+    """
+
+    modes = get_boundary_basis_modes(
+        eq = eq,
+        basis_name = basis_name,
+    )
+
+    free_mode_indices = get_low_order_boundary_mode_indices(
+        eq = eq,
+        basis_name = basis_name,
+        mode_cutoff = mode_cutoff,
+    )
+
+    free_modes = modes[free_mode_indices]
+
+    if basis_name == "R_basis" and FIX_MAJOR_RADIUS_MODE:
+        r00_mask = np.all(
+            free_modes == np.array([0, 0, 0]),
+            axis = 1,
+        )
+
+        free_modes = free_modes[~r00_mask]
+
+    return free_modes
+
+
+
+
+
+def get_fixed_boundary_modes(
+        eq,
+        basis_name,
+        mode_cutoff = BOUNDARY_MODE_CUTOFF,
+    ):
+    """
+    Return boundary modes passed to FixBoundaryR/FixBoundaryZ.
+    """
+
+    modes = get_boundary_basis_modes(
+        eq = eq,
+        basis_name = basis_name,
+    )
+
+    free_mode_indices = get_low_order_boundary_mode_indices(
+        eq = eq,
+        basis_name = basis_name,
+        mode_cutoff = mode_cutoff,
+    )
+
+    fixed_modes = np.delete(
+        modes,
+        free_mode_indices,
+        axis = 0,
+    )
+
+    if basis_name == "R_basis" and FIX_MAJOR_RADIUS_MODE:
+        r00_mask = np.all(
+            modes == np.array([0, 0, 0]),
+            axis = 1,
+        )
+
+        if np.any(r00_mask):
+            fixed_modes = np.vstack(
+                (
+                    modes[r00_mask],
+                    fixed_modes,
+                )
+            )
+
+    return np.unique(
+        fixed_modes,
+        axis = 0,
+    )
+
+
+
+
+
+def get_boundary_mode_summary(
+        eq,
+    ):
+    """
+    Return the exact boundary modes fixed and excluded by FixBoundaryR/FixBoundaryZ.
+    """
+
+    r_fixed_modes = get_fixed_boundary_modes(
+        eq = eq,
+        basis_name = "R_basis",
+    )
+
+    z_fixed_modes = get_fixed_boundary_modes(
+        eq = eq,
+        basis_name = "Z_basis",
+    )
+
+    r_free_modes = get_free_boundary_modes(
+        eq = eq,
+        basis_name = "R_basis",
+    )
+
+    z_free_modes = get_free_boundary_modes(
+        eq = eq,
+        basis_name = "Z_basis",
+    )
+
+    return {
+        "mode_cutoff": BOUNDARY_MODE_CUTOFF,
+        "free_rule": "Exclude modes from FixBoundaryR/FixBoundaryZ where abs(m) <= 2 and abs(n) <= 2, except the R major-radius mode [0, 0, 0].",
+        "fixed_rule": "Pass all remaining modes to FixBoundaryR/FixBoundaryZ, so modes with abs(m) > 2 or abs(n) > 2 are fixed. Also pass R mode [0, 0, 0] to FixBoundaryR as DESC tutorial regularization.",
+        "fix_major_radius_mode": bool(FIX_MAJOR_RADIUS_MODE),
+        "R_free_mode_count": int(r_free_modes.shape[0]),
+        "Z_free_mode_count": int(z_free_modes.shape[0]),
+        "R_fixed_mode_count": int(r_fixed_modes.shape[0]),
+        "Z_fixed_mode_count": int(z_fixed_modes.shape[0]),
+        "R_free_modes_excluded_from_FixBoundaryR": r_free_modes.tolist(),
+        "Z_free_modes_excluded_from_FixBoundaryZ": z_free_modes.tolist(),
+        "R_fixed_modes_passed_to_FixBoundaryR": r_fixed_modes.tolist(),
+        "Z_fixed_modes_passed_to_FixBoundaryZ": z_fixed_modes.tolist(),
+    }
+
+
+
+
+
+def make_hyperparameter_payload(
+        case,
+        obj,
+        eq,
+    ):
+    """
+    Build a JSON-safe hyperparameter payload for one objective folder.
+    """
+
+    grid_resolution = get_grid_resolution(
+        eq = eq,
+    )
+
+    return {
+        "case": str(case),
+        "objective_folder": str(obj),
+        "variants": [
+            "FLUX",
+            "PRESS",
+        ],
+        "optimizer": OPTIMIZER,
+        "ftol": FTOL,
+        "xtol": XTOL,
+        "gtol": GTOL,
+        "maxiter": MAXITER,
+        "max_nfev": MAX_NFEV,
+        "x_scale": X_SCALE,
+        "incoming_resolution": {
+            "L": int(eq.L),
+            "M": int(eq.M),
+            "N": int(eq.N),
+            "L_grid": int(eq.L_grid),
+            "M_grid": int(eq.M_grid),
+            "N_grid": int(eq.N_grid),
+        },
+        "objective_grid_resolution": {
+            "L": int(grid_resolution["L"]),
+            "M": int(grid_resolution["M"]),
+            "N": int(grid_resolution["N"]),
+        },
+        "boundary_constraints": get_boundary_mode_summary(
+            eq = eq,
+        ),
+        "isodynamicity": {
+            "rho": ISO_RHO.tolist(),
+        },
+        "ballooning": {
+            "rho": BALLOON_RHO.tolist(),
+            "alpha": BALLOON_ALPHA.tolist(),
+            "nturns": BALLOON_NTURNS,
+            "nzeta_per_turn": BALLOON_NZETA_PER_TURN,
+        },
+        "optimizer_options": make_optimizer_options(),
+    }
+
+
+
+
+
+def save_hyperparameter_file(
+        case,
+        obj,
+        objective_dir,
+        eq,
+    ):
+    """
+    Save the hyperparameters used for one objective folder.
+    """
+
+    case_name = str(case).strip()
+
+    hyperparameter_path = objective_dir / f"{case_name}_{obj}_hyperparameters.json"
+
+    payload = make_hyperparameter_payload(
+        case = case,
+        obj = obj,
+        eq = eq,
+    )
+
+    with open(hyperparameter_path, "w") as file:
+        json.dump(
+            payload,
+            file,
+            indent = 4,
+        )
+
+    print("")
+    print(f"Saved objective-folder hyperparameters: {hyperparameter_path}")
+    print("")
+
+    return hyperparameter_path
 
 
 
@@ -197,6 +509,21 @@ def print_hyperparameter_report(
     print(f"BALLOON_ALPHA = {BALLOON_ALPHA}")
     print(f"BALLOON_NTURNS = {BALLOON_NTURNS}")
     print(f"BALLOON_NZETA_PER_TURN = {BALLOON_NZETA_PER_TURN}")
+    print("")
+    boundary_summary = get_boundary_mode_summary(
+        eq = eq,
+    )
+
+    print("Boundary mode constraints:")
+    print(f"BOUNDARY_MODE_CUTOFF = {BOUNDARY_MODE_CUTOFF}")
+    print(f"FIX_MAJOR_RADIUS_MODE = {FIX_MAJOR_RADIUS_MODE}")
+    print("FixBoundaryR/FixBoundaryZ are present in both FLUX and PRESS.")
+    print("Excluded from FixBoundaryR/Z and therefore optimized: modes where abs(m) <= 2 and abs(n) <= 2, except R [0, 0, 0].")
+    print("Passed to FixBoundaryR/Z and therefore fixed: all remaining higher modes, plus R [0, 0, 0].")
+    print(f"R free mode count = {boundary_summary['R_free_mode_count']}")
+    print(f"Z free mode count = {boundary_summary['Z_free_mode_count']}")
+    print(f"R fixed mode count = {boundary_summary['R_fixed_mode_count']}")
+    print(f"Z fixed mode count = {boundary_summary['Z_fixed_mode_count']}")
     print("================================================================================================================")
     print("")
 
@@ -393,15 +720,25 @@ def build_core_constraints(
         eq,
     ):
     """
-    Build constraints shared by FXD and FREE pressure optimizations.
+    Build constraints shared by FLUX and PRESS pressure optimizations.
     """
 
     return (
         FixBoundaryZ(
             eq = eq,
+            name = "FixBoundaryZ",
+            modes = get_fixed_boundary_modes(
+                eq = eq,
+                basis_name = "Z_basis",
+            ),
         ),
         FixBoundaryR(
             eq = eq,
+            name = "FixBoundaryR",
+            modes = get_fixed_boundary_modes(
+                eq = eq,
+                basis_name = "R_basis",
+            ),
         ),
         ForceBalance(
             eq = eq,
@@ -413,11 +750,13 @@ def build_core_constraints(
         FixIota(
             eq = eq,
         ),
-        FixCurrent(
-            eq = eq,
-        ),
+        # FixCurrent(
+        #     eq = eq,
+        #     name = "FixCurrent",
+        # ),
         FixPsi(
             eq = eq,
+            name = "FixPsi",
         ),
     )
 
@@ -432,7 +771,7 @@ def build_optimization_problem(
         variant,
     ):
     """
-    Build the ObjectiveFunction objects for one FXD or FREE optimization.
+    Build the ObjectiveFunction objects for one FLUX or PRESS optimization.
     """
 
     primary_objectives = build_primary_objectives(
@@ -446,21 +785,22 @@ def build_optimization_problem(
 
     variant = str(variant).upper()
 
-    if variant == "FXD":
+    if variant == "FLUX":
         constraints = constraints + (
             FixPressure(
                 eq = eq,
+                name = "FixPressure",
             ),
         )
 
-    elif variant == "FREE":
-        free_objectives, free_constraints = build_free_extension(
+    elif variant == "PRESS":
+        press_objectives, press_constraints = build_press_extension(
             eq = eq,
             eq_initial = eq_initial,
         )
 
-        primary_objectives = primary_objectives + tuple(free_objectives)
-        constraints = constraints + tuple(free_constraints)
+        primary_objectives = primary_objectives + tuple(press_objectives)
+        constraints = constraints + tuple(press_constraints)
 
     else:
         raise ValueError(
@@ -471,11 +811,44 @@ def build_optimization_problem(
         objectives = primary_objectives,
     )
 
-    constraint_objective = ObjectiveFunction(
-        objectives = constraints,
+    return objective, constraints
+
+
+
+
+
+def print_optimization_stack(
+        objective,
+        constraints,
+    ):
+    """
+    Print objective and constraint class names before DESC build messages.
+    """
+
+    objective_components = getattr(
+        objective,
+        "objectives",
+        None,
     )
 
-    return objective, constraint_objective
+    if objective_components is None:
+        objective_components = getattr(
+            objective,
+            "_objectives",
+            (),
+        )
+
+    print("DESC objective stack:")
+
+    for component in objective_components:
+        print(f"  {component.__class__.__name__}: name = {component.name}")
+
+    print("DESC constraint stack:")
+
+    for component in constraints:
+        print(f"  {component.__class__.__name__}: name = {component.name}")
+
+    print("")
 
 
 
@@ -495,13 +868,12 @@ def make_optimizer_options():
     Build the optimizer options dictionary.
     """
 
-    options = {}
+    options = {
+        "initial_trust_ratio": 0.01,
+    }
 
     if MAX_NFEV is not None:
         options["max_nfev"] = MAX_NFEV
-
-    if len(options) == 0:
-        return None
 
     return options
 
@@ -569,7 +941,7 @@ def run_one_variant(
         eq_initial,
     ):
     """
-    Run one FXD or FREE pressure optimization.
+    Run one FLUX or PRESS pressure optimization.
     """
 
     variant = str(variant).upper()
@@ -597,6 +969,11 @@ def run_one_variant(
     print(f"Output path: {output_path}")
     print("################################################################################################################")
     print("")
+
+    print_optimization_stack(
+        objective = objective,
+        constraints = constraints,
+    )
 
     eq, result = optimize_save_report(
         eq = eq,
@@ -626,7 +1003,7 @@ def run_objective_pair(
         eq_initial,
     ):
     """
-    Run the FXD/FREE pair for one objective folder.
+    Run the FLUX/PRESS pair for one objective folder.
     """
 
     objective_dir = get_objective_dir(
@@ -638,17 +1015,24 @@ def run_objective_pair(
         folder = objective_dir,
     )
 
+    save_hyperparameter_file(
+        case = case,
+        obj = obj,
+        objective_dir = objective_dir,
+        eq = eq_initial,
+    )
+
     run_one_variant(
         case = case,
         obj = obj,
-        variant = "FXD",
+        variant = "FLUX",
         eq_initial = eq_initial,
     )
 
     run_one_variant(
         case = case,
         obj = obj,
-        variant = "FREE",
+        variant = "PRESS",
         eq_initial = eq_initial,
     )
 
