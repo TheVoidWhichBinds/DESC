@@ -1258,6 +1258,7 @@ def make_optimization_summary(
         ftol,
         xtol,
         gtol,
+        ctol,
         maxiter,
         options,
         x_scale,
@@ -1315,6 +1316,7 @@ def make_optimization_summary(
             "ftol": ftol,
             "xtol": xtol,
             "gtol": gtol,
+            "ctol": ctol,
             "maxiter": maxiter,
             "x_scale": x_scale,
             "options": options,
@@ -1361,6 +1363,7 @@ def print_optimization_summary(
     print(f"ftol: {hyperparameters.get('ftol')}")
     print(f"xtol: {hyperparameters.get('xtol')}")
     print(f"gtol: {hyperparameters.get('gtol')}")
+    print(f"ctol: {hyperparameters.get('ctol')}")
     print(f"maxiter: {hyperparameters.get('maxiter')}")
     print(f"x_scale: {hyperparameters.get('x_scale')}")
     print("options:")
@@ -1390,6 +1393,7 @@ def save_optimization_result(
         ftol,
         xtol,
         gtol,
+        ctol,
         maxiter,
         options,
         x_scale,
@@ -1420,6 +1424,7 @@ def save_optimization_result(
         ftol = ftol,
         xtol = xtol,
         gtol = gtol,
+        ctol = ctol,
         maxiter = maxiter,
         options = options,
         x_scale = x_scale,
@@ -1456,6 +1461,7 @@ def optimize_save_report(
         ftol = None,
         xtol = None,
         gtol = None,
+        ctol = None,
         maxiter = None,
         options = None,
         copy = False,
@@ -1475,6 +1481,7 @@ def optimize_save_report(
         ftol = ftol,
         xtol = xtol,
         gtol = gtol,
+        ctol = ctol,
         maxiter = maxiter,
         options = options,
         copy = copy,
@@ -1498,6 +1505,7 @@ def optimize_save_report(
         ftol = ftol,
         xtol = xtol,
         gtol = gtol,
+        ctol = ctol,
         maxiter = maxiter,
         options = options,
         x_scale = x_scale,

@@ -1,6 +1,6 @@
 {
     "case": "ARIES-CS",
-    "objective_folder": "qs3",
+    "objective_folder": "iso",
     "variants": [
         "FLUX",
         "PRESS"

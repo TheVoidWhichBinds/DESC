@@ -85,13 +85,18 @@ except ImportError:
 OPTIMIZER = "lsq-auglag"
 
 FTOL = 1e-4
-XTOL = 1e-6
-GTOL = 1e-6
+XTOL = 1e-4
+GTOL = 1e-4
+CTOL = 6e-4
 
-MAXITER = 100
+MAXITER = 500
 MAX_NFEV = None
 
 X_SCALE = "auto"
+
+INITIAL_EQUILIBRIUM_L = 8
+INITIAL_EQUILIBRIUM_M = 8
+INITIAL_EQUILIBRIUM_N = 8
 
 ISO_RHO = np.array(
     [
@@ -104,10 +109,12 @@ ISO_RHO = np.array(
 
 BALLOON_RHO = np.array(
     [
-        0.30,
-        0.45,
-        0.60,
-        0.75,
+        0.4,
+        0.5,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
     ]
 )
 
@@ -119,7 +126,7 @@ BALLOON_ALPHA = np.linspace(
 )
 
 BALLOON_NTURNS = 3
-BALLOON_NZETA_PER_TURN = 200
+BALLOON_NZETA_PER_TURN = 150
 
 BOUNDARY_MODE_CUTOFF = 2
 FIX_MAJOR_RADIUS_MODE = True
@@ -397,9 +404,15 @@ def make_hyperparameter_payload(
         "ftol": FTOL,
         "xtol": XTOL,
         "gtol": GTOL,
+        "ctol": CTOL,
         "maxiter": MAXITER,
         "max_nfev": MAX_NFEV,
         "x_scale": X_SCALE,
+        "initial_equilibrium_resolution_target": {
+            "L": int(INITIAL_EQUILIBRIUM_L),
+            "M": int(INITIAL_EQUILIBRIUM_M),
+            "N": int(INITIAL_EQUILIBRIUM_N),
+        },
         "incoming_resolution": {
             "L": int(eq.L),
             "M": int(eq.M),
@@ -491,9 +504,15 @@ def print_hyperparameter_report(
     print(f"ftol: {FTOL}")
     print(f"xtol: {XTOL}")
     print(f"gtol: {GTOL}")
+    print(f"ctol: {CTOL}")
     print(f"maxiter: {MAXITER}")
     print(f"max_nfev: {MAX_NFEV}")
     print(f"x_scale: {X_SCALE}")
+    print("")
+    print("Target downloaded-equilibrium resolution:")
+    print(f"INITIAL_EQUILIBRIUM_L = {INITIAL_EQUILIBRIUM_L}")
+    print(f"INITIAL_EQUILIBRIUM_M = {INITIAL_EQUILIBRIUM_M}")
+    print(f"INITIAL_EQUILIBRIUM_N = {INITIAL_EQUILIBRIUM_N}")
     print("")
     print("Incoming equilibrium resolution:")
     print(f"L      = {eq.L}")
@@ -888,11 +907,34 @@ def make_optimizer_options():
 
 
 
+def apply_initial_equilibrium_resolution(
+        eq,
+    ):
+    """
+    Change the downloaded DESC example equilibrium to the requested initial resolution.
+    """
+
+    eq.change_resolution(
+        L = INITIAL_EQUILIBRIUM_L,
+        M = INITIAL_EQUILIBRIUM_M,
+        N = INITIAL_EQUILIBRIUM_N,
+    )
+
+    eq.surface = eq.get_surface_at(
+        rho = 1.0,
+    )
+
+    return eq
+
+
+
+
+
 def load_initial_equilibrium(
         case,
     ):
     """
-    Load the initial equilibrium from DESC examples.
+    Load the initial equilibrium from DESC examples and apply the requested resolution.
     """
 
     print("")
@@ -903,6 +945,10 @@ def load_initial_equilibrium(
 
     eq = desc.examples.get(
         case,
+    )
+
+    eq = apply_initial_equilibrium_resolution(
+        eq = eq,
     )
 
     return eq
@@ -992,6 +1038,7 @@ def run_one_variant(
         ftol = FTOL,
         xtol = XTOL,
         gtol = GTOL,
+        ctol = CTOL,
         maxiter = MAXITER,
         options = make_optimizer_options(),
         copy = False,
