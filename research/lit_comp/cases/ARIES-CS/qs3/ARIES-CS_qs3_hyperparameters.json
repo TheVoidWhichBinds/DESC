@@ -5,8 +5,8 @@
         "FLUX",
         "PRESS"
     ],
-    "optimizer": "proximal-lsq-exact",
-    "ftol": 1e-06,
+    "optimizer": "lsq-auglag",
+    "ftol": 0.0001,
     "xtol": 1e-06,
     "gtol": 1e-06,
     "maxiter": 100,
@@ -2196,5 +2196,7 @@
         "nturns": 3,
         "nzeta_per_turn": 200
     },
-    "optimizer_options": null
+    "optimizer_options": {
+        "initial_trust_ratio": 0.01
+    }
 }
