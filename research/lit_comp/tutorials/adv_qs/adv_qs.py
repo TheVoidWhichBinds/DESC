@@ -11,7 +11,7 @@ Write-up of the DESC Advanced QS Optimization tutorial, minus plotting.
 from copy import deepcopy
 from pathlib import Path
 from desc import set_device
-set_device("cpu")
+set_device("gpu")
 
 import os
 import sys
@@ -55,9 +55,6 @@ from helper import (
     save_optimization_result,
     should_run_tolerance_case,
 )
-from compare import (
-    tutorial_obj,
-)
 
 
 
@@ -74,10 +71,6 @@ from compare import (
 fname = "adv_qs"
 
 OUTPUT_DIR = Path(__file__).resolve().parent
-
-MULTIGRID_OUTPUT_DIR = OUTPUT_DIR / "multigrid"
-
-AUGLAG_OUTPUT_DIR = OUTPUT_DIR / "auglag"
 
 
 
@@ -131,28 +124,49 @@ eq0 = solve_continuation_automatic(
 # OPTIMIZATION HYPERPARAMETERS
 #========================================================================================================================================
 MULTIGRID_OPTIMIZER = "proximal-lsq-exact"
-MULTIGRID_MAXITER = 500
+MULTIGRID_MAXITER = 200
 MULTIGRID_X_SCALE = "auto"
 MULTIGRID_BASE_OPTIONS = {}
 
 AUGLAG_OPTIMIZER = "lsq-auglag"
-AUGLAG_MAXITER = 500
+AUGLAG_MAXITER = 200
 AUGLAG_X_SCALE = "auto"
 AUGLAG_BASE_OPTIONS = {}
 
-OUTER_FTOL_ORDERS = [2,4,6]
+OUTER_FTOL_ORDERS = range(
+    4,
+    8,
+)
 
-OUTER_XTOL_ORDERS = [6]
+OUTER_XTOL_ORDERS = range(
+    4,
+    8,
+)
 
-OUTER_GTOL_ORDERS = [3,6]
+OUTER_GTOL_ORDERS = range(
+    4,
+    8,
+)
 
-INNER_FTOL_ORDERS = [4,6]
+INNER_FTOL_ORDERS = range(
+    4,
+    8,
+)
 
-INNER_XTOL_ORDERS = [6]
+INNER_XTOL_ORDERS = range(
+    4,
+    8,
+)
 
-INNER_GTOL_ORDERS = [6]
+INNER_GTOL_ORDERS = range(
+    4,
+    8,
+)
 
-INITIAL_TRUST_RATIO_ORDERS = [3]
+INITIAL_TRUST_RATIO_ORDERS = range(
+    1,
+    4,
+)
 
 
 
@@ -951,60 +965,35 @@ for tolerance_case in iter_tolerance_cases(
 
     ran_tolerance_case = True
 
-    multigrid_tolerance_case = deepcopy(
-        tolerance_case,
-    )
-
-    auglag_tolerance_case = deepcopy(
-        tolerance_case,
-    )
-
-    multigrid_case_dir, multigrid_tolerance_report_path = prepare_tolerance_case_dir(
-        output_dir = MULTIGRID_OUTPUT_DIR,
-        tolerance_case = multigrid_tolerance_case,
+    case_dir, tolerance_report_path = prepare_tolerance_case_dir(
+        output_dir = OUTPUT_DIR,
+        tolerance_case = tolerance_case,
     )
 
     print_tolerance_case_header(
-        tolerance_case = multigrid_tolerance_case,
-        case_dir = multigrid_case_dir,
+        tolerance_case = tolerance_case,
+        case_dir = case_dir,
     )
 
-    auglag_case_dir, auglag_tolerance_report_path = prepare_tolerance_case_dir(
-        output_dir = AUGLAG_OUTPUT_DIR,
-        tolerance_case = auglag_tolerance_case,
-    )
+    INITIAL_PATH = case_dir / f"{fname}_initial.h5"
 
-    print_tolerance_case_header(
-        tolerance_case = auglag_tolerance_case,
-        case_dir = auglag_case_dir,
-    )
+    MULTIGRID_FXD_PATH = case_dir / f"{fname}_multigrid_FXD.h5"
 
-    MULTIGRID_INITIAL_PATH = multigrid_case_dir / f"{fname}_multigrid_initial.h5"
+    MULTIGRID_FREE_PATH = case_dir / f"{fname}_multigrid_FREE.h5"
 
-    MULTIGRID_FXD_PATH = multigrid_case_dir / f"{fname}_multigrid_FXD.h5"
+    AUGLAG_FXD_PATH = case_dir / f"{fname}_auglag_FXD.h5"
 
-    MULTIGRID_FREE_PATH = multigrid_case_dir / f"{fname}_multigrid_FREE.h5"
-
-    AUGLAG_INITIAL_PATH = auglag_case_dir / f"{fname}_auglag_initial.h5"
-
-    AUGLAG_FXD_PATH = auglag_case_dir / f"{fname}_auglag_FXD.h5"
-
-    AUGLAG_FREE_PATH = auglag_case_dir / f"{fname}_auglag_FREE.h5"
+    AUGLAG_FREE_PATH = case_dir / f"{fname}_auglag_FREE.h5"
 
     eq0.save(
-        str(MULTIGRID_INITIAL_PATH)
-    )
-
-    eq0.save(
-        str(AUGLAG_INITIAL_PATH)
+        str(INITIAL_PATH)
     )
 
     print("")
-    print(f"Multigrid tolerance report written to: {multigrid_tolerance_report_path}")
-    print(f"Augmented-Lagrangian tolerance report written to: {auglag_tolerance_report_path}")
+    print(f"Tolerance report written to: {tolerance_report_path}")
     print("")
 
-    auglag_tolerances = auglag_tolerance_case["tolerances"]
+    tolerances = tolerance_case["tolerances"]
 
 
 
@@ -1016,7 +1005,7 @@ for tolerance_case in iter_tolerance_cases(
         eq_initial = eq0,
         output_path = MULTIGRID_FXD_PATH,
         label = "adv_qs_multigrid_FXD",
-        tolerance_case = multigrid_tolerance_case,
+        tolerance_case = tolerance_case,
         free_pressure = False,
     )
 
@@ -1030,7 +1019,7 @@ for tolerance_case in iter_tolerance_cases(
         eq_initial = eq0,
         output_path = MULTIGRID_FREE_PATH,
         label = "adv_qs_multigrid_FREE",
-        tolerance_case = multigrid_tolerance_case,
+        tolerance_case = tolerance_case,
         free_pressure = True,
     )
 
@@ -1044,7 +1033,7 @@ for tolerance_case in iter_tolerance_cases(
 
     eq_auglag_FXD, history_auglag_FXD, options_auglag_FXD = run_constrained_optimization(
         eq = eq_auglag_FXD,
-        tolerance_case = auglag_tolerance_case,
+        tolerance_case = tolerance_case,
         free_pressure = False,
     )
 
@@ -1057,13 +1046,13 @@ for tolerance_case in iter_tolerance_cases(
         output_path = AUGLAG_FXD_PATH,
         label = "adv_qs_auglag_FXD",
         optimizer = AUGLAG_OPTIMIZER,
-        ftol = auglag_tolerances["ftol"],
-        xtol = auglag_tolerances["xtol"],
-        gtol = auglag_tolerances["gtol"],
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
         maxiter = AUGLAG_MAXITER,
         options = options_auglag_FXD,
         x_scale = AUGLAG_X_SCALE,
-        tolerance_case = auglag_tolerance_case,
+        tolerance_case = tolerance_case,
     )
 
 
@@ -1076,7 +1065,7 @@ for tolerance_case in iter_tolerance_cases(
 
     eq_auglag_FREE, history_auglag_FREE, options_auglag_FREE = run_constrained_optimization(
         eq = eq_auglag_FREE,
-        tolerance_case = auglag_tolerance_case,
+        tolerance_case = tolerance_case,
         free_pressure = True,
     )
 
@@ -1089,13 +1078,13 @@ for tolerance_case in iter_tolerance_cases(
         output_path = AUGLAG_FREE_PATH,
         label = "adv_qs_auglag_FREE",
         optimizer = AUGLAG_OPTIMIZER,
-        ftol = auglag_tolerances["ftol"],
-        xtol = auglag_tolerances["xtol"],
-        gtol = auglag_tolerances["gtol"],
+        ftol = tolerances["ftol"],
+        xtol = tolerances["xtol"],
+        gtol = tolerances["gtol"],
         maxiter = AUGLAG_MAXITER,
         options = options_auglag_FREE,
         x_scale = AUGLAG_X_SCALE,
-        tolerance_case = auglag_tolerance_case,
+        tolerance_case = tolerance_case,
     )
 
 
@@ -1110,25 +1099,3 @@ if not ran_tolerance_case:
     raise ValueError(
         f"No adv_qs tolerance case matched DESC_SWEEP_INDEX = {requested_sweep_index}."
     )
-
-
-
-
-if os.environ.get(
-        "DESC_SKIP_TUTORIAL_COMPARE",
-        "0",
-    ) != "1":
-
-    rows_by_case, csv_paths = tutorial_obj(
-        tutorial = fname,
-    )
-
-    print("")
-    print("Finished adv_qs comparison CSV generation.")
-    print("CSV files written to:")
-    print("")
-
-    for case_label, csv_path in csv_paths.items():
-        print(f"{case_label}: {csv_path}")
-
-    print("")
