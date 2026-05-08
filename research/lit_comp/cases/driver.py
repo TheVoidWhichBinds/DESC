@@ -13,13 +13,20 @@
 #
 #==============================================================================================================
 
+import os
+os.environ["JAX_PLATFORMS"] = "cpu"
+
+if "JAX_PLATFORM_NAME" in os.environ:
+    del os.environ["JAX_PLATFORM_NAME"]
 
 from desc import set_device
-set_device("gpu")
-import os 
+set_device("cpu")
+
 import argparse
 import json
+
 import numpy as np
+
 import desc.examples
 from desc.grid import ConcentricGrid, LinearGrid
 from desc.objectives import (
