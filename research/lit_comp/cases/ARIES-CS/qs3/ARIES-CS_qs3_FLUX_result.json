@@ -1,0 +1,6 @@
+{
+    "case": "ARIES-CS",
+    "construction": "FLUX",
+    "objective_mode": "qs3",
+    "result": {
+        "constr_violation": 

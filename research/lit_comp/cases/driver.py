@@ -754,13 +754,13 @@ def build_core_constraints(
             ),
             normalize = True,
         ),
-        FixIota(
-            eq = eq,
-        ),
-        # FixCurrent(
+        # FixIota(
         #     eq = eq,
-        #     name = "FixCurrent",
         # ),
+        FixCurrent(
+            eq = eq,
+            name = "FixCurrent",
+        ),
         FixPsi(
             eq = eq,
             name = "FixPsi",
