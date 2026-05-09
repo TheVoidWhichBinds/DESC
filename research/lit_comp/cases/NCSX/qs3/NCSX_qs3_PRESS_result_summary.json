@@ -1,0 +1,27 @@
+{
+    "label": "NCSX_qs3_PRESS",
+    "equilibrium_output_path": "/Users/macdaddi/DESC/research/lit_comp/cases/NCSX/qs3/NCSX_qs3_PRESS.h5",
+    "result_pickle_path": "/Users/macdaddi/DESC/research/lit_comp/cases/NCSX/qs3/NCSX_qs3_PRESS_result.pkl",
+    "summary_json_path": "/Users/macdaddi/DESC/research/lit_comp/cases/NCSX/qs3/NCSX_qs3_PRESS_result_summary.json",
+    "result": {
+        "final_cost": 2.8632899188581358e-05,
+        "message": "`gtol` condition satisfied.",
+        "termination_message": null,
+        "success": true,
+        "status": null,
+        "nfev": 22,
+        "njev": 20,
+        "nit": 19,
+        "optimality": "Array(0.00043145, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "lsq-auglag",
+        "ftol": 0.001,
+        "xtol": 0.001,
+        "gtol": 0.001,
+        "ctol": 0.001,
+        "maxiter": 500,
+        "x_scale": "auto",
+        "options": {}
+    }
+}

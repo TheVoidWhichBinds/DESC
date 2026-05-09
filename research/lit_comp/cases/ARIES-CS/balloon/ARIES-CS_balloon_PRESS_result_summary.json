@@ -1,0 +1,27 @@
+{
+    "label": "ARIES-CS_balloon_PRESS",
+    "equilibrium_output_path": "/Users/macdaddi/DESC/research/lit_comp/cases/ARIES-CS/balloon/ARIES-CS_balloon_PRESS.h5",
+    "result_pickle_path": "/Users/macdaddi/DESC/research/lit_comp/cases/ARIES-CS/balloon/ARIES-CS_balloon_PRESS_result.pkl",
+    "summary_json_path": "/Users/macdaddi/DESC/research/lit_comp/cases/ARIES-CS/balloon/ARIES-CS_balloon_PRESS_result_summary.json",
+    "result": {
+        "final_cost": 5.900730818445835e-09,
+        "message": "Optimization terminated successfully.\n`xtol` condition satisfied. (xtol=1.00e-03)",
+        "termination_message": null,
+        "success": true,
+        "status": null,
+        "nfev": 25,
+        "njev": 16,
+        "nit": 16,
+        "optimality": "Array(0.00240092, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "lsq-auglag",
+        "ftol": 0.001,
+        "xtol": 0.001,
+        "gtol": 0.001,
+        "ctol": 0.001,
+        "maxiter": 500,
+        "x_scale": "auto",
+        "options": {}
+    }
+}

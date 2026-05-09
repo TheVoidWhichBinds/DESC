@@ -1,0 +1,27 @@
+{
+    "label": "HELIOTRON_qs3_FLUX",
+    "equilibrium_output_path": "/Users/macdaddi/DESC/research/lit_comp/cases/HELIOTRON/qs3/HELIOTRON_qs3_FLUX.h5",
+    "result_pickle_path": "/Users/macdaddi/DESC/research/lit_comp/cases/HELIOTRON/qs3/HELIOTRON_qs3_FLUX_result.pkl",
+    "summary_json_path": "/Users/macdaddi/DESC/research/lit_comp/cases/HELIOTRON/qs3/HELIOTRON_qs3_FLUX_result_summary.json",
+    "result": {
+        "final_cost": 3.2207326047895044e-08,
+        "message": "`gtol` condition satisfied.",
+        "termination_message": null,
+        "success": true,
+        "status": null,
+        "nfev": 23,
+        "njev": 22,
+        "nit": 21,
+        "optimality": "Array(0.00018371, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "lsq-auglag",
+        "ftol": 0.001,
+        "xtol": 0.001,
+        "gtol": 0.001,
+        "ctol": 0.001,
+        "maxiter": 500,
+        "x_scale": "auto",
+        "options": {}
+    }
+}

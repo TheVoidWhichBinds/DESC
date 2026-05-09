@@ -992,75 +992,6 @@ def plot_pressure_profiles(
 
 
 
-def plot_iota_profiles(
-        tutorial_name,
-        tutorial_dir,
-        files,
-    ):
-    """
-    Plot all FXD and FREE iota profiles in one tutorial-level figure.
-
-    If a tutorial has multiple optimizations, all of them are included in the
-    same iota plot and labeled by optimization name and variant.
-    """
-
-    profiles = {}
-
-    for optimization_name, group_files in files.items():
-        for variant in (
-            "FXD",
-            "FREE",
-        ):
-            path = group_files.get(
-                variant,
-                None,
-            )
-
-            if path is None:
-                continue
-
-            try:
-                eq = load_final_equilibrium(
-                    path = path,
-                )
-
-                rho, iota = compute_radial_profile(
-                    eq = eq,
-                    quantity = "iota",
-                )
-
-            except Exception as error:
-                print("")
-                print(f"Skipping iota profile for {optimization_name} {variant}: {error}")
-                print("")
-                continue
-
-            if optimization_name == "main":
-                label = variant
-
-            else:
-                label = f"{optimization_name} {variant}"
-
-            profiles[label] = (
-                rho,
-                iota,
-            )
-
-    save_path = tutorial_dir / f"{tutorial_name}_iota.png"
-
-    saved = make_profile_plot(
-        profiles = profiles,
-        title = f"{tutorial_name}: iota profiles",
-        ylabel = "iota",
-        save_path = save_path,
-    )
-
-    if saved is None:
-        return []
-
-    return [saved]
-
-
 
 
 
@@ -1086,12 +1017,6 @@ def plot_standard_tutorial_outputs(
     saved_paths = []
 
     saved_paths += plot_pressure_profiles(
-        tutorial_name = tutorial_name,
-        tutorial_dir = tutorial_dir,
-        files = files,
-    )
-
-    saved_paths += plot_iota_profiles(
         tutorial_name = tutorial_name,
         tutorial_dir = tutorial_dir,
         files = files,

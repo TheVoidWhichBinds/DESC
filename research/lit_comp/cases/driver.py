@@ -84,10 +84,10 @@ except ImportError:
 
 OPTIMIZER = "lsq-auglag"
 
-FTOL = 1e-4
-XTOL = 1e-4
-GTOL = 1e-4
-CTOL = 6e-4
+FTOL = 1e-3
+XTOL = 1e-3
+GTOL = 1e-3
+CTOL = 1e-3
 
 MAXITER = 500
 MAX_NFEV = None
@@ -109,12 +109,9 @@ ISO_RHO = np.array(
 
 BALLOON_RHO = np.array(
     [
-        0.4,
         0.5,
         0.6,
         0.7,
-        0.8,
-        0.9,
     ]
 )
 
@@ -773,13 +770,13 @@ def build_core_constraints(
             ),
             normalize = True,
         ),
-        # FixIota(
-        #     eq = eq,
-        # ),
-        FixCurrent(
+        FixIota(
             eq = eq,
-            name = "FixCurrent",
         ),
+        # FixCurrent(
+        #     eq = eq,
+        #     name = "FixCurrent",
+        # ),
         FixPsi(
             eq = eq,
             name = "FixPsi",

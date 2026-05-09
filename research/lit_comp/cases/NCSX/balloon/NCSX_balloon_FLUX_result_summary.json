@@ -1,0 +1,27 @@
+{
+    "label": "NCSX_balloon_FLUX",
+    "equilibrium_output_path": "/Users/macdaddi/DESC/research/lit_comp/cases/NCSX/balloon/NCSX_balloon_FLUX.h5",
+    "result_pickle_path": "/Users/macdaddi/DESC/research/lit_comp/cases/NCSX/balloon/NCSX_balloon_FLUX_result.pkl",
+    "summary_json_path": "/Users/macdaddi/DESC/research/lit_comp/cases/NCSX/balloon/NCSX_balloon_FLUX_result_summary.json",
+    "result": {
+        "final_cost": 1.4766336060415685e-06,
+        "message": "`gtol` condition satisfied.",
+        "termination_message": null,
+        "success": true,
+        "status": null,
+        "nfev": 26,
+        "njev": 21,
+        "nit": 19,
+        "optimality": "Array(0.00070041, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "lsq-auglag",
+        "ftol": 0.001,
+        "xtol": 0.001,
+        "gtol": 0.001,
+        "ctol": 0.001,
+        "maxiter": 500,
+        "x_scale": "auto",
+        "options": {}
+    }
+}

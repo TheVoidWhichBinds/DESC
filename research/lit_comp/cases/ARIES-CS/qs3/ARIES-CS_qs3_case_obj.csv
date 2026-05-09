@@ -1,0 +1,13 @@
+objective,metric,FLUX,PRESS
+ForceBalance,size,1122,1122
+ForceBalance,l2,14756245.316734036,12425676.903564045
+ForceBalance,max_abs,1775606.3936203648,1526636.9251740635
+ForceBalance,mean_abs,352774.73352365824,296373.0712214751
+ForceBalance,rms,440534.00572814286,370957.049216519
+ForceBalance,status,ok,ok
+QuasisymmetryTripleProduct,size,2673,2673
+QuasisymmetryTripleProduct,l2,24.468103706529956,22.152277168669027
+QuasisymmetryTripleProduct,max_abs,3.4437425844809564,3.34531298803181
+QuasisymmetryTripleProduct,mean_abs,0.22912781343151392,0.20214806291228152
+QuasisymmetryTripleProduct,rms,0.4732611265459618,0.42846849817809185
+QuasisymmetryTripleProduct,status,ok,ok
