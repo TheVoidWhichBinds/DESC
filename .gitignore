@@ -47,3 +47,4 @@ __pycache__/
 # Large local paper/data files
 /research/lit_comp/papers/zip_files/
 /tests/inputs/wout_HELIOTRON_asym_NTHETA50_NZETA100.nc
+research/lit_comp.zip
