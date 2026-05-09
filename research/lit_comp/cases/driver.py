@@ -94,9 +94,12 @@ MAX_NFEV = None
 
 X_SCALE = "auto"
 
+APPLY_INITIAL_EQUILIBRIUM_RESOLUTION = False
+
 INITIAL_EQUILIBRIUM_L = 8
 INITIAL_EQUILIBRIUM_M = 8
 INITIAL_EQUILIBRIUM_N = 8
+
 
 ISO_RHO = np.array(
     [
@@ -128,6 +131,16 @@ BALLOON_NZETA_PER_TURN = 150
 BOUNDARY_MODE_CUTOFF = 2
 FIX_MAJOR_RADIUS_MODE = True
 
+FIX_IOTA_CASES = {
+    "HELIOTRON",
+    "W7-X",
+}
+
+FIX_CURRENT_CASES = {
+    "ARIES-CS",
+    "NCSX",
+}
+
 
 
 
@@ -145,13 +158,32 @@ def get_grid_resolution(
         eq,
     ):
     """
-    Return grid resolution equal to twice the incoming spectral resolution.
+    Return grid resolution equal to the working spectral resolution.
     """
 
     return {
-        "L": 2 * int(eq.L),
-        "M": 2 * int(eq.M),
-        "N": 2 * int(eq.N),
+        "L": int(eq.L),
+        "M": int(eq.M),
+        "N": int(eq.N),
+    }
+
+
+
+
+def get_equilibrium_resolution(
+        eq,
+    ):
+    """
+    Return the spectral and grid resolution for one equilibrium.
+    """
+
+    return {
+        "L": int(eq.L),
+        "M": int(eq.M),
+        "N": int(eq.N),
+        "L_grid": int(eq.L_grid),
+        "M_grid": int(eq.M_grid),
+        "N_grid": int(eq.N_grid),
     }
 
 
@@ -381,12 +413,21 @@ def make_hyperparameter_payload(
         case,
         obj,
         eq,
+        eq_loaded,
     ):
     """
     Build a JSON-safe hyperparameter payload for one objective folder.
     """
 
     grid_resolution = get_grid_resolution(
+        eq = eq,
+    )
+
+    loaded_resolution = get_equilibrium_resolution(
+        eq = eq_loaded,
+    )
+
+    working_resolution = get_equilibrium_resolution(
         eq = eq,
     )
 
@@ -405,23 +446,26 @@ def make_hyperparameter_payload(
         "maxiter": MAXITER,
         "max_nfev": MAX_NFEV,
         "x_scale": X_SCALE,
+        "apply_initial_equilibrium_resolution": bool(APPLY_INITIAL_EQUILIBRIUM_RESOLUTION),
         "initial_equilibrium_resolution_target": {
             "L": int(INITIAL_EQUILIBRIUM_L),
             "M": int(INITIAL_EQUILIBRIUM_M),
             "N": int(INITIAL_EQUILIBRIUM_N),
         },
-        "incoming_resolution": {
-            "L": int(eq.L),
-            "M": int(eq.M),
-            "N": int(eq.N),
-            "L_grid": int(eq.L_grid),
-            "M_grid": int(eq.M_grid),
-            "N_grid": int(eq.N_grid),
-        },
+        "initial_equilibrium_grid_resolution_policy": "always_match_working_equilibrium_spectral_resolution",
+        "incoming_loaded_equilibrium_resolution": loaded_resolution,
+        "working_initial_equilibrium_resolution_after_change": working_resolution,
         "objective_grid_resolution": {
             "L": int(grid_resolution["L"]),
             "M": int(grid_resolution["M"]),
             "N": int(grid_resolution["N"]),
+        },
+        "profile_constraint": {
+            "active_constraint": get_profile_constraint_type(
+                case = case,
+            ),
+            "fix_iota_cases": sorted(FIX_IOTA_CASES),
+            "fix_current_cases": sorted(FIX_CURRENT_CASES),
         },
         "boundary_constraints": get_boundary_mode_summary(
             eq = eq,
@@ -447,6 +491,7 @@ def save_hyperparameter_file(
         obj,
         objective_dir,
         eq,
+        eq_loaded,
     ):
     """
     Save the hyperparameters used for one objective folder.
@@ -460,6 +505,7 @@ def save_hyperparameter_file(
         case = case,
         obj = obj,
         eq = eq,
+        eq_loaded = eq_loaded,
     )
 
     with open(hyperparameter_path, "w") as file:
@@ -481,13 +527,22 @@ def save_hyperparameter_file(
 
 def print_hyperparameter_report(
         case,
+        eq_loaded,
         eq,
     ):
     """
-    Print optimizer hyperparameters and incoming equilibrium resolution.
+    Print optimizer hyperparameters and equilibrium resolutions.
     """
 
     grid_resolution = get_grid_resolution(
+        eq = eq,
+    )
+
+    loaded_resolution = get_equilibrium_resolution(
+        eq = eq_loaded,
+    )
+
+    working_resolution = get_equilibrium_resolution(
         eq = eq,
     )
 
@@ -506,18 +561,35 @@ def print_hyperparameter_report(
     print(f"max_nfev: {MAX_NFEV}")
     print(f"x_scale: {X_SCALE}")
     print("")
-    print("Target downloaded-equilibrium resolution:")
+    print("Profile constraint:")
+    print(f"Active profile constraint = {get_profile_constraint_type(case = case)}")
+    print(f"FIX_IOTA_CASES = {sorted(FIX_IOTA_CASES)}")
+    print(f"FIX_CURRENT_CASES = {sorted(FIX_CURRENT_CASES)}")
+    print("")
+    print("Initial equilibrium spectral-resolution change:")
+    print(f"APPLY_INITIAL_EQUILIBRIUM_RESOLUTION = {APPLY_INITIAL_EQUILIBRIUM_RESOLUTION}")
     print(f"INITIAL_EQUILIBRIUM_L = {INITIAL_EQUILIBRIUM_L}")
     print(f"INITIAL_EQUILIBRIUM_M = {INITIAL_EQUILIBRIUM_M}")
     print(f"INITIAL_EQUILIBRIUM_N = {INITIAL_EQUILIBRIUM_N}")
     print("")
-    print("Incoming equilibrium resolution:")
-    print(f"L      = {eq.L}")
-    print(f"M      = {eq.M}")
-    print(f"N      = {eq.N}")
-    print(f"L_grid = {eq.L_grid}")
-    print(f"M_grid = {eq.M_grid}")
-    print(f"N_grid = {eq.N_grid}")
+    print("Initial equilibrium grid-resolution policy:")
+    print("L_grid, M_grid, and N_grid are always set equal to the working equilibrium L, M, and N.")
+    print("")
+    print("Incoming loaded equilibrium resolution before change_resolution:")
+    print(f"L      = {loaded_resolution['L']}")
+    print(f"M      = {loaded_resolution['M']}")
+    print(f"N      = {loaded_resolution['N']}")
+    print(f"L_grid = {loaded_resolution['L_grid']}")
+    print(f"M_grid = {loaded_resolution['M_grid']}")
+    print(f"N_grid = {loaded_resolution['N_grid']}")
+    print("")
+    print("Working initial equilibrium resolution after copy/change_resolution:")
+    print(f"L      = {working_resolution['L']}")
+    print(f"M      = {working_resolution['M']}")
+    print(f"N      = {working_resolution['N']}")
+    print(f"L_grid = {working_resolution['L_grid']}")
+    print(f"M_grid = {working_resolution['M_grid']}")
+    print(f"N_grid = {working_resolution['N_grid']}")
     print("")
     print("Optimization/comparison grid resolution:")
     print(f"L_grid_objectives = {grid_resolution['L']}")
@@ -739,14 +811,95 @@ def build_primary_objectives(
 
 
 
+def normalize_case_name(
+        case,
+    ):
+    """
+    Return the case name in the normalized form used by the profile-constraint sets.
+    """
+
+    return str(case).strip().upper()
+
+
+
+
+
+def get_profile_constraint_type(
+        case,
+    ):
+    """
+    Return whether this case should use FixIota or FixCurrent.
+    """
+
+    case_name = normalize_case_name(
+        case = case,
+    )
+
+    use_iota = case_name in FIX_IOTA_CASES
+    use_current = case_name in FIX_CURRENT_CASES
+
+    if use_iota and use_current:
+        raise ValueError(
+            f"Case {case} appears in both FIX_IOTA_CASES and FIX_CURRENT_CASES. "
+            "Each case must use exactly one profile constraint."
+        )
+
+    if use_iota:
+        return "FixIota"
+
+    if use_current:
+        return "FixCurrent"
+
+    raise ValueError(
+        f"Case {case} is not listed in FIX_IOTA_CASES or FIX_CURRENT_CASES. "
+        "Add this case to exactly one of those sets in the HYPERPARAMETERS section."
+    )
+
+
+
+
+
+def build_profile_constraint(
+        eq,
+        case,
+    ):
+    """
+    Build the case-dependent profile constraint.
+    """
+
+    profile_constraint_type = get_profile_constraint_type(
+        case = case,
+    )
+
+    if profile_constraint_type == "FixIota":
+        return FixIota(
+            eq = eq,
+            name = "FixIota",
+        )
+
+    if profile_constraint_type == "FixCurrent":
+        return FixCurrent(
+            eq = eq,
+            name = "FixCurrent",
+        )
+
+    raise ValueError(
+        f"Unknown profile constraint type: {profile_constraint_type}"
+    )
+
+
+
+
+
 def build_core_constraints(
         eq,
+        case,
     ):
     """
     Build constraints shared by FLUX and PRESS pressure optimizations.
     """
 
-    return (
+    constraints = (
         FixBoundaryZ(
             eq = eq,
             name = "FixBoundaryZ",
@@ -770,18 +923,20 @@ def build_core_constraints(
             ),
             normalize = True,
         ),
-        FixIota(
-            eq = eq,
-        ),
-        # FixCurrent(
-        #     eq = eq,
-        #     name = "FixCurrent",
-        # ),
         FixPsi(
             eq = eq,
             name = "FixPsi",
         ),
     )
+
+    constraints = constraints + (
+        build_profile_constraint(
+            eq = eq,
+            case = case,
+        ),
+    )
+
+    return constraints
 
 
 
@@ -792,6 +947,7 @@ def build_optimization_problem(
         eq_initial,
         obj,
         variant,
+        case,
     ):
     """
     Build the ObjectiveFunction objects for one FLUX or PRESS optimization.
@@ -804,6 +960,7 @@ def build_optimization_problem(
 
     constraints = build_core_constraints(
         eq = eq,
+        case = case,
     )
 
     variant = str(variant).upper()
@@ -908,13 +1065,25 @@ def apply_initial_equilibrium_resolution(
         eq,
     ):
     """
-    Change the downloaded DESC example equilibrium to the requested initial resolution.
+    Set the working equilibrium resolution and force grid resolution to match it.
     """
 
+    target_l = int(eq.L)
+    target_m = int(eq.M)
+    target_n = int(eq.N)
+
+    if APPLY_INITIAL_EQUILIBRIUM_RESOLUTION:
+        target_l = int(INITIAL_EQUILIBRIUM_L)
+        target_m = int(INITIAL_EQUILIBRIUM_M)
+        target_n = int(INITIAL_EQUILIBRIUM_N)
+
     eq.change_resolution(
-        L = INITIAL_EQUILIBRIUM_L,
-        M = INITIAL_EQUILIBRIUM_M,
-        N = INITIAL_EQUILIBRIUM_N,
+        L = target_l,
+        M = target_m,
+        N = target_n,
+        L_grid = target_l,
+        M_grid = target_m,
+        N_grid = target_n,
     )
 
     eq.surface = eq.get_surface_at(
@@ -926,12 +1095,35 @@ def apply_initial_equilibrium_resolution(
 
 
 
+def print_loaded_equilibrium_resolution(
+        eq_loaded,
+    ):
+    """
+    Print the raw resolution of the DESC example immediately after loading.
+    """
+
+    loaded_resolution = get_equilibrium_resolution(
+        eq = eq_loaded,
+    )
+
+    print("Incoming loaded equilibrium resolution before change_resolution:")
+    print(f"L      = {loaded_resolution['L']}")
+    print(f"M      = {loaded_resolution['M']}")
+    print(f"N      = {loaded_resolution['N']}")
+    print(f"L_grid = {loaded_resolution['L_grid']}")
+    print(f"M_grid = {loaded_resolution['M_grid']}")
+    print(f"N_grid = {loaded_resolution['N_grid']}")
+    print("")
+
+
+
+
 
 def load_initial_equilibrium(
         case,
     ):
     """
-    Load the initial equilibrium from DESC examples and apply the requested resolution.
+    Load the initial equilibrium from DESC examples and apply the requested resolution to a copy.
     """
 
     print("")
@@ -940,15 +1132,17 @@ def load_initial_equilibrium(
     print("================================================================================================================")
     print("")
 
-    eq = desc.examples.get(
+    eq_loaded = desc.examples.get(
         case,
     )
 
-    eq = apply_initial_equilibrium_resolution(
-        eq = eq,
+    eq_initial = eq_loaded.copy()
+
+    eq_initial = apply_initial_equilibrium_resolution(
+        eq = eq_initial,
     )
 
-    return eq
+    return eq_loaded, eq_initial
 
 
 
@@ -1003,6 +1197,7 @@ def run_one_variant(
         eq_initial = eq_initial,
         obj = obj,
         variant = variant,
+        case = case,
     )
 
     output_path = get_output_path(
@@ -1051,6 +1246,7 @@ def run_one_variant(
 def run_objective_pair(
         case,
         obj,
+        eq_loaded,
         eq_initial,
     ):
     """
@@ -1071,6 +1267,7 @@ def run_objective_pair(
         obj = obj,
         objective_dir = objective_dir,
         eq = eq_initial,
+        eq_loaded = eq_loaded,
     )
 
     run_one_variant(
@@ -1107,12 +1304,13 @@ def run_case(
         case = case,
     )
 
-    eq_initial = load_initial_equilibrium(
+    eq_loaded, eq_initial = load_initial_equilibrium(
         case = case,
     )
 
     print_hyperparameter_report(
         case = case,
+        eq_loaded = eq_loaded,
         eq = eq_initial,
     )
 
@@ -1125,6 +1323,7 @@ def run_case(
         run_objective_pair(
             case = case,
             obj = objective_name,
+            eq_loaded = eq_loaded,
             eq_initial = eq_initial,
         )
 

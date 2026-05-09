@@ -1,6 +1,6 @@
 {
-    "case": "SOLOVEV",
-    "objective_folder": "balloon",
+    "case": "HELIOTRON",
+    "objective_folder": "iso",
     "variants": [
         "FLUX",
         "PRESS"
@@ -24,7 +24,7 @@
         "N": 8,
         "L_grid": 36,
         "M_grid": 18,
-        "N_grid": 0
+        "N_grid": 6
     },
     "objective_grid_resolution": {
         "L": 16,
