@@ -1,0 +1,13 @@
+objective,metric,FLUX,PRESS
+ForceBalance,size,650,650
+ForceBalance,l2,197392.21558365296,133580.074991296
+ForceBalance,max_abs,30049.347498083458,33362.60070504052
+ForceBalance,mean_abs,5544.707014307443,3283.014796669611
+ForceBalance,rms,7742.359685325848,5239.441607752353
+ForceBalance,status,ok,ok
+BallooningStability,size,3,3
+BallooningStability,l2,0.06857678041368949,0.0012113785960247683
+BallooningStability,max_abs,0.06190111136041157,0.0012113785960247683
+BallooningStability,mean_abs,0.030650421818346454,0.00040379286534158944
+BallooningStability,rms,0.03959282263200148,0.000699389758505451
+BallooningStability,status,ok,ok
