@@ -9,7 +9,7 @@
     "ftol": 0.0001,
     "xtol": 0.0001,
     "gtol": 0.0001,
-    "ctol": 0.0001,
+    "ctol": 0.001,
     "maxiter": 500,
     "max_nfev": null,
     "x_scale": "auto",
