@@ -7,7 +7,6 @@
 #   cd research/lit_comp/cases
 #   python3 plot.py --case ATF
 #   python3 plot.py --case ATF --obj qs3
-#   python3 plot.py --case ATF --obj balloon --run 001
 #
 # This script plots:
 #   1. INITIAL/FLUX/PRESS pressure profiles
@@ -30,7 +29,6 @@ try:
         find_h5_files,
         find_initial_h5_file,
         get_existing_objective_dirs,
-        get_latest_run_dir,
         load_final_eq,
         normalize_case_name,
     )
@@ -40,7 +38,6 @@ except ImportError:
         find_h5_files,
         find_initial_h5_file,
         get_existing_objective_dirs,
-        get_latest_run_dir,
         load_final_eq,
         normalize_case_name,
     )
@@ -542,6 +539,80 @@ def make_toroidal_legend_handles():
 
 
 
+def get_toroidal_phi_values(
+        reference_eq,
+        num_phi = 6,
+        N_Xsec_index = 0,
+        N_Xsecs = 1,
+    ):
+    """
+    Return one interleaved toroidal angle set over one field period.
+    """
+
+    field_period = 2.0 * np.pi / reference_eq.NFP
+
+    base_phi_values = np.linspace(
+        0.0,
+        field_period,
+        num_phi,
+        endpoint = False,
+    )
+
+    phi_offset = (
+        float(N_Xsec_index)
+        * field_period
+        / float(num_phi * N_Xsecs)
+    )
+
+    phi_values = np.mod(
+        base_phi_values + phi_offset,
+        field_period,
+    )
+
+    return phi_values
+
+
+
+
+
+def print_toroidal_phi_values(
+        phi_values,
+        reference_eq,
+        N_Xsec_index = 0,
+        N_Xsecs = 1,
+    ):
+    """
+    Print the toroidal angles used in one cross-section figure.
+    """
+
+    field_period = 2.0 * np.pi / reference_eq.NFP
+
+    phi_string = ", ".join(
+        [
+            f"{float(phi_value):.6f}"
+            for phi_value in phi_values
+        ]
+    )
+
+    normalized_string = ", ".join(
+        [
+            f"{float(phi_value / field_period):.6f}"
+            for phi_value in phi_values
+        ]
+    )
+
+    print("")
+    print("----------------------------------------------------------------------------------------------------------------")
+    print(f"Toroidal N-Xsec set {N_Xsec_index + 1:03d} / {N_Xsecs:03d}")
+    print(f"phi [rad]            = {phi_string}")
+    print(f"phi / (2*pi / NFP)   = {normalized_string}")
+    print("----------------------------------------------------------------------------------------------------------------")
+    print("")
+
+
+
+
+
 def make_toroidal_cross_section_plot(
         equilibrium_data,
         title,
@@ -549,6 +620,8 @@ def make_toroidal_cross_section_plot(
         rho = 8,
         theta = 8,
         num_phi = 6,
+        N_Xsec_index = 0,
+        N_Xsecs = 1,
     ):
     """
     Make and save one toroidal cross-section overlay figure.
@@ -572,11 +645,18 @@ def make_toroidal_cross_section_plot(
         squeeze = False,
     )
 
-    phi_values = np.linspace(
-        0.0,
-        2.0 * np.pi / reference_eq.NFP,
-        num_phi,
-        endpoint = False,
+    phi_values = get_toroidal_phi_values(
+        reference_eq = reference_eq,
+        num_phi = num_phi,
+        N_Xsec_index = N_Xsec_index,
+        N_Xsecs = N_Xsecs,
+    )
+
+    print_toroidal_phi_values(
+        phi_values = phi_values,
+        reference_eq = reference_eq,
+        N_Xsec_index = N_Xsec_index,
+        N_Xsecs = N_Xsecs,
     )
 
     for index, phi_value in enumerate(phi_values):
@@ -617,6 +697,9 @@ def make_toroidal_cross_section_plot(
             "equal",
             adjustable = "box",
         )
+
+    if N_Xsecs > 1:
+        title = f"{title}: N-Xsec set {N_Xsec_index + 1:03d} of {N_Xsecs:03d}"
 
     fig.suptitle(
         title,
@@ -665,28 +748,28 @@ def make_toroidal_cross_section_plot(
 # Case Plotters
 #========================================================================================================================================
 
-def get_plot_output_dir(
+def get_all_run_dirs(
         objective_dir,
-        run = None,
     ):
     """
-    Return the output directory to plot for one objective folder.
+    Return all numbered run directories within one objective folder.
     """
 
-    if run is None:
-        return get_latest_run_dir(
-            objective_dir = objective_dir,
-        )
+    run_dirs = sorted(
+        [
+            path
+            for path in Path(objective_dir).iterdir()
+            if path.is_dir() and path.name.isdigit()
+        ],
+        key = lambda path: int(path.name),
+    )
 
-    run_label = f"{int(run):03d}"
-    run_dir = Path(objective_dir) / run_label
-
-    if not run_dir.exists():
+    if len(run_dirs) == 0:
         raise FileNotFoundError(
-            f"Requested run folder does not exist: {run_dir}"
+            f"No numbered run folders were found in: {objective_dir}"
         )
 
-    return run_dir
+    return run_dirs
 
 
 
@@ -759,6 +842,7 @@ def plot_toroidal_cross_sections(
         output_dir,
         files,
         initial_path,
+        N_Xsecs = 1,
     ):
     """
     Plot INITIAL, FLUX, and PRESS toroidal cross-section overlays.
@@ -821,39 +905,44 @@ def plot_toroidal_cross_sections(
         output_dir = output_dir,
     )
 
-    save_path = output_dir / f"{plot_stem}_toroidal_cross_sections.png"
+    saved_paths = []
 
-    saved = make_toroidal_cross_section_plot(
-        equilibrium_data = equilibrium_data,
-        title = f"{plot_stem}: toroidal cross-sections",
-        save_path = save_path,
-        num_phi = 6,
-    )
+    for N_Xsec_index in range(N_Xsecs):
+        if N_Xsecs == 1:
+            save_path = output_dir / f"{plot_stem}_toroidal_cross_sections.png"
 
-    if saved is None:
-        return []
+        else:
+            save_path = output_dir / f"{plot_stem}_toroidal_cross_sections_N_Xsec_{N_Xsec_index + 1:03d}.png"
 
-    return [saved]
+        saved = make_toroidal_cross_section_plot(
+            equilibrium_data = equilibrium_data,
+            title = f"{plot_stem}: toroidal cross-sections",
+            save_path = save_path,
+            num_phi = 6,
+            N_Xsec_index = N_Xsec_index,
+            N_Xsecs = N_Xsecs,
+        )
+
+        if saved is not None:
+            saved_paths.append(saved)
+
+    return saved_paths
 
 
 
 
 
-def plot_objective_folder(
+def plot_objective_run_folder(
         case,
         objective_dir,
-        run = None,
+        output_dir,
+        N_Xsecs = 1,
     ):
     """
-    Plot pressure profiles and toroidal cross-sections for one objective output folder.
+    Plot pressure profiles and toroidal cross-sections for one numbered run folder.
     """
 
     objective_label = objective_dir.name
-
-    output_dir = get_plot_output_dir(
-        objective_dir = objective_dir,
-        run = run,
-    )
 
     files = find_h5_files(
         case_dir = output_dir,
@@ -872,6 +961,12 @@ def plot_objective_folder(
 
     saved_paths = []
 
+    print("")
+    print("----------------------------------------------------------------------------------------------------------------")
+    print(f"Plotting objective = {objective_label}, run = {output_dir.name}")
+    print("----------------------------------------------------------------------------------------------------------------")
+    print("")
+
     saved_paths += plot_pressure_profiles(
         case = case,
         objective_label = objective_label,
@@ -886,6 +981,7 @@ def plot_objective_folder(
         output_dir = output_dir,
         files = files,
         initial_path = initial_path,
+        N_Xsecs = N_Xsecs,
     )
 
     return saved_paths
@@ -897,10 +993,10 @@ def plot_objective_folder(
 def plot_case(
         case,
         obj = None,
-        run = None,
+        N_Xsecs = 1,
     ):
     """
-    Plot relevant comparisons for one case.
+    Plot relevant comparisons for one case across all numbered run folders.
     """
 
     objective_dirs = get_existing_objective_dirs(
@@ -911,11 +1007,28 @@ def plot_case(
     saved_paths = []
 
     for objective_dir in objective_dirs:
-        saved_paths += plot_objective_folder(
-            case = case,
+        run_dirs = get_all_run_dirs(
             objective_dir = objective_dir,
-            run = run,
         )
+
+        print("")
+        print("================================================================================================================")
+        print(f"Objective folder = {objective_dir.name}")
+        print("Run folders to plot:")
+
+        for run_dir in run_dirs:
+            print(f"  {run_dir.name}")
+
+        print("================================================================================================================")
+        print("")
+
+        for output_dir in run_dirs:
+            saved_paths += plot_objective_run_folder(
+                case = case,
+                objective_dir = objective_dir,
+                output_dir = output_dir,
+                N_Xsecs = N_Xsecs,
+            )
 
     if len(saved_paths) == 0:
         raise FileNotFoundError(
@@ -961,12 +1074,18 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--run",
-        default = None,
-        help = "Optional numbered run folder to plot, e.g. 001. If omitted, the latest run is plotted.",
+        "--N-Xsecs",
+        type = int,
+        default = 1,
+        help = "Number of interleaved six-cut toroidal cross-section figures to save.",
     )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if args.N_Xsecs < 1:
+        parser.error("--N-Xsecs must be at least 1.")
+
+    return args
 
 
 
@@ -986,8 +1105,8 @@ def main():
     if args.obj is not None:
         print(f"Objective folder = {args.obj}")
 
-    if args.run is not None:
-        print(f"Run folder = {int(args.run):03d}")
+    print("Run folders = all numbered runs")
+    print(f"Toroidal N-Xsec sets = {args.N_Xsecs}")
 
     print("================================================================================================================")
     print("")
@@ -995,7 +1114,7 @@ def main():
     saved_paths = plot_case(
         case = args.case,
         obj = args.obj,
-        run = args.run,
+        N_Xsecs = args.N_Xsecs,
     )
 
     print("")
