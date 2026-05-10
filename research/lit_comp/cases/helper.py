@@ -23,9 +23,9 @@
 #           ATF/
 #               ATF_initial.h5
 #               qs3/
-#               iso/
+#                   001/
 #               balloon/
-#               all/
+#                   001/
 #
 #==============================================================================================================
 
@@ -65,10 +65,10 @@ PRESS_SUFFIX = "_PRESS"
 
 CASE_OBJECTIVE_FOLDERS = (
     "qs3",
-    "iso",
     "balloon",
-    "all",
 )
+
+RUN_FOLDER_WIDTH = 3
 
 
 
@@ -203,7 +203,7 @@ def get_initial_equilibrium_path(
         case,
     ):
     """
-    Return the run-local initial equilibrium path.
+    Return the case-level initial equilibrium path.
     """
 
     case_name = normalize_case_name(
@@ -222,6 +222,7 @@ def get_output_path(
         case,
         obj,
         variant,
+        run_dir = None,
     ):
     """
     Return one optimization h5 output path.
@@ -233,10 +234,152 @@ def get_output_path(
 
     variant = str(variant).upper()
 
-    return get_objective_dir(
-        case = case_name,
-        obj = obj,
-    ) / f"{case_name}_{obj}_{variant}.h5"
+    if run_dir is None:
+        run_dir = get_objective_dir(
+            case = case_name,
+            obj = obj,
+        )
+
+    else:
+        run_dir = Path(run_dir)
+
+    return run_dir / f"{case_name}_{obj}_{variant}.h5"
+
+
+
+
+
+
+def get_run_label(
+        run_number,
+    ):
+    """
+    Format a run number as a zero-padded folder label.
+    """
+
+    return f"{int(run_number):0{RUN_FOLDER_WIDTH}d}"
+
+
+
+
+
+
+def is_numbered_run_dir(
+        path,
+    ):
+    """
+    Return True if a path is a numbered run folder.
+    """
+
+    path = Path(path)
+
+    return path.is_dir() and path.name.isdigit()
+
+
+
+
+
+
+def get_existing_run_dirs(
+        objective_dir,
+    ):
+    """
+    Return numbered run folders under one objective folder.
+    """
+
+    objective_dir = Path(objective_dir)
+
+    return tuple(
+        sorted(
+            path for path in objective_dir.iterdir()
+            if is_numbered_run_dir(
+                path = path,
+            )
+        )
+    )
+
+
+
+
+
+
+def get_latest_run_dir(
+        objective_dir,
+    ):
+    """
+    Return the newest numbered run folder, falling back to the objective folder.
+    """
+
+    objective_dir = Path(objective_dir)
+
+    run_dirs = get_existing_run_dirs(
+        objective_dir = objective_dir,
+    )
+
+    if len(run_dirs) == 0:
+        return objective_dir
+
+    return run_dirs[-1]
+
+
+
+
+
+
+def get_next_run_dir(
+        objective_dir,
+    ):
+    """
+    Create and return the next numbered run folder under one objective folder.
+    """
+
+    objective_dir = Path(objective_dir)
+
+    objective_dir.mkdir(
+        parents = True,
+        exist_ok = True,
+    )
+
+    run_dirs = get_existing_run_dirs(
+        objective_dir = objective_dir,
+    )
+
+    if len(run_dirs) == 0:
+        run_number = 1
+
+    else:
+        run_number = max(int(path.name) for path in run_dirs) + 1
+
+    run_dir = objective_dir / get_run_label(
+        run_number = run_number,
+    )
+
+    run_dir.mkdir(
+        parents = True,
+        exist_ok = False,
+    )
+
+    return run_dir
+
+
+
+
+
+
+def get_run_initial_equilibrium_path(
+        case,
+        obj,
+        run_dir,
+    ):
+    """
+    Return the run-local initial-equilibrium path.
+    """
+
+    case_name = normalize_case_name(
+        case = case,
+    )
+
+    return Path(run_dir) / f"{case_name}_{obj}_initial.h5"
 
 
 
@@ -338,7 +481,7 @@ def find_h5_files(
         case_dir,
     ):
     """
-    Find FLUX and PRESS h5 files in one objective output folder.
+    Find FLUX and PRESS h5 files in one output folder.
 
     Returns:
         {
@@ -373,6 +516,36 @@ def find_h5_files(
         return {}
 
     return files
+
+
+
+
+
+
+def find_initial_h5_file(
+        run_dir,
+        case = None,
+    ):
+    """
+    Find the initial equilibrium associated with one output folder.
+    """
+
+    run_dir = Path(run_dir)
+
+    matches = sorted(run_dir.glob("*initial.h5"))
+
+    if len(matches) > 0:
+        return matches[0]
+
+    if case is not None:
+        case_initial_path = get_initial_equilibrium_path(
+            case = case,
+        )
+
+        if case_initial_path.exists():
+            return case_initial_path
+
+    return None
 
 
 

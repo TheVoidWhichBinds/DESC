@@ -18,7 +18,6 @@ try:
     from .driver import (
         build_balloon_objective,
         build_force_balance_grid,
-        build_iso_objective,
         build_qs3_objective,
     )
 
@@ -26,6 +25,7 @@ try:
         compare_objective_set,
         find_h5_files,
         get_existing_objective_dirs,
+        get_existing_run_dirs,
         normalize_case_name,
         objective_spec,
         write_table_csv,
@@ -35,7 +35,6 @@ except ImportError:
     from driver import (
         build_balloon_objective,
         build_force_balance_grid,
-        build_iso_objective,
         build_qs3_objective,
     )
 
@@ -43,12 +42,11 @@ except ImportError:
         compare_objective_set,
         find_h5_files,
         get_existing_objective_dirs,
+        get_existing_run_dirs,
         normalize_case_name,
         objective_spec,
         write_table_csv,
     )
-
-
 
 
 
@@ -106,32 +104,6 @@ def qs3_objectives(
 
 
 
-def iso_objectives(
-        eq,
-    ):
-    """
-    Return comparison rows for the iso folder.
-    """
-
-    return [
-        objective_spec(
-            name = "ForceBalance",
-            objective = build_force_balance_objective(
-                eq = eq,
-            ),
-        ),
-        objective_spec(
-            name = "Isodynamicity",
-            objective = build_iso_objective(
-                eq = eq,
-            ),
-        ),
-    ]
-
-
-
-
-
 def balloon_objectives(
         eq,
     ):
@@ -158,46 +130,6 @@ def balloon_objectives(
 
 
 
-def all_objectives(
-        eq,
-    ):
-    """
-    Return comparison rows for the all folder.
-    """
-
-    return [
-        objective_spec(
-            name = "ForceBalance",
-            objective = build_force_balance_objective(
-                eq = eq,
-            ),
-        ),
-        objective_spec(
-            name = "QuasisymmetryTripleProduct",
-            objective = build_qs3_objective(
-                eq = eq,
-            ),
-        ),
-        objective_spec(
-            name = "Isodynamicity",
-            objective = build_iso_objective(
-                eq = eq,
-            ),
-        ),
-        objective_spec(
-            name = "BallooningStability",
-            objective = build_balloon_objective(
-                eq = eq,
-            ),
-        ),
-    ]
-
-
-
-
-
-
-
 
 
 
@@ -207,9 +139,7 @@ def all_objectives(
 
 OBJECTIVE_BUILDERS = {
     "qs3": qs3_objectives,
-    "iso": iso_objectives,
     "balloon": balloon_objectives,
-    "all": all_objectives,
 }
 
 
@@ -242,8 +172,6 @@ def get_objective_builder(
 
 
 
-
-
 #==============================================================================================================
 # Case Comparison
 #==============================================================================================================
@@ -251,17 +179,44 @@ def get_objective_builder(
 def make_case_csv_path(
         case,
         obj,
-        objective_dir,
+        output_dir,
     ):
     """
-    Build the comparison CSV path for one objective folder.
+    Build the comparison CSV path for one output folder.
     """
 
     case_name = normalize_case_name(
         case = case,
     )
 
-    return objective_dir / f"{case_name}_{obj}_case_obj.csv"
+    output_dir = output_dir.resolve()
+
+    if output_dir.name.isdigit():
+        return output_dir / f"{case_name}_{obj}_{output_dir.name}_case_obj.csv"
+
+    return output_dir / f"{case_name}_{obj}_case_obj.csv"
+
+
+
+
+
+def get_comparison_output_dirs(
+        objective_dir,
+    ):
+    """
+    Return numbered run folders when present, otherwise the objective folder itself.
+    """
+
+    run_dirs = get_existing_run_dirs(
+        objective_dir = objective_dir,
+    )
+
+    if len(run_dirs) > 0:
+        return run_dirs
+
+    return (
+        objective_dir,
+    )
 
 
 
@@ -274,7 +229,7 @@ def case_obj(
     """
     Compare objective values between FLUX and PRESS files.
 
-    If obj is None, every objective folder is compared.
+    If obj is None, every configured objective folder is compared.
     """
 
     objective_dirs = get_existing_objective_dirs(
@@ -292,38 +247,46 @@ def case_obj(
             obj = objective_label,
         )
 
-        files = find_h5_files(
-            case_dir = objective_dir,
-        )
-
-        if len(files) == 0:
-            print("")
-            print(f"No *_FLUX.h5 or *_PRESS.h5 files were found in: {objective_dir}")
-            print("")
-            continue
-
-        rows = compare_objective_set(
-            files = files,
-            objective_getter = objective_builder,
-        )
-
-        csv_path = make_case_csv_path(
-            case = case,
-            obj = objective_label,
+        output_dirs = get_comparison_output_dirs(
             objective_dir = objective_dir,
         )
 
-        write_table_csv(
-            rows = rows,
-            path = csv_path,
-        )
+        for output_dir in output_dirs:
+            files = find_h5_files(
+                case_dir = output_dir,
+            )
 
-        rows_by_case[objective_label] = rows
-        csv_paths[objective_label] = csv_path
+            output_label = objective_label
+
+            if output_dir.name.isdigit():
+                output_label = f"{objective_label}/{output_dir.name}"
+
+            if len(files) == 0:
+                print("")
+                print(f"No *_FLUX.h5 or *_PRESS.h5 files were found in: {output_dir}")
+                print("")
+                continue
+
+            rows = compare_objective_set(
+                files = files,
+                objective_getter = objective_builder,
+            )
+
+            csv_path = make_case_csv_path(
+                case = case,
+                obj = objective_label,
+                output_dir = output_dir,
+            )
+
+            write_table_csv(
+                rows = rows,
+                path = csv_path,
+            )
+
+            rows_by_case[output_label] = rows
+            csv_paths[output_label] = csv_path
 
     return rows_by_case, csv_paths
-
-
 
 
 
@@ -354,11 +317,9 @@ def parse_args():
         default = None,
         choices = [
             "qs3",
-            "iso",
             "balloon",
-            "all",
         ],
-        help = "Optional objective folder to compare. If omitted, all four folders are compared.",
+        help = "Optional objective folder to compare. If omitted, qs3 and balloon are compared.",
     )
 
     return parser.parse_args()

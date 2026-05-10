@@ -7,9 +7,7 @@
 #   cd research/lit_comp/cases
 #   python3 driver.py --case ATF
 #   python3 driver.py --case ATF --obj qs3
-#   python3 driver.py --case ATF --obj iso
 #   python3 driver.py --case ATF --obj balloon
-#   python3 driver.py --case ATF --obj all
 #
 #==============================================================================================================
 
@@ -45,26 +43,26 @@ from desc.objectives import (
 
 try:
     from .helper import (
-        clear_objective_folder,
         ensure_case_layout,
         get_initial_equilibrium_path,
+        get_next_run_dir,
         get_objective_dir,
         get_output_path,
+        get_run_initial_equilibrium_path,
         optimize_save_report,
-        remove_file_if_present,
         resolve_requested_objectives,
         build_press_extension,
     )
 
 except ImportError:
     from helper import (
-        clear_objective_folder,
         ensure_case_layout,
         get_initial_equilibrium_path,
+        get_next_run_dir,
         get_objective_dir,
         get_output_path,
+        get_run_initial_equilibrium_path,
         optimize_save_report,
-        remove_file_if_present,
         resolve_requested_objectives,
         build_press_extension,
     )
@@ -470,9 +468,6 @@ def make_hyperparameter_payload(
         "boundary_constraints": get_boundary_mode_summary(
             eq = eq,
         ),
-        "isodynamicity": {
-            "rho": ISO_RHO.tolist(),
-        },
         "ballooning": {
             "rho": BALLOON_RHO.tolist(),
             "alpha": BALLOON_ALPHA.tolist(),
@@ -489,7 +484,7 @@ def make_hyperparameter_payload(
 def save_hyperparameter_file(
         case,
         obj,
-        objective_dir,
+        output_dir,
         eq,
         eq_loaded,
     ):
@@ -499,7 +494,7 @@ def save_hyperparameter_file(
 
     case_name = str(case).strip()
 
-    hyperparameter_path = objective_dir / f"{case_name}_{obj}_hyperparameters.json"
+    hyperparameter_path = output_dir / f"{case_name}_{obj}_hyperparameters.json"
 
     payload = make_hyperparameter_payload(
         case = case,
@@ -516,7 +511,7 @@ def save_hyperparameter_file(
         )
 
     print("")
-    print(f"Saved objective-folder hyperparameters: {hyperparameter_path}")
+    print(f"Saved run hyperparameters: {hyperparameter_path}")
     print("")
 
     return hyperparameter_path
@@ -595,9 +590,6 @@ def print_hyperparameter_report(
     print(f"L_grid_objectives = {grid_resolution['L']}")
     print(f"M_grid_objectives = {grid_resolution['M']}")
     print(f"N_grid_objectives = {grid_resolution['N']}")
-    print("")
-    print("Isodynamicity surfaces:")
-    print(f"ISO_RHO = {ISO_RHO}")
     print("")
     print("Ballooning settings:")
     print(f"BALLOON_RHO = {BALLOON_RHO}")
@@ -776,13 +768,6 @@ def build_primary_objectives(
             ),
         )
 
-    if obj == "iso":
-        return (
-            build_iso_objective(
-                eq = eq,
-            ),
-        )
-
     if obj == "balloon":
         return (
             build_balloon_objective(
@@ -790,18 +775,6 @@ def build_primary_objectives(
             ),
         )
 
-    if obj == "all":
-        return (
-            build_qs3_objective(
-                eq = eq,
-            ),
-            build_iso_objective(
-                eq = eq,
-            ),
-            build_balloon_objective(
-                eq = eq,
-            ),
-        )
 
     raise ValueError(
         f"Unknown objective folder: {obj}"
@@ -1148,20 +1121,53 @@ def load_initial_equilibrium(
 
 
 
-def save_initial_equilibrium(
+def save_case_initial_equilibrium(
         case,
         eq,
     ):
     """
-    Save the incoming DESC example equilibrium inside the case folder.
+    Save a case-level initial equilibrium only when it does not already exist.
     """
 
     initial_path = get_initial_equilibrium_path(
         case = case,
     )
 
-    remove_file_if_present(
-        path = initial_path,
+    if not initial_path.exists():
+        eq.save(
+            str(initial_path)
+        )
+
+        print("")
+        print(f"Saved case-level initial equilibrium: {initial_path}")
+        print("")
+
+    else:
+        print("")
+        print(f"Keeping existing case-level initial equilibrium: {initial_path}")
+        print("")
+
+    return initial_path
+
+
+
+
+
+
+def save_run_initial_equilibrium(
+        case,
+        obj,
+        run_dir,
+        eq,
+    ):
+    """
+    Save the initial equilibrium inside one numbered run folder.
+    """
+
+    initial_path = get_run_initial_equilibrium_path(
+        case = case,
+        obj = obj,
+        run_dir = run_dir,
     )
 
     eq.save(
@@ -1169,7 +1175,7 @@ def save_initial_equilibrium(
     )
 
     print("")
-    print(f"Saved initial equilibrium: {initial_path}")
+    print(f"Saved run-local initial equilibrium: {initial_path}")
     print("")
 
     return initial_path
@@ -1183,6 +1189,7 @@ def run_one_variant(
         obj,
         variant,
         eq_initial,
+        run_dir,
     ):
     """
     Run one FLUX or PRESS pressure optimization.
@@ -1204,6 +1211,7 @@ def run_one_variant(
         case = case,
         obj = obj,
         variant = variant,
+        run_dir = run_dir,
     )
 
     label = f"{case}_{obj}_{variant}"
@@ -1258,14 +1266,27 @@ def run_objective_pair(
         obj = obj,
     )
 
-    clear_objective_folder(
-        folder = objective_dir,
+    run_dir = get_next_run_dir(
+        objective_dir = objective_dir,
+    )
+
+    print("")
+    print("================================================================================================================")
+    print(f"Created output run folder: {run_dir}")
+    print("================================================================================================================")
+    print("")
+
+    save_run_initial_equilibrium(
+        case = case,
+        obj = obj,
+        run_dir = run_dir,
+        eq = eq_initial,
     )
 
     save_hyperparameter_file(
         case = case,
         obj = obj,
-        objective_dir = objective_dir,
+        output_dir = run_dir,
         eq = eq_initial,
         eq_loaded = eq_loaded,
     )
@@ -1275,6 +1296,7 @@ def run_objective_pair(
         obj = obj,
         variant = "FLUX",
         eq_initial = eq_initial,
+        run_dir = run_dir,
     )
 
     run_one_variant(
@@ -1282,6 +1304,7 @@ def run_objective_pair(
         obj = obj,
         variant = "PRESS",
         eq_initial = eq_initial,
+        run_dir = run_dir,
     )
 
 
@@ -1314,7 +1337,7 @@ def run_case(
         eq = eq_initial,
     )
 
-    save_initial_equilibrium(
+    save_case_initial_equilibrium(
         case = case,
         eq = eq_initial,
     )
@@ -1401,11 +1424,9 @@ def parse_args():
         default = None,
         choices = [
             "qs3",
-            "iso",
             "balloon",
-            "all",
         ],
-        help = "Optional objective pair to run. If omitted, all four pairs run.",
+        help = "Optional objective pair to run. If omitted, qs3 and balloon both run.",
     )
 
     parser.add_argument(
@@ -1432,13 +1453,13 @@ def main():
     print(f"Running case = {args.case}")
 
     if args.obj is None:
-        print("Objective mode: all objective pairs")
+        print("Objective mode: qs3 and balloon")
 
     else:
         print(f"Objective mode: {args.obj}")
 
     print("Backend: CPU")
-    print("Overwrite mode: enabled")
+    print("Output mode: append numbered run folders")
     print("================================================================================================================")
     print("")
 

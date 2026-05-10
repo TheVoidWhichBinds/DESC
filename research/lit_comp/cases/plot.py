@@ -1,16 +1,17 @@
 # plot.py
 #==============================================================================================================
 #
-# Plot case output comparisons from research/lit_comp/cases/<case>/<objective>/.
+# Plot case output comparisons from research/lit_comp/cases/<case>/<objective>/<run>/.
 #
 # Usage:
 #   cd research/lit_comp/cases
 #   python3 plot.py --case ATF
 #   python3 plot.py --case ATF --obj qs3
+#   python3 plot.py --case ATF --obj balloon --run 001
 #
-# This script only plots:
-#   1. FLUX/PRESS pressure profiles
-#   2. FLUX/PRESS toroidal cross-sections
+# This script plots:
+#   1. INITIAL/FLUX/PRESS pressure profiles
+#   2. INITIAL/FLUX/PRESS toroidal cross-section overlays
 #
 #==============================================================================================================
 
@@ -18,6 +19,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import numpy as np
 
 from desc.grid import LinearGrid
@@ -26,7 +28,9 @@ from desc.plotting import plot_surfaces
 try:
     from .helper import (
         find_h5_files,
+        find_initial_h5_file,
         get_existing_objective_dirs,
+        get_latest_run_dir,
         load_final_eq,
         normalize_case_name,
     )
@@ -34,12 +38,12 @@ try:
 except ImportError:
     from helper import (
         find_h5_files,
+        find_initial_h5_file,
         get_existing_objective_dirs,
+        get_latest_run_dir,
         load_final_eq,
         normalize_case_name,
     )
-
-
 
 
 
@@ -89,12 +93,28 @@ def compute_radial_profile(
 
 def load_pressure_profiles(
         files,
+        initial_path = None,
     ):
     """
-    Load FLUX and PRESS pressure profiles for one objective folder.
+    Load INITIAL, FLUX, and PRESS pressure profiles for one output folder.
     """
 
     profiles = {}
+
+    if initial_path is not None:
+        eq = load_final_eq(
+            path = initial_path,
+        )
+
+        rho, pressure = compute_radial_profile(
+            eq = eq,
+            quantity = "p",
+        )
+
+        profiles["INITIAL"] = (
+            rho,
+            pressure,
+        )
 
     for variant in (
         "FLUX",
@@ -131,11 +151,209 @@ def load_pressure_profiles(
 
 
 
-
-
 #========================================================================================================================================
 # PLOTTING HELPERS
 #========================================================================================================================================
+
+def get_line_styles():
+    """
+    Return line styles used consistently across pressure and surface plots.
+    """
+
+    return {
+        "INITIAL": {
+            "color": "black",
+            "linestyle": "-",
+            "linewidth": 2,
+            "alpha": 0.38,
+            "zorder": 1,
+        },
+        "FLUX": {
+            "color": "tab:red",
+            "linestyle": "--",
+            "linewidth": 1,
+            "alpha": 0.82,
+            "zorder": 2,
+        },
+        "PRESS": {
+            "color": "tab:green",
+            "linestyle": ":",
+            "linewidth": 1,
+            "alpha": 0.98,
+            "zorder": 3,
+        },
+    }
+
+
+
+
+
+def get_surface_plot_kwargs(
+        label,
+    ):
+    """
+    Return keyword arguments passed directly into DESC plot_surfaces.
+    """
+
+    style = get_line_styles()[label]
+
+    return {
+        "label": label,
+        "rho_color": style["color"],
+        "theta_color": style["color"],
+        "lcfs_color": style["color"],
+        "axis_color": style["color"],
+        "rho_ls": style["linestyle"],
+        "theta_ls": style["linestyle"],
+        "lcfs_ls": style["linestyle"],
+        "rho_lw": style["linewidth"],
+        "theta_lw": style["linewidth"],
+        "lcfs_lw": style["linewidth"],
+        "axis_alpha": style["alpha"],
+        "axis_size": 2.5,
+    }
+
+
+
+
+
+def apply_line_style(
+        line,
+        style,
+    ):
+    """
+    Apply style settings to one matplotlib line.
+    """
+
+    line.set_color(
+        style.get(
+            "color",
+            None,
+        )
+    )
+
+    line.set_linestyle(
+        style.get(
+            "linestyle",
+            "-",
+        )
+    )
+
+    line.set_linewidth(
+        style.get(
+            "linewidth",
+            1.8,
+        )
+    )
+
+    line.set_alpha(
+        style.get(
+            "alpha",
+            0.90,
+        )
+    )
+
+    line.set_zorder(
+        style.get(
+            "zorder",
+            2,
+        )
+    )
+
+    line.set_solid_capstyle("round")
+    line.set_dash_capstyle("round")
+
+
+
+
+
+def apply_collection_style(
+        collection,
+        style,
+    ):
+    """
+    Apply style settings to one matplotlib collection.
+    """
+
+    color = style.get(
+        "color",
+        None,
+    )
+
+    if color is not None:
+        try:
+            collection.set_color(color)
+        except Exception:
+            pass
+
+        try:
+            collection.set_edgecolor(color)
+        except Exception:
+            pass
+
+        try:
+            collection.set_edgecolors(color)
+        except Exception:
+            pass
+
+    try:
+        collection.set_facecolor("none")
+    except Exception:
+        pass
+
+    try:
+        collection.set_linestyle(
+            style.get(
+                "linestyle",
+                "-",
+            )
+        )
+    except Exception:
+        pass
+
+    try:
+        collection.set_linestyles(
+            style.get(
+                "linestyle",
+                "-",
+            )
+        )
+    except Exception:
+        pass
+
+    try:
+        collection.set_linewidth(
+            style.get(
+                "linewidth",
+                1.8,
+            )
+        )
+    except Exception:
+        pass
+
+    try:
+        collection.set_alpha(
+            style.get(
+                "alpha",
+                0.90,
+            )
+        )
+    except Exception:
+        pass
+
+    try:
+        collection.set_zorder(
+            style.get(
+                "zorder",
+                2,
+            )
+        )
+    except Exception:
+        pass
+
+
+
+
 
 def make_pressure_plot(
         profiles,
@@ -153,35 +371,38 @@ def make_pressure_plot(
         figsize = (9, 6),
     )
 
-    dash_styles = {
-        "FLUX": (
-            0,
-            (
-                6,
-                3,
-            ),
-        ),
-        "PRESS": (
-            2,
-            (
-                10,
-                3,
-            ),
-        ),
-    }
+    line_styles = get_line_styles()
 
     for label, (rho, values) in profiles.items():
-        linestyle = dash_styles.get(
+        style = line_styles.get(
             label,
-            "--",
+            {},
         )
 
         ax.plot(
             rho,
             values,
             label = label,
-            linestyle = linestyle,
-            linewidth = 2.25,
+            color = style.get(
+                "color",
+                None,
+            ),
+            linestyle = style.get(
+                "linestyle",
+                "--",
+            ),
+            linewidth = style.get(
+                "linewidth",
+                2.25,
+            ),
+            alpha = style.get(
+                "alpha",
+                1.0,
+            ),
+            zorder = style.get(
+                "zorder",
+                2,
+            ),
         )
 
     ax.set_xlabel("rho")
@@ -215,6 +436,112 @@ def make_pressure_plot(
 
 
 
+def style_new_surface_artists(
+        ax,
+        start_line_index,
+        start_collection_index,
+        start_patch_index,
+        label,
+    ):
+    """
+    Apply the plot style for one equilibrium to artists newly added by plot_surfaces.
+    """
+
+    line_styles = get_line_styles()
+    style = line_styles.get(
+        label,
+        {},
+    )
+
+    new_lines = ax.lines[start_line_index:]
+    new_collections = ax.collections[start_collection_index:]
+    new_patches = ax.patches[start_patch_index:]
+
+    for line in new_lines:
+        apply_line_style(
+            line = line,
+            style = style,
+        )
+
+    for collection in new_collections:
+        apply_collection_style(
+            collection = collection,
+            style = style,
+        )
+
+    for patch in new_patches:
+        try:
+            patch.set_edgecolor(
+                style.get(
+                    "color",
+                    None,
+                )
+            )
+            patch.set_facecolor("none")
+            patch.set_linestyle(
+                style.get(
+                    "linestyle",
+                    "-",
+                )
+            )
+            patch.set_linewidth(
+                style.get(
+                    "linewidth",
+                    1.8,
+                )
+            )
+            patch.set_alpha(
+                style.get(
+                    "alpha",
+                    0.90,
+                )
+            )
+            patch.set_zorder(
+                style.get(
+                    "zorder",
+                    2,
+                )
+            )
+        except Exception:
+            pass
+
+
+
+
+
+def make_toroidal_legend_handles():
+    """
+    Build legend handles for the toroidal overlay plot.
+    """
+
+    handles = []
+    line_styles = get_line_styles()
+
+    for label in (
+        "INITIAL",
+        "FLUX",
+        "PRESS",
+    ):
+        style = line_styles[label]
+
+        handles.append(
+            Line2D(
+                [0],
+                [0],
+                label = label,
+                color = style["color"],
+                linestyle = style["linestyle"],
+                linewidth = style["linewidth"],
+                alpha = style["alpha"],
+            )
+        )
+
+    return handles
+
+
+
+
+
 def make_toroidal_cross_section_plot(
         equilibrium_data,
         title,
@@ -224,32 +551,43 @@ def make_toroidal_cross_section_plot(
         num_phi = 6,
     ):
     """
-    Make and save one toroidal cross-section figure for one objective folder.
+    Make and save one toroidal cross-section overlay figure.
     """
 
     if len(equilibrium_data) == 0:
         return None
 
+    reference_eq = equilibrium_data[0][1]
+
+    nrows = 3
+    ncols = 2
+
     fig, axes = plt.subplots(
-        len(equilibrium_data),
-        num_phi,
+        nrows,
+        ncols,
         figsize = (
-            3.0 * num_phi,
-            3.4 * len(equilibrium_data),
+            8.0,
+            10.5,
         ),
         squeeze = False,
     )
 
-    for row, (variant, eq) in enumerate(equilibrium_data):
-        phi_values = np.linspace(
-            0.0,
-            2.0 * np.pi / eq.NFP,
-            num_phi,
-            endpoint = False,
-        )
+    phi_values = np.linspace(
+        0.0,
+        2.0 * np.pi / reference_eq.NFP,
+        num_phi,
+        endpoint = False,
+    )
 
-        for col, phi_value in enumerate(phi_values):
-            ax = axes[row, col]
+    for index, phi_value in enumerate(phi_values):
+        row = index // ncols
+        col = index % ncols
+        ax = axes[row, col]
+
+        for label, eq in equilibrium_data:
+            start_line_index = len(ax.lines)
+            start_collection_index = len(ax.collections)
+            start_patch_index = len(ax.patches)
 
             plot_surfaces(
                 eq,
@@ -257,29 +595,44 @@ def make_toroidal_cross_section_plot(
                 theta = theta,
                 phi = float(phi_value),
                 ax = np.atleast_1d(ax),
+                **get_surface_plot_kwargs(
+                    label = label,
+                ),
             )
 
-            if row == 0:
-                ax.set_title(
-                    rf"$\phi = {phi_value:.3f}$",
-                    fontsize = 10,
-                )
+            style_new_surface_artists(
+                ax = ax,
+                start_line_index = start_line_index,
+                start_collection_index = start_collection_index,
+                start_patch_index = start_patch_index,
+                label = label,
+            )
 
-            if col == 0:
-                ax.text(
-                    -0.20,
-                    0.50,
-                    variant,
-                    transform = ax.transAxes,
-                    rotation = 90,
-                    va = "center",
-                    ha = "center",
-                    fontsize = 11,
-                )
+        ax.set_title(
+            rf"$\phi = {phi_value:.3f}$",
+            fontsize = 10,
+        )
+
+        ax.set_aspect(
+            "equal",
+            adjustable = "box",
+        )
 
     fig.suptitle(
         title,
         fontsize = 12,
+    )
+
+    fig.legend(
+        handles = make_toroidal_legend_handles(),
+        loc = "upper center",
+        ncol = 3,
+        frameon = True,
+        fontsize = 9,
+        bbox_to_anchor = (
+            0.5,
+            0.965,
+        ),
     )
 
     fig.tight_layout(
@@ -287,7 +640,7 @@ def make_toroidal_cross_section_plot(
             0.02,
             0.02,
             1.00,
-            0.94,
+            0.93,
         ),
     )
 
@@ -308,35 +661,86 @@ def make_toroidal_cross_section_plot(
 
 
 
-
-
 #========================================================================================================================================
 # Case Plotters
 #========================================================================================================================================
 
-def plot_pressure_profiles(
-        case,
-        objective_label,
+def get_plot_output_dir(
         objective_dir,
-        files,
+        run = None,
     ):
     """
-    Plot FLUX and PRESS pressure profiles for one objective folder.
+    Return the output directory to plot for one objective folder.
     """
 
-    profiles = load_pressure_profiles(
-        files = files,
-    )
+    if run is None:
+        return get_latest_run_dir(
+            objective_dir = objective_dir,
+        )
+
+    run_label = f"{int(run):03d}"
+    run_dir = Path(objective_dir) / run_label
+
+    if not run_dir.exists():
+        raise FileNotFoundError(
+            f"Requested run folder does not exist: {run_dir}"
+        )
+
+    return run_dir
+
+
+
+
+
+def get_plot_stem(
+        case,
+        objective_label,
+        output_dir,
+    ):
+    """
+    Return a file stem for plot outputs.
+    """
 
     case_name = normalize_case_name(
         case = case,
     )
 
-    save_path = objective_dir / f"{case_name}_{objective_label}_pressure.png"
+    if output_dir.name.isdigit():
+        return f"{case_name}_{objective_label}_{output_dir.name}"
+
+    return f"{case_name}_{objective_label}"
+
+
+
+
+
+def plot_pressure_profiles(
+        case,
+        objective_label,
+        output_dir,
+        files,
+        initial_path,
+    ):
+    """
+    Plot INITIAL, FLUX, and PRESS pressure profiles for one output folder.
+    """
+
+    profiles = load_pressure_profiles(
+        files = files,
+        initial_path = initial_path,
+    )
+
+    plot_stem = get_plot_stem(
+        case = case,
+        objective_label = objective_label,
+        output_dir = output_dir,
+    )
+
+    save_path = output_dir / f"{plot_stem}_pressure.png"
 
     saved = make_pressure_plot(
         profiles = profiles,
-        title = f"{case_name} {objective_label}: pressure profiles",
+        title = f"{plot_stem}: pressure profiles",
         save_path = save_path,
     )
 
@@ -352,14 +756,31 @@ def plot_pressure_profiles(
 def plot_toroidal_cross_sections(
         case,
         objective_label,
-        objective_dir,
+        output_dir,
         files,
+        initial_path,
     ):
     """
-    Plot FLUX and PRESS toroidal cross-sections for one objective folder.
+    Plot INITIAL, FLUX, and PRESS toroidal cross-section overlays.
     """
 
     equilibrium_data = []
+
+    if initial_path is not None:
+        try:
+            equilibrium_data.append(
+                (
+                    "INITIAL",
+                    load_final_eq(
+                        path = initial_path,
+                    ),
+                )
+            )
+
+        except Exception as error:
+            print("")
+            print(f"Skipping toroidal cross-sections for {objective_label} INITIAL: {error}")
+            print("")
 
     for variant in (
         "FLUX",
@@ -394,15 +815,17 @@ def plot_toroidal_cross_sections(
     if len(equilibrium_data) == 0:
         return []
 
-    case_name = normalize_case_name(
+    plot_stem = get_plot_stem(
         case = case,
+        objective_label = objective_label,
+        output_dir = output_dir,
     )
 
-    save_path = objective_dir / f"{case_name}_{objective_label}_toroidal_cross_sections.png"
+    save_path = output_dir / f"{plot_stem}_toroidal_cross_sections.png"
 
     saved = make_toroidal_cross_section_plot(
         equilibrium_data = equilibrium_data,
-        title = f"{case_name} {objective_label}: toroidal cross-sections",
+        title = f"{plot_stem}: toroidal cross-sections",
         save_path = save_path,
         num_phi = 6,
     )
@@ -419,37 +842,50 @@ def plot_toroidal_cross_sections(
 def plot_objective_folder(
         case,
         objective_dir,
+        run = None,
     ):
     """
-    Plot pressure profiles and toroidal cross-sections for one objective folder.
+    Plot pressure profiles and toroidal cross-sections for one objective output folder.
     """
 
     objective_label = objective_dir.name
 
+    output_dir = get_plot_output_dir(
+        objective_dir = objective_dir,
+        run = run,
+    )
+
     files = find_h5_files(
-        case_dir = objective_dir,
+        case_dir = output_dir,
     )
 
     if len(files) == 0:
         print("")
-        print(f"No *_FLUX.h5 or *_PRESS.h5 files were found in: {objective_dir}")
+        print(f"No *_FLUX.h5 or *_PRESS.h5 files were found in: {output_dir}")
         print("")
         return []
+
+    initial_path = find_initial_h5_file(
+        run_dir = output_dir,
+        case = case,
+    )
 
     saved_paths = []
 
     saved_paths += plot_pressure_profiles(
         case = case,
         objective_label = objective_label,
-        objective_dir = objective_dir,
+        output_dir = output_dir,
         files = files,
+        initial_path = initial_path,
     )
 
     saved_paths += plot_toroidal_cross_sections(
         case = case,
         objective_label = objective_label,
-        objective_dir = objective_dir,
+        output_dir = output_dir,
         files = files,
+        initial_path = initial_path,
     )
 
     return saved_paths
@@ -461,6 +897,7 @@ def plot_objective_folder(
 def plot_case(
         case,
         obj = None,
+        run = None,
     ):
     """
     Plot relevant comparisons for one case.
@@ -477,6 +914,7 @@ def plot_case(
         saved_paths += plot_objective_folder(
             case = case,
             objective_dir = objective_dir,
+            run = run,
         )
 
     if len(saved_paths) == 0:
@@ -485,8 +923,6 @@ def plot_case(
         )
 
     return saved_paths
-
-
 
 
 
@@ -519,11 +955,15 @@ def parse_args():
         default = None,
         choices = [
             "qs3",
-            "iso",
             "balloon",
-            "all",
         ],
-        help = "Optional objective folder to plot. If omitted, all four folders are plotted.",
+        help = "Optional objective folder to plot. If omitted, qs3 and balloon are plotted.",
+    )
+
+    parser.add_argument(
+        "--run",
+        default = None,
+        help = "Optional numbered run folder to plot, e.g. 001. If omitted, the latest run is plotted.",
     )
 
     return parser.parse_args()
@@ -546,12 +986,16 @@ def main():
     if args.obj is not None:
         print(f"Objective folder = {args.obj}")
 
+    if args.run is not None:
+        print(f"Run folder = {int(args.run):03d}")
+
     print("================================================================================================================")
     print("")
 
     saved_paths = plot_case(
         case = args.case,
         obj = args.obj,
+        run = args.run,
     )
 
     print("")
