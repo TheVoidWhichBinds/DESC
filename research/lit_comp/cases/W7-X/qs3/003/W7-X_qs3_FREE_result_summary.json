@@ -1,0 +1,27 @@
+{
+    "label": "W7-X_qs3_FREE",
+    "equilibrium_output_path": "/scratch/dz2596/DESC/research/lit_comp/cases/W7-X/qs3/003/W7-X_qs3_FREE.h5",
+    "result_pickle_path": "/scratch/dz2596/DESC/research/lit_comp/cases/W7-X/qs3/003/W7-X_qs3_FREE_result.pkl",
+    "summary_json_path": "/scratch/dz2596/DESC/research/lit_comp/cases/W7-X/qs3/003/W7-X_qs3_FREE_result_summary.json",
+    "result": {
+        "final_cost": 0.0038282051452780816,
+        "message": "Optimization terminated successfully.\n`xtol` condition satisfied. (xtol=1.00e-05)",
+        "termination_message": null,
+        "success": true,
+        "status": null,
+        "nfev": 6,
+        "njev": 5,
+        "nit": 5,
+        "optimality": "Array(0.00089374, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "lsq-auglag",
+        "ftol": 1e-05,
+        "xtol": 1e-05,
+        "gtol": 1e-05,
+        "ctol": 0.001,
+        "maxiter": 500,
+        "x_scale": "auto",
+        "options": {}
+    }
+}
