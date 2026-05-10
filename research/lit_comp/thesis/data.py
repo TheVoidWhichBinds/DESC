@@ -45,6 +45,46 @@ TABLE_CONFIGS = (
         "folder": Path("tutorials") / "balloon" / "balloon",
         "output": "balloon_table.txt",
     },
+    {
+        "name": "ARIES-CS_qs3",
+        "folder": Path("cases") / "ARIES-CS" / "qs3",
+        "output": "ARIES-CS_QS3_table.txt",
+    },
+    {
+        "name": "ARIES-CS_balloon",
+        "folder": Path("cases") / "ARIES-CS" / "balloon",
+        "output": "ARIES-CS_balloon_table.txt",
+    },
+    {
+        "name": "HELIOTRON_qs3",
+        "folder": Path("cases") / "HELIOTRON" / "qs3",
+        "output": "HELIOTRON_QS3_table.txt",
+    },
+    {
+        "name": "HELIOTRON_balloon",
+        "folder": Path("cases") / "HELIOTRON" / "balloon",
+        "output": "HELIOTRON_balloon_table.txt",
+    },
+    {
+        "name": "NCSX_qs3",
+        "folder": Path("cases") / "NCSX" / "qs3",
+        "output": "NCSX_QS3_table.txt",
+    },
+    {
+        "name": "NCSX_balloon",
+        "folder": Path("cases") / "NCSX" / "balloon",
+        "output": "NCSX_balloon_table.txt",
+    },
+    {
+        "name": "W7-X_qs3",
+        "folder": Path("cases") / "W7-X" / "qs3",
+        "output": "W7-X_QS3_table.txt",
+    },
+    {
+        "name": "W7-X_balloon",
+        "folder": Path("cases") / "W7-X" / "balloon",
+        "output": "W7-X_balloon_table.txt",
+    },
 )
 
 OBJECTIVE_ACRONYMS = {
