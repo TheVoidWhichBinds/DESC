@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/scratch/dz2596/DESC/research/lit_comp/tutorials/driver.py", line 301, in <module>
+    main()
+  File "/scratch/dz2596/DESC/research/lit_comp/tutorials/driver.py", line 274, in main
+    output = run_file(
+             ^^^^^^^^^
+  File "/scratch/dz2596/DESC/research/lit_comp/tutorials/helper.py", line 2491, in run_file
+    runpy.run_path(
+  File "<frozen runpy>", line 287, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/scratch/dz2596/DESC/research/lit_comp/tutorials/basic_qs/basic_qs.py", line 563, in <module>
+    raise ValueError(
+ValueError: No basic_qs tolerance case matched DESC_SWEEP_INDEX = 3.

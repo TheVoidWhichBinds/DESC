@@ -82,9 +82,9 @@ except ImportError:
 
 OPTIMIZER = "lsq-auglag"
 
-FTOL = 1e-3
-XTOL = 1e-3
-GTOL = 1e-3
+FTOL = 1e-4
+XTOL = 1e-4
+GTOL = 1e-4
 CTOL = 1e-3
 
 MAXITER = 500
