@@ -1,0 +1,27 @@
+{
+    "label": "HELIOTRON_balloon_FLUX",
+    "equilibrium_output_path": "/scratch/dz2596/DESC/research/lit_comp/cases/HELIOTRON/balloon/002/HELIOTRON_balloon_FLUX.h5",
+    "result_pickle_path": "/scratch/dz2596/DESC/research/lit_comp/cases/HELIOTRON/balloon/002/HELIOTRON_balloon_FLUX_result.pkl",
+    "summary_json_path": "/scratch/dz2596/DESC/research/lit_comp/cases/HELIOTRON/balloon/002/HELIOTRON_balloon_FLUX_result_summary.json",
+    "result": {
+        "final_cost": 0.003936029006790713,
+        "message": "Optimization terminated successfully.\n`xtol` condition satisfied. (xtol=1.00e-04)",
+        "termination_message": null,
+        "success": true,
+        "status": null,
+        "nfev": 77,
+        "njev": 73,
+        "nit": 73,
+        "optimality": "Array(0.00152744, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "lsq-auglag",
+        "ftol": 0.0001,
+        "xtol": 0.0001,
+        "gtol": 0.0001,
+        "ctol": 0.001,
+        "maxiter": 500,
+        "x_scale": "auto",
+        "options": {}
+    }
+}
