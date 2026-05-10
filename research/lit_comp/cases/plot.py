@@ -9,8 +9,8 @@
 #   python3 plot.py --case ATF --obj qs3
 #
 # This script plots:
-#   1. INITIAL/FLUX/PRESS pressure profiles
-#   2. INITIAL/FLUX/PRESS toroidal cross-section overlays
+#   1. INITIAL/FXD/FREE pressure profiles
+#   2. INITIAL/FXD/FREE toroidal cross-section overlays
 #
 #==============================================================================================================
 
@@ -93,7 +93,7 @@ def load_pressure_profiles(
         initial_path = None,
     ):
     """
-    Load INITIAL, FLUX, and PRESS pressure profiles for one output folder.
+    Load INITIAL, FXD, and FREE pressure profiles for one output folder.
     """
 
     profiles = {}
@@ -114,8 +114,8 @@ def load_pressure_profiles(
         )
 
     for variant in (
-        "FLUX",
-        "PRESS",
+        "FXD",
+        "FREE",
     ):
         path = files.get(
             variant,
@@ -165,14 +165,14 @@ def get_line_styles():
             "alpha": 0.38,
             "zorder": 1,
         },
-        "FLUX": {
+        "FXD": {
             "color": "tab:red",
             "linestyle": "--",
             "linewidth": 1,
             "alpha": 0.82,
             "zorder": 2,
         },
-        "PRESS": {
+        "FREE": {
             "color": "tab:green",
             "linestyle": ":",
             "linewidth": 1,
@@ -516,8 +516,8 @@ def make_toroidal_legend_handles():
 
     for label in (
         "INITIAL",
-        "FLUX",
-        "PRESS",
+        "FXD",
+        "FREE",
     ):
         style = line_styles[label]
 
@@ -805,7 +805,7 @@ def plot_pressure_profiles(
         initial_path,
     ):
     """
-    Plot INITIAL, FLUX, and PRESS pressure profiles for one output folder.
+    Plot INITIAL, FXD, and FREE pressure profiles for one output folder.
     """
 
     profiles = load_pressure_profiles(
@@ -845,7 +845,7 @@ def plot_toroidal_cross_sections(
         N_Xsecs = 1,
     ):
     """
-    Plot INITIAL, FLUX, and PRESS toroidal cross-section overlays.
+    Plot INITIAL, FXD, and FREE toroidal cross-section overlays.
     """
 
     equilibrium_data = []
@@ -867,8 +867,8 @@ def plot_toroidal_cross_sections(
             print("")
 
     for variant in (
-        "FLUX",
-        "PRESS",
+        "FXD",
+        "FREE",
     ):
         path = files.get(
             variant,
@@ -950,7 +950,7 @@ def plot_objective_run_folder(
 
     if len(files) == 0:
         print("")
-        print(f"No *_FLUX.h5 or *_PRESS.h5 files were found in: {output_dir}")
+        print(f"No *_FXD.h5 or *_FREE.h5 files were found in: {output_dir}")
         print("")
         return []
 
@@ -1032,7 +1032,7 @@ def plot_case(
 
     if len(saved_paths) == 0:
         raise FileNotFoundError(
-            "No plots were generated because no *_FLUX.h5 or *_PRESS.h5 files were found."
+            "No plots were generated because no *_FXD.h5 or *_FREE.h5 files were found."
         )
 
     return saved_paths
@@ -1054,7 +1054,7 @@ def parse_args():
     """
 
     parser = ArgumentParser(
-        description = "Plot DESC case FLUX/PRESS comparisons.",
+        description = "Plot DESC case FXD/FREE comparisons.",
     )
 
     parser.add_argument(

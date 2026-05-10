@@ -1,7 +1,7 @@
 # compare.py
 #==============================================================================================================
 #
-# Compare case objective outputs between FLUX and PRESS pressure optimizations.
+# Compare case objective outputs between FXD and FREE pressure optimizations.
 #
 # Usage:
 #   cd research/lit_comp/cases
@@ -227,7 +227,7 @@ def case_obj(
         obj = None,
     ):
     """
-    Compare objective values between FLUX and PRESS files.
+    Compare objective values between FXD and FREE files.
 
     If obj is None, every configured objective folder is compared.
     """
@@ -263,7 +263,7 @@ def case_obj(
 
             if len(files) == 0:
                 print("")
-                print(f"No *_FLUX.h5 or *_PRESS.h5 files were found in: {output_dir}")
+                print(f"No *_FXD.h5 or *_FREE.h5 files were found in: {output_dir}")
                 print("")
                 continue
 

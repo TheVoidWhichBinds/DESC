@@ -1,7 +1,7 @@
 # driver.py
 #==============================================================================================================
 #
-# Top-level CLI for running DESC case optimizations with FLUX/PRESS pressure pairs.
+# Top-level CLI for running DESC case optimizations with FXD/FREE pressure pairs.
 #
 # Usage:
 #   cd research/lit_comp/cases
@@ -433,8 +433,8 @@ def make_hyperparameter_payload(
         "case": str(case),
         "objective_folder": str(obj),
         "variants": [
-            "FLUX",
-            "PRESS",
+            "FXD",
+            "FREE",
         ],
         "optimizer": OPTIMIZER,
         "ftol": FTOL,
@@ -604,7 +604,7 @@ def print_hyperparameter_report(
     print("Boundary mode constraints:")
     print(f"BOUNDARY_MODE_CUTOFF = {BOUNDARY_MODE_CUTOFF}")
     print(f"FIX_MAJOR_RADIUS_MODE = {FIX_MAJOR_RADIUS_MODE}")
-    print("FixBoundaryR/FixBoundaryZ are present in both FLUX and PRESS.")
+    print("FixBoundaryR/FixBoundaryZ are present in both FXD and FREE.")
     print("Excluded from FixBoundaryR/Z and therefore optimized: modes where abs(m) <= 2 and abs(n) <= 2, except R [0, 0, 0].")
     print("Passed to FixBoundaryR/Z and therefore fixed: all remaining higher modes, plus R [0, 0, 0].")
     print(f"R free mode count = {boundary_summary['R_free_mode_count']}")
@@ -869,7 +869,7 @@ def build_core_constraints(
         case,
     ):
     """
-    Build constraints shared by FLUX and PRESS pressure optimizations.
+    Build constraints shared by FXD and FREE pressure optimizations.
     """
 
     constraints = (
@@ -923,7 +923,7 @@ def build_optimization_problem(
         case,
     ):
     """
-    Build the ObjectiveFunction objects for one FLUX or PRESS optimization.
+    Build the ObjectiveFunction objects for one FXD or FREE optimization.
     """
 
     primary_objectives = build_primary_objectives(
@@ -938,7 +938,7 @@ def build_optimization_problem(
 
     variant = str(variant).upper()
 
-    if variant == "FLUX":
+    if variant == "FXD":
         constraints = constraints + (
             FixPressure(
                 eq = eq,
@@ -946,7 +946,7 @@ def build_optimization_problem(
             ),
         )
 
-    elif variant == "PRESS":
+    elif variant == "FREE":
         press_objectives, press_constraints = build_press_extension(
             eq = eq,
             eq_initial = eq_initial,
@@ -1192,7 +1192,7 @@ def run_one_variant(
         run_dir,
     ):
     """
-    Run one FLUX or PRESS pressure optimization.
+    Run one FXD or FREE pressure optimization.
     """
 
     variant = str(variant).upper()
@@ -1258,7 +1258,7 @@ def run_objective_pair(
         eq_initial,
     ):
     """
-    Run the FLUX/PRESS pair for one objective folder.
+    Run the FXD/FREE pair for one objective folder.
     """
 
     objective_dir = get_objective_dir(
@@ -1294,7 +1294,7 @@ def run_objective_pair(
     run_one_variant(
         case = case,
         obj = obj,
-        variant = "FLUX",
+        variant = "FXD",
         eq_initial = eq_initial,
         run_dir = run_dir,
     )
@@ -1302,7 +1302,7 @@ def run_objective_pair(
     run_one_variant(
         case = case,
         obj = obj,
-        variant = "PRESS",
+        variant = "FREE",
         eq_initial = eq_initial,
         run_dir = run_dir,
     )

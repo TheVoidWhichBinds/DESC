@@ -1,4 +1,4 @@
-objective,metric,FLUX,PRESS
+objective,metric,FXD,FREE
 ForceBalance,size,650,650
 ForceBalance,l2,348944.35141693446,349215.37167575746
 ForceBalance,max_abs,83941.627981186,85149.1415494589
