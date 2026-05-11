@@ -1,0 +1,27 @@
+{
+    "label": "W7-X_force_FREE",
+    "equilibrium_output_path": "/scratch/dz2596/DESC/research/lit_comp/cases/W7-X/force/002/W7-X_force_FREE.h5",
+    "result_pickle_path": "/scratch/dz2596/DESC/research/lit_comp/cases/W7-X/force/002/W7-X_force_FREE_result.pkl",
+    "summary_json_path": "/scratch/dz2596/DESC/research/lit_comp/cases/W7-X/force/002/W7-X_force_FREE_result_summary.json",
+    "result": {
+        "final_cost": 1.1252620234819196e-09,
+        "message": "`gtol` condition satisfied.",
+        "termination_message": null,
+        "success": true,
+        "status": null,
+        "nfev": 20,
+        "njev": 16,
+        "nit": 13,
+        "optimality": "Array(6.98166066e-05, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "lsq-auglag",
+        "ftol": 0.0001,
+        "xtol": 0.0001,
+        "gtol": 0.0001,
+        "ctol": 0.0001,
+        "maxiter": 500,
+        "x_scale": "auto",
+        "options": {}
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "label": "HELIOTRON_force_FXD",
+    "equilibrium_output_path": "/scratch/dz2596/DESC/research/lit_comp/cases/HELIOTRON/force/002/HELIOTRON_force_FXD.h5",
+    "result_pickle_path": "/scratch/dz2596/DESC/research/lit_comp/cases/HELIOTRON/force/002/HELIOTRON_force_FXD_result.pkl",
+    "summary_json_path": "/scratch/dz2596/DESC/research/lit_comp/cases/HELIOTRON/force/002/HELIOTRON_force_FXD_result_summary.json",
+    "result": {
+        "final_cost": 3.1506036441883005e-12,
+        "message": "`gtol` condition satisfied.",
+        "termination_message": null,
+        "success": true,
+        "status": null,
+        "nfev": 7,
+        "njev": 7,
+        "nit": 6,
+        "optimality": "Array(9.14878655e-06, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "lsq-auglag",
+        "ftol": 0.0001,
+        "xtol": 0.0001,
+        "gtol": 0.0001,
+        "ctol": 0.0001,
+        "maxiter": 500,
+        "x_scale": "auto",
+        "options": {}
+    }
+}

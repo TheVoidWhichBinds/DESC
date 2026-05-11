@@ -1,0 +1,27 @@
+{
+    "label": "ARIES-CS_force_FXD",
+    "equilibrium_output_path": "/scratch/dz2596/DESC/research/lit_comp/cases/ARIES-CS/force/003/ARIES-CS_force_FXD.h5",
+    "result_pickle_path": "/scratch/dz2596/DESC/research/lit_comp/cases/ARIES-CS/force/003/ARIES-CS_force_FXD_result.pkl",
+    "summary_json_path": "/scratch/dz2596/DESC/research/lit_comp/cases/ARIES-CS/force/003/ARIES-CS_force_FXD_result_summary.json",
+    "result": {
+        "final_cost": 3.6074431320697136e-09,
+        "message": "Optimization terminated successfully.\n`xtol` condition satisfied. (xtol=1.00e-04)",
+        "termination_message": null,
+        "success": true,
+        "status": null,
+        "nfev": 10,
+        "njev": 12,
+        "nit": 8,
+        "optimality": "Array(0.0001127, dtype=float64)"
+    },
+    "hyperparameters": {
+        "optimizer": "lsq-auglag",
+        "ftol": 0.0001,
+        "xtol": 0.0001,
+        "gtol": 0.0001,
+        "ctol": 0.0001,
+        "maxiter": 500,
+        "x_scale": "auto",
+        "options": {}
+    }
+}
