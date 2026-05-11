@@ -166,14 +166,14 @@ def get_line_styles():
             "zorder": 1,
         },
         "FXD": {
-            "color": "tab:red",
+            "color": "tab:green",
             "linestyle": "--",
             "linewidth": 1,
             "alpha": 0.82,
             "zorder": 2,
         },
         "FREE": {
-            "color": "tab:green",
+            "color": "tab:purple",
             "linestyle": ":",
             "linewidth": 1,
             "alpha": 0.98,
@@ -541,7 +541,7 @@ def make_toroidal_legend_handles():
 
 def get_toroidal_phi_values(
         reference_eq,
-        num_phi = 6,
+        num_phi = 4,
         N_Xsec_index = 0,
         N_Xsecs = 1,
     ):
@@ -619,7 +619,7 @@ def make_toroidal_cross_section_plot(
         save_path,
         rho = 8,
         theta = 8,
-        num_phi = 6,
+        num_phi = 4,
         N_Xsec_index = 0,
         N_Xsecs = 1,
     ):
@@ -632,7 +632,7 @@ def make_toroidal_cross_section_plot(
 
     reference_eq = equilibrium_data[0][1]
 
-    nrows = 3
+    nrows = 2
     ncols = 2
 
     fig, axes = plt.subplots(
@@ -640,7 +640,7 @@ def make_toroidal_cross_section_plot(
         ncols,
         figsize = (
             8.0,
-            10.5,
+            8.0,
         ),
         squeeze = False,
     )
@@ -918,7 +918,7 @@ def plot_toroidal_cross_sections(
             equilibrium_data = equilibrium_data,
             title = f"{plot_stem}: toroidal cross-sections",
             save_path = save_path,
-            num_phi = 6,
+            num_phi = 4,
             N_Xsec_index = N_Xsec_index,
             N_Xsecs = N_Xsecs,
         )
@@ -1077,7 +1077,7 @@ def parse_args():
         "--N-Xsecs",
         type = int,
         default = 1,
-        help = "Number of interleaved six-cut toroidal cross-section figures to save.",
+        help = "Number of interleaved four-cut toroidal cross-section figures to save.",
     )
 
     args = parser.parse_args()
