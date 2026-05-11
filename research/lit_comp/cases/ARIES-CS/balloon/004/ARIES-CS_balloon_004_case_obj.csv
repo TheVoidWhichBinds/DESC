@@ -1,0 +1,13 @@
+objective,metric,FXD,FREE
+ForceBalance,size,442,442
+ForceBalance,l2,51982.90004658032,415495.655035552
+ForceBalance,max_abs,26246.713882265714,96104.8624383414
+ForceBalance,mean_abs,862.7677359296168,12782.246493086379
+ForceBalance,rms,2472.5744077639642,19763.112913236055
+ForceBalance,status,ok,ok
+BallooningStability,size,3,3
+BallooningStability,l2,0.009219622436956239,0.0
+BallooningStability,max_abs,0.009219105860005999,0.0
+BallooningStability,mean_abs,0.0031055673597828234,0.0
+BallooningStability,rms,0.005322951495803398,0.0
+BallooningStability,status,ok,ok
