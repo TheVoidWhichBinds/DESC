@@ -1,25 +1,25 @@
 {
     "label": "ARIES-CS_force_FREE",
-    "equilibrium_output_path": "/scratch/dz2596/DESC/research/lit_comp/cases/ARIES-CS/force/003/ARIES-CS_force_FREE.h5",
-    "result_pickle_path": "/scratch/dz2596/DESC/research/lit_comp/cases/ARIES-CS/force/003/ARIES-CS_force_FREE_result.pkl",
-    "summary_json_path": "/scratch/dz2596/DESC/research/lit_comp/cases/ARIES-CS/force/003/ARIES-CS_force_FREE_result_summary.json",
+    "equilibrium_output_path": "/scratch/dz2596/DESC/research/lit_comp/cases/ARIES-CS/force/004/ARIES-CS_force_FREE.h5",
+    "result_pickle_path": "/scratch/dz2596/DESC/research/lit_comp/cases/ARIES-CS/force/004/ARIES-CS_force_FREE_result.pkl",
+    "summary_json_path": "/scratch/dz2596/DESC/research/lit_comp/cases/ARIES-CS/force/004/ARIES-CS_force_FREE_result_summary.json",
     "result": {
-        "final_cost": 2.2816982626784363e-08,
-        "message": "Optimization terminated successfully.\n`xtol` condition satisfied. (xtol=1.00e-04)",
+        "final_cost": 3.341454979428316e-10,
+        "message": "Optimization terminated successfully.\n`xtol` condition satisfied. (xtol=1.00e-05)",
         "termination_message": null,
         "success": true,
         "status": null,
-        "nfev": 17,
-        "njev": 13,
-        "nit": 12,
-        "optimality": "Array(0.00031036, dtype=float64)"
+        "nfev": 25,
+        "njev": 20,
+        "nit": 17,
+        "optimality": "Array(6.17054648e-05, dtype=float64)"
     },
     "hyperparameters": {
         "optimizer": "lsq-auglag",
-        "ftol": 0.0001,
-        "xtol": 0.0001,
-        "gtol": 0.0001,
-        "ctol": 0.0001,
+        "ftol": 1e-05,
+        "xtol": 1e-05,
+        "gtol": 1e-05,
+        "ctol": 1e-05,
         "maxiter": 500,
         "x_scale": "auto",
         "options": {}

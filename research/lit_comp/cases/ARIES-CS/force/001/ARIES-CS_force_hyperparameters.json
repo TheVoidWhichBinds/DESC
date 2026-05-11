@@ -6,9 +6,9 @@
         "FREE"
     ],
     "optimizer": "lsq-auglag",
-    "ftol": 1e-05,
-    "xtol": 1e-05,
-    "gtol": 1e-05,
+    "ftol": 0.001,
+    "xtol": 0.001,
+    "gtol": 0.001,
     "ctol": 0.001,
     "maxiter": 500,
     "max_nfev": null,

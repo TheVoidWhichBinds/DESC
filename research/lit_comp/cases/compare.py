@@ -5,8 +5,10 @@
 #
 # Usage:
 #   cd research/lit_comp/cases
-#   python3 compare.py --case ATF
-#   python3 compare.py --case ATF --obj qs3
+#   python3 compare.py --case ARIES-CS
+#   python3 compare.py --case ARIES-CS --obj qs3
+#   python3 compare.py --case ARIES-CS --obj balloon
+#   python3 compare.py --case ARIES-CS --obj force
 #
 #==============================================================================================================
 
@@ -47,6 +49,8 @@ except ImportError:
         objective_spec,
         write_table_csv,
     )
+
+
 
 
 
@@ -130,6 +134,28 @@ def balloon_objectives(
 
 
 
+def force_objectives(
+        eq,
+    ):
+    """
+    Return comparison rows for the force folder.
+    """
+
+    return [
+        objective_spec(
+            name = "ForceBalance",
+            objective = build_force_balance_objective(
+                eq = eq,
+            ),
+        ),
+    ]
+
+
+
+
+
+
+
 
 
 
@@ -140,6 +166,7 @@ def balloon_objectives(
 OBJECTIVE_BUILDERS = {
     "qs3": qs3_objectives,
     "balloon": balloon_objectives,
+    "force": force_objectives,
 }
 
 
@@ -309,7 +336,7 @@ def parse_args():
     parser.add_argument(
         "--case",
         required = True,
-        help = "Case name, e.g. ATF, HELIOTRON, NCSX, W7-X.",
+        help = "Case name, e.g. ARIES-CS, HELIOTRON, W7-X.",
     )
 
     parser.add_argument(
@@ -318,8 +345,9 @@ def parse_args():
         choices = [
             "qs3",
             "balloon",
+            "force",
         ],
-        help = "Optional objective folder to compare. If omitted, qs3 and balloon are compared.",
+        help = "Optional objective folder to compare. If omitted, qs3, balloon, and force are compared.",
     )
 
     return parser.parse_args()

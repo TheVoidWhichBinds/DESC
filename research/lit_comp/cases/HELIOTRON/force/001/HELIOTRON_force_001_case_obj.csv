@@ -1,0 +1,7 @@
+objective,metric,FXD,FREE
+ForceBalance,size,182,182
+ForceBalance,l2,7755.4983903335,4351.891615177058
+ForceBalance,max_abs,2058.925632596927,975.7462252700286
+ForceBalance,mean_abs,413.5956173087712,237.28637223499135
+ForceBalance,rms,574.8757882200977,322.583668593317
+ForceBalance,status,ok,ok
