@@ -405,3 +405,1104 @@ def get_boundary_mode_summary(
 
 
 
+
+
+def make_hyperparameter_payload(
+        case,
+        obj,
+        eq,
+        eq_loaded,
+    ):
+    """
+    Build a JSON-safe hyperparameter payload for one objective folder.
+    """
+
+    grid_resolution = get_grid_resolution(
+        eq = eq,
+    )
+
+    loaded_resolution = get_equilibrium_resolution(
+        eq = eq_loaded,
+    )
+
+    working_resolution = get_equilibrium_resolution(
+        eq = eq,
+    )
+
+    return {
+        "case": str(case),
+        "objective_folder": str(obj),
+        "variants": [
+            "FXD",
+            "FREE",
+        ],
+        "optimizer": OPTIMIZER,
+        "ftol": FTOL,
+        "xtol": XTOL,
+        "gtol": GTOL,
+        "ctol": CTOL,
+        "maxiter": MAXITER,
+        "max_nfev": MAX_NFEV,
+        "x_scale": X_SCALE,
+        "apply_initial_equilibrium_resolution": bool(APPLY_INITIAL_EQUILIBRIUM_RESOLUTION),
+        "initial_equilibrium_resolution_target": {
+            "L": int(INITIAL_EQUILIBRIUM_L),
+            "M": int(INITIAL_EQUILIBRIUM_M),
+            "N": int(INITIAL_EQUILIBRIUM_N),
+        },
+        "initial_equilibrium_grid_resolution_policy": "always_match_working_equilibrium_spectral_resolution",
+        "incoming_loaded_equilibrium_resolution": loaded_resolution,
+        "working_initial_equilibrium_resolution_after_change": working_resolution,
+        "objective_grid_resolution": {
+            "L": int(grid_resolution["L"]),
+            "M": int(grid_resolution["M"]),
+            "N": int(grid_resolution["N"]),
+        },
+        "profile_constraint": {
+            "active_constraint": get_profile_constraint_type(
+                case = case,
+            ),
+            "fix_iota_cases": sorted(FIX_IOTA_CASES),
+            "fix_current_cases": sorted(FIX_CURRENT_CASES),
+        },
+        "boundary_constraints": get_boundary_mode_summary(
+            eq = eq,
+        ),
+        "ballooning": {
+            "rho": BALLOON_RHO.tolist(),
+            "alpha": BALLOON_ALPHA.tolist(),
+            "nturns": BALLOON_NTURNS,
+            "nzeta_per_turn": BALLOON_NZETA_PER_TURN,
+        },
+        "optimizer_options": make_optimizer_options(),
+    }
+
+
+
+
+
+def save_hyperparameter_file(
+        case,
+        obj,
+        output_dir,
+        eq,
+        eq_loaded,
+    ):
+    """
+    Save the hyperparameters used for one objective folder.
+    """
+
+    case_name = str(case).strip()
+
+    hyperparameter_path = output_dir / f"{case_name}_{obj}_hyperparameters.json"
+
+    payload = make_hyperparameter_payload(
+        case = case,
+        obj = obj,
+        eq = eq,
+        eq_loaded = eq_loaded,
+    )
+
+    with open(hyperparameter_path, "w") as file:
+        json.dump(
+            payload,
+            file,
+            indent = 4,
+        )
+
+    print("")
+    print(f"Saved run hyperparameters: {hyperparameter_path}")
+    print("")
+
+    return hyperparameter_path
+
+
+
+
+
+def print_hyperparameter_report(
+        case,
+        eq_loaded,
+        eq,
+    ):
+    """
+    Print optimizer hyperparameters and equilibrium resolutions.
+    """
+
+    grid_resolution = get_grid_resolution(
+        eq = eq,
+    )
+
+    loaded_resolution = get_equilibrium_resolution(
+        eq = eq_loaded,
+    )
+
+    working_resolution = get_equilibrium_resolution(
+        eq = eq,
+    )
+
+    print("")
+    print("================================================================================================================")
+    print("HYPERPARAMETERS")
+    print("================================================================================================================")
+    print("")
+    print(f"case: {case}")
+    print(f"optimizer: {OPTIMIZER}")
+    print(f"ftol: {FTOL}")
+    print(f"xtol: {XTOL}")
+    print(f"gtol: {GTOL}")
+    print(f"ctol: {CTOL}")
+    print(f"maxiter: {MAXITER}")
+    print(f"max_nfev: {MAX_NFEV}")
+    print(f"x_scale: {X_SCALE}")
+    print("")
+    print("Profile constraint:")
+    print(f"Active profile constraint = {get_profile_constraint_type(case = case)}")
+    print(f"FIX_IOTA_CASES = {sorted(FIX_IOTA_CASES)}")
+    print(f"FIX_CURRENT_CASES = {sorted(FIX_CURRENT_CASES)}")
+    print("")
+    print("Initial equilibrium spectral-resolution change:")
+    print(f"APPLY_INITIAL_EQUILIBRIUM_RESOLUTION = {APPLY_INITIAL_EQUILIBRIUM_RESOLUTION}")
+    print(f"INITIAL_EQUILIBRIUM_L = {INITIAL_EQUILIBRIUM_L}")
+    print(f"INITIAL_EQUILIBRIUM_M = {INITIAL_EQUILIBRIUM_M}")
+    print(f"INITIAL_EQUILIBRIUM_N = {INITIAL_EQUILIBRIUM_N}")
+    print("")
+    print("Initial equilibrium grid-resolution policy:")
+    print("L_grid, M_grid, and N_grid are always set equal to the working equilibrium L, M, and N.")
+    print("")
+    print("Incoming loaded equilibrium resolution before change_resolution:")
+    print(f"L      = {loaded_resolution['L']}")
+    print(f"M      = {loaded_resolution['M']}")
+    print(f"N      = {loaded_resolution['N']}")
+    print(f"L_grid = {loaded_resolution['L_grid']}")
+    print(f"M_grid = {loaded_resolution['M_grid']}")
+    print(f"N_grid = {loaded_resolution['N_grid']}")
+    print("")
+    print("Working initial equilibrium resolution after copy/change_resolution:")
+    print(f"L      = {working_resolution['L']}")
+    print(f"M      = {working_resolution['M']}")
+    print(f"N      = {working_resolution['N']}")
+    print(f"L_grid = {working_resolution['L_grid']}")
+    print(f"M_grid = {working_resolution['M_grid']}")
+    print(f"N_grid = {working_resolution['N_grid']}")
+    print("")
+    print("Optimization/comparison grid resolution:")
+    print(f"L_grid_objectives = {grid_resolution['L']}")
+    print(f"M_grid_objectives = {grid_resolution['M']}")
+    print(f"N_grid_objectives = {grid_resolution['N']}")
+    print("")
+    print("Ballooning settings:")
+    print(f"BALLOON_RHO = {BALLOON_RHO}")
+    print(f"BALLOON_ALPHA = {BALLOON_ALPHA}")
+    print(f"BALLOON_NTURNS = {BALLOON_NTURNS}")
+    print(f"BALLOON_NZETA_PER_TURN = {BALLOON_NZETA_PER_TURN}")
+    print("")
+    boundary_summary = get_boundary_mode_summary(
+        eq = eq,
+    )
+
+    print("Boundary mode constraints:")
+    print(f"BOUNDARY_MODE_CUTOFF = {BOUNDARY_MODE_CUTOFF}")
+    print(f"FIX_MAJOR_RADIUS_MODE = {FIX_MAJOR_RADIUS_MODE}")
+    print("FixBoundaryR/FixBoundaryZ are present in both FXD and FREE.")
+    print("Excluded from FixBoundaryR/Z and therefore optimized: modes where abs(m) <= 2 and abs(n) <= 2, except R [0, 0, 0].")
+    print("Passed to FixBoundaryR/Z and therefore fixed: all remaining higher modes, plus R [0, 0, 0].")
+    print(f"R free mode count = {boundary_summary['R_free_mode_count']}")
+    print(f"Z free mode count = {boundary_summary['Z_free_mode_count']}")
+    print(f"R fixed mode count = {boundary_summary['R_fixed_mode_count']}")
+    print(f"Z fixed mode count = {boundary_summary['Z_fixed_mode_count']}")
+    print("================================================================================================================")
+    print("")
+
+
+
+
+
+def build_force_balance_grid(
+        eq,
+    ):
+    """
+    Build the force-balance grid.
+    """
+
+    grid_resolution = get_grid_resolution(
+        eq = eq,
+    )
+
+    return LinearGrid(
+        M = grid_resolution["M"],
+        N = grid_resolution["N"],
+        NFP = eq.NFP,
+        sym = eq.sym,
+    )
+
+
+
+
+
+def build_qs3_grid(
+        eq,
+    ):
+    """
+    Build the quasi-symmetry triple-product grid.
+    """
+
+    grid_resolution = get_grid_resolution(
+        eq = eq,
+    )
+
+    return ConcentricGrid(
+        L = grid_resolution["L"],
+        M = grid_resolution["M"],
+        N = grid_resolution["N"],
+        NFP = eq.NFP,
+        sym = eq.sym,
+    )
+
+
+
+
+
+def build_iso_grid(
+        eq,
+    ):
+    """
+    Build the isodynamicity grid.
+    """
+
+    grid_resolution = get_grid_resolution(
+        eq = eq,
+    )
+
+    return LinearGrid(
+        rho = ISO_RHO,
+        M = grid_resolution["M"],
+        N = grid_resolution["N"],
+        NFP = eq.NFP,
+        sym = eq.sym,
+    )
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
+# Objective Builders
+#==============================================================================================================
+
+def build_force_balance_objective(
+        eq,
+    ):
+    """
+    Build the force-balance objective.
+    """
+
+    return ForceBalance(
+        eq = eq,
+        grid = build_force_balance_grid(
+            eq = eq,
+        ),
+        normalize = True,
+    )
+
+
+
+
+
+def build_qs3_objective(
+        eq,
+    ):
+    """
+    Build the quasi-symmetry triple-product objective.
+    """
+
+    return QuasisymmetryTripleProduct(
+        eq = eq,
+        grid = build_qs3_grid(
+            eq = eq,
+        ),
+        normalize = True,
+    )
+
+
+
+
+
+def build_iso_objective(
+        eq,
+    ):
+    """
+    Build the isodynamicity objective.
+    """
+
+    return Isodynamicity(
+        eq = eq,
+        grid = build_iso_grid(
+            eq = eq,
+        ),
+        normalize = True,
+    )
+
+
+
+
+
+def build_balloon_objective(
+        eq,
+    ):
+    """
+    Build the ideal ballooning stability objective.
+    """
+
+    return BallooningStability(
+        eq = eq,
+        rho = BALLOON_RHO,
+        alpha = BALLOON_ALPHA,
+        nturns = BALLOON_NTURNS,
+        nzetaperturn = BALLOON_NZETA_PER_TURN,
+        normalize = True,
+    )
+
+
+
+
+
+def build_primary_objectives(
+        eq,
+        obj,
+    ):
+    """
+    Build the requested objective tuple for one optimization folder.
+    """
+
+    if obj == "qs3":
+        return (
+            build_qs3_objective(
+                eq = eq,
+            ),
+        )
+
+    if obj == "balloon":
+        return (
+            build_balloon_objective(
+                eq = eq,
+            ),
+        )
+
+    if obj == "force":
+        return (
+            build_force_balance_objective(
+                eq = eq,
+            ),
+        )
+
+    raise ValueError(
+        f"Unknown objective folder: {obj}"
+    )
+
+
+
+
+
+def normalize_case_name(
+        case,
+    ):
+    """
+    Return the case name in the normalized form used by the profile-constraint sets.
+    """
+
+    return str(case).strip().upper()
+
+
+
+
+
+def get_profile_constraint_type(
+        case,
+    ):
+    """
+    Return whether this case should use FixIota or FixCurrent.
+    """
+
+    case_name = normalize_case_name(
+        case = case,
+    )
+
+    use_iota = case_name in FIX_IOTA_CASES
+    use_current = case_name in FIX_CURRENT_CASES
+
+    if use_iota and use_current:
+        raise ValueError(
+            f"Case {case} appears in both FIX_IOTA_CASES and FIX_CURRENT_CASES. "
+            "Each case must use exactly one profile constraint."
+        )
+
+    if use_iota:
+        return "FixIota"
+
+    if use_current:
+        return "FixCurrent"
+
+    raise ValueError(
+        f"Case {case} is not listed in FIX_IOTA_CASES or FIX_CURRENT_CASES. "
+        "Add this case to exactly one of those sets in the HYPERPARAMETERS section."
+    )
+
+
+
+
+
+def build_profile_constraint(
+        eq,
+        case,
+    ):
+    """
+    Build the case-dependent profile constraint.
+    """
+
+    profile_constraint_type = get_profile_constraint_type(
+        case = case,
+    )
+
+    if profile_constraint_type == "FixIota":
+        return FixIota(
+            eq = eq,
+            name = "FixIota",
+        )
+
+    if profile_constraint_type == "FixCurrent":
+        return FixCurrent(
+            eq = eq,
+            name = "FixCurrent",
+        )
+
+    raise ValueError(
+        f"Unknown profile constraint type: {profile_constraint_type}"
+    )
+
+
+
+
+
+def build_core_constraints(
+        eq,
+        case,
+    ):
+    """
+    Build constraints shared by FXD and FREE pressure optimizations.
+    """
+
+    constraints = (
+        FixBoundaryZ(
+            eq = eq,
+            name = "FixBoundaryZ",
+            modes = get_fixed_boundary_modes(
+                eq = eq,
+                basis_name = "Z_basis",
+            ),
+        ),
+        FixBoundaryR(
+            eq = eq,
+            name = "FixBoundaryR",
+            modes = get_fixed_boundary_modes(
+                eq = eq,
+                basis_name = "R_basis",
+            ),
+        ),
+        ForceBalance(
+            eq = eq,
+            grid = build_force_balance_grid(
+                eq = eq,
+            ),
+            normalize = True,
+        ),
+        FixPsi(
+            eq = eq,
+            name = "FixPsi",
+        ),
+    )
+
+    constraints = constraints + (
+        build_profile_constraint(
+            eq = eq,
+            case = case,
+        ),
+    )
+
+    return constraints
+
+
+
+
+
+def build_optimization_problem(
+        eq,
+        eq_initial,
+        obj,
+        variant,
+        case,
+    ):
+    """
+    Build the ObjectiveFunction objects for one FXD or FREE optimization.
+    """
+
+    primary_objectives = build_primary_objectives(
+        eq = eq,
+        obj = obj,
+    )
+
+    constraints = build_core_constraints(
+        eq = eq,
+        case = case,
+    )
+
+    variant = str(variant).upper()
+
+    if variant == "FXD":
+        constraints = constraints + (
+            FixPressure(
+                eq = eq,
+                name = "FixPressure",
+            ),
+        )
+
+    elif variant == "FREE":
+        press_objectives, press_constraints = build_press_extension(
+            eq = eq,
+            eq_initial = eq_initial,
+        )
+
+        primary_objectives = primary_objectives + tuple(press_objectives)
+        constraints = constraints + tuple(press_constraints)
+
+    else:
+        raise ValueError(
+            f"Unknown variant: {variant}"
+        )
+
+    objective = ObjectiveFunction(
+        objectives = primary_objectives,
+    )
+
+    return objective, constraints
+
+
+
+
+
+def print_optimization_stack(
+        objective,
+        constraints,
+    ):
+    """
+    Print objective and constraint class names before DESC build messages.
+    """
+
+    objective_components = getattr(
+        objective,
+        "objectives",
+        None,
+    )
+
+    if objective_components is None:
+        objective_components = getattr(
+            objective,
+            "_objectives",
+            (),
+        )
+
+    print("DESC objective stack:")
+
+    for component in objective_components:
+        print(f"  {component.__class__.__name__}: name = {component.name}")
+
+    print("DESC constraint stack:")
+
+    for component in constraints:
+        print(f"  {component.__class__.__name__}: name = {component.name}")
+
+    print("")
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
+# Optimization Helpers
+#==============================================================================================================
+
+def make_optimizer_options():
+    """
+    Build the optimizer options dictionary.
+    """
+
+    options = {
+        "initial_trust_ratio": 0.01,
+    }
+
+    if MAX_NFEV is not None:
+        options["max_nfev"] = MAX_NFEV
+
+    return options
+
+
+
+
+
+def apply_initial_equilibrium_resolution(
+        eq,
+    ):
+    """
+    Set the working equilibrium resolution and force grid resolution to match it.
+    """
+
+    target_l = int(eq.L)
+    target_m = int(eq.M)
+    target_n = int(eq.N)
+
+    if APPLY_INITIAL_EQUILIBRIUM_RESOLUTION:
+        target_l = int(INITIAL_EQUILIBRIUM_L)
+        target_m = int(INITIAL_EQUILIBRIUM_M)
+        target_n = int(INITIAL_EQUILIBRIUM_N)
+
+    eq.change_resolution(
+        L = target_l,
+        M = target_m,
+        N = target_n,
+        L_grid = target_l,
+        M_grid = target_m,
+        N_grid = target_n,
+    )
+
+    eq.surface = eq.get_surface_at(
+        rho = 1.0,
+    )
+
+    return eq
+
+
+
+
+def print_loaded_equilibrium_resolution(
+        eq_loaded,
+    ):
+    """
+    Print the raw resolution of the DESC example immediately after loading.
+    """
+
+    loaded_resolution = get_equilibrium_resolution(
+        eq = eq_loaded,
+    )
+
+    print("Incoming loaded equilibrium resolution before change_resolution:")
+    print(f"L      = {loaded_resolution['L']}")
+    print(f"M      = {loaded_resolution['M']}")
+    print(f"N      = {loaded_resolution['N']}")
+    print(f"L_grid = {loaded_resolution['L_grid']}")
+    print(f"M_grid = {loaded_resolution['M_grid']}")
+    print(f"N_grid = {loaded_resolution['N_grid']}")
+    print("")
+
+
+
+
+
+def load_initial_equilibrium(
+        case,
+    ):
+    """
+    Load the initial equilibrium from DESC examples and apply the requested resolution to a copy.
+    """
+
+    print("")
+    print("================================================================================================================")
+    print(f"Loading DESC example equilibrium: {case}")
+    print("================================================================================================================")
+    print("")
+
+    eq_loaded = desc.examples.get(
+        case,
+    )
+
+    eq_initial = eq_loaded.copy()
+
+    eq_initial = apply_initial_equilibrium_resolution(
+        eq = eq_initial,
+    )
+
+    return eq_loaded, eq_initial
+
+
+
+
+
+def save_case_initial_equilibrium(
+        case,
+        eq,
+    ):
+    """
+    Save a case-level initial equilibrium only when it does not already exist.
+    """
+
+    initial_path = get_initial_equilibrium_path(
+        case = case,
+    )
+
+    if not initial_path.exists():
+        eq.save(
+            str(initial_path)
+        )
+
+        print("")
+        print(f"Saved case-level initial equilibrium: {initial_path}")
+        print("")
+
+    else:
+        print("")
+        print(f"Keeping existing case-level initial equilibrium: {initial_path}")
+        print("")
+
+    return initial_path
+
+
+
+
+
+
+def save_run_initial_equilibrium(
+        case,
+        obj,
+        run_dir,
+        eq,
+    ):
+    """
+    Save the initial equilibrium inside one numbered run folder.
+    """
+
+    initial_path = get_run_initial_equilibrium_path(
+        case = case,
+        obj = obj,
+        run_dir = run_dir,
+    )
+
+    eq.save(
+        str(initial_path)
+    )
+
+    print("")
+    print(f"Saved run-local initial equilibrium: {initial_path}")
+    print("")
+
+    return initial_path
+
+
+
+
+
+def run_one_variant(
+        case,
+        obj,
+        variant,
+        eq_initial,
+        run_dir,
+    ):
+    """
+    Run one FXD or FREE pressure optimization.
+    """
+
+    variant = str(variant).upper()
+
+    eq = eq_initial.copy()
+
+    objective, constraints = build_optimization_problem(
+        eq = eq,
+        eq_initial = eq_initial,
+        obj = obj,
+        variant = variant,
+        case = case,
+    )
+
+    output_path = get_output_path(
+        case = case,
+        obj = obj,
+        variant = variant,
+        run_dir = run_dir,
+    )
+
+    label = f"{case}_{obj}_{variant}"
+
+    print("")
+    print("################################################################################################################")
+    print(f"Starting optimization: {label}")
+    print(f"Output path: {output_path}")
+    print("################################################################################################################")
+    print("")
+
+    print_optimization_stack(
+        objective = objective,
+        constraints = constraints,
+    )
+
+    eq, result = optimize_save_report(
+        eq = eq,
+        objective = objective,
+        constraints = constraints,
+        optimizer = OPTIMIZER,
+        output_path = output_path,
+        label = label,
+        ftol = FTOL,
+        xtol = XTOL,
+        gtol = GTOL,
+        ctol = CTOL,
+        maxiter = MAXITER,
+        options = make_optimizer_options(),
+        copy = False,
+        x_scale = X_SCALE,
+    )
+
+    return eq, result
+
+
+
+
+
+def run_objective_pair(
+        case,
+        obj,
+        eq_loaded,
+        eq_initial,
+    ):
+    """
+    Run the FXD/FREE pair for one objective folder.
+    """
+
+    objective_dir = get_objective_dir(
+        case = case,
+        obj = obj,
+    )
+
+    run_dir = get_next_run_dir(
+        objective_dir = objective_dir,
+    )
+
+    print("")
+    print("================================================================================================================")
+    print(f"Created output run folder: {run_dir}")
+    print("================================================================================================================")
+    print("")
+
+    save_run_initial_equilibrium(
+        case = case,
+        obj = obj,
+        run_dir = run_dir,
+        eq = eq_initial,
+    )
+
+    save_hyperparameter_file(
+        case = case,
+        obj = obj,
+        output_dir = run_dir,
+        eq = eq_initial,
+        eq_loaded = eq_loaded,
+    )
+
+    run_one_variant(
+        case = case,
+        obj = obj,
+        variant = "FXD",
+        eq_initial = eq_initial,
+        run_dir = run_dir,
+    )
+
+    run_one_variant(
+        case = case,
+        obj = obj,
+        variant = "FREE",
+        eq_initial = eq_initial,
+        run_dir = run_dir,
+    )
+
+
+
+
+
+def run_case(
+        case,
+        obj = None,
+    ):
+    """
+    Run requested optimization pairs for one DESC example case.
+    """
+
+    objective_names = resolve_requested_objectives(
+        obj = obj,
+    )
+
+    ensure_case_layout(
+        case = case,
+    )
+
+    eq_loaded, eq_initial = load_initial_equilibrium(
+        case = case,
+    )
+
+    print_hyperparameter_report(
+        case = case,
+        eq_loaded = eq_loaded,
+        eq = eq_initial,
+    )
+
+    save_case_initial_equilibrium(
+        case = case,
+        eq = eq_initial,
+    )
+
+    for objective_name in objective_names:
+        run_objective_pair(
+            case = case,
+            obj = objective_name,
+            eq_loaded = eq_loaded,
+            eq_initial = eq_initial,
+        )
+
+    return objective_names
+
+
+
+
+
+def run_comparison_outputs(
+        case,
+        obj = None,
+    ):
+    """
+    Run compare.py logic after optimization outputs are written.
+    """
+
+    try:
+        from .compare import case_obj
+
+    except ImportError:
+        from compare import case_obj
+
+    print("")
+    print("================================================================================================================")
+    print("Running case comparison CSV generation")
+    print("================================================================================================================")
+    print("")
+
+    rows, csv_paths = case_obj(
+        case = case,
+        obj = obj,
+    )
+
+    print("")
+    print("Finished case-objective comparison.")
+    print("CSV files written to:")
+    print("")
+
+    for case_label, csv_path in csv_paths.items():
+        print(f"{case_label}: {csv_path}")
+
+    print("")
+
+    return rows, csv_paths
+
+
+
+
+
+
+
+
+
+
+#==============================================================================================================
+# CLI
+#==============================================================================================================
+
+def parse_args():
+    """
+    Parse command-line arguments.
+    """
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--case",
+        required = True,
+        help = "DESC example/case name, e.g. ATF, HELIOTRON, W7-X.",
+    )
+
+    parser.add_argument(
+        "--obj",
+        default = None,
+        choices = [
+            "qs3",
+            "balloon",
+            "force",
+        ],
+        help = "Optional objective pair to run. If omitted, qs3, balloon, and force all run.",
+    )
+
+    parser.add_argument(
+        "--skip-compare",
+        action = "store_true",
+        help = "Skip comparison CSV generation after the case run.",
+    )
+
+    return parser.parse_args()
+
+
+
+
+
+def main():
+    """
+    Run one DESC example case.
+    """
+
+    args = parse_args()
+
+    print("")
+    print("================================================================================================================")
+    print(f"Running case = {args.case}")
+
+    if args.obj is None:
+        print("Objective mode: qs3, balloon, and force")
+
+    else:
+        print(f"Objective mode: {args.obj}")
+
+    print("Backend: CPU")
+    print("Output mode: append numbered run folders")
+    print("================================================================================================================")
+    print("")
+
+    run_case(
+        case = args.case,
+        obj = args.obj,
+    )
+
+    if not args.skip_compare:
+        run_comparison_outputs(
+            case = args.case,
+            obj = args.obj,
+        )
+
+
+
+
+
+if __name__ == "__main__":
+    main()
