@@ -6,18 +6,13 @@
 # Usage:
 #   cd DESC
 #   python3 research/lit_comp/tutorials/plot.py --tutorial basic_qs
-#   python3 research/lit_comp/tutorials/plot.py --tutorial adv_qs
 #   python3 research/lit_comp/tutorials/plot.py --tutorial balloon
-#   python3 research/lit_comp/tutorials/plot.py --tutorial neoclassical
 #   python3 research/lit_comp/tutorials/plot.py --tutorial basic_qs --case 001
 #
 # New output layout:
 #   tutorials/basic_qs/tripleQS/001/
 #   tutorials/basic_qs/twotermQH/001/
-#   tutorials/adv_qs/multigrid/001/
-#   tutorials/adv_qs/auglag/001/
 #   tutorials/balloon/balloon/001/
-#   tutorials/neoclassical/neoclassical/001/
 #
 #==============================================================================================================
 
@@ -33,9 +28,8 @@ import numpy as np
 
 from desc.grid import LinearGrid
 from desc.io import load
-from desc.plotting import plot_surfaces
-
-
+from desc.plotting import plot_comparison
+from matplotlib.colors import to_rgba
 
 
 
@@ -49,6 +43,30 @@ from desc.plotting import plot_surfaces
 #========================================================================================================================================
 TUTORIALS_DIR = Path(__file__).resolve().parent
 LIT_COMP_DIR = TUTORIALS_DIR.parent
+
+
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# PLOT STYLE
+#========================================================================================================================================
+VARIANT_LABELS = {
+    "FXD": "fixed-pressure",
+    "FREE": "free-pressure",
+}
+
+DEFAULT_COLOR_CYCLE = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+
+VARIANT_COLORS = {
+    "FXD": DEFAULT_COLOR_CYCLE[0],
+    "FREE": DEFAULT_COLOR_CYCLE[1],
+}
 
 
 
@@ -94,6 +112,27 @@ def get_tutorial_dir(
         )
 
     return tutorial_dir
+
+
+
+
+
+def get_tutorial_plot_title(
+        tutorial_name,
+    ):
+    """
+    Return a publication-style tutorial title.
+    """
+
+    title_map = {
+        "basic_qs": "Basic Quasi-Symmetry Triple Product Tutorial",
+        "balloon": "Infinite-n Ideal Ballooning Mode Tutorial",
+    }
+
+    return title_map.get(
+        tutorial_name,
+        f"{tutorial_name} Tutorial",
+    )
 
 
 
@@ -332,24 +371,6 @@ def get_specific_optimization_name(
 
 
 
-def is_nested_optimization_case_dir(
-        case_dir,
-    ):
-    """
-    Return True for paths like basic_qs/tripleQS/001.
-    """
-
-    case_dir = Path(case_dir)
-
-    if not case_dir.name.isdigit():
-        return False
-
-    return case_dir.parent.parent == TUTORIALS_DIR / case_dir.parent.parent.name
-
-
-
-
-
 def get_optimization_label_from_case_dir(
         tutorial_name,
         case_dir,
@@ -575,73 +596,6 @@ def load_pressure_gradient_profiles_for_group(
 
 
 #========================================================================================================================================
-# TOROIDAL CROSS-SECTION HELPERS
-#========================================================================================================================================
-def compute_toroidal_cross_section(
-        eq,
-        zeta,
-        rho_values = None,
-        num_theta = 200,
-    ):
-    """
-    Compute R-Z flux-surface curves at one fixed toroidal angle.
-    """
-
-    if rho_values is None:
-        rho_values = np.linspace(
-            0.0,
-            1.0,
-            9,
-        )
-
-    theta = np.linspace(
-        0.0,
-        2.0 * np.pi,
-        num_theta,
-    )
-
-    curves = []
-
-    for rho_value in rho_values:
-
-        grid = LinearGrid(
-            rho = np.atleast_1d(rho_value),
-            theta = theta,
-            zeta = np.atleast_1d(zeta),
-            NFP = eq.NFP,
-        )
-
-        data = eq.compute(
-            [
-                "R",
-                "Z",
-            ],
-            grid = grid,
-        )
-
-        R = np.asarray(data["R"]).reshape(-1)
-        Z = np.asarray(data["Z"]).reshape(-1)
-
-        curves.append(
-            (
-                rho_value,
-                R,
-                Z,
-            )
-        )
-
-    return curves
-
-
-
-
-
-
-
-
-
-
-#========================================================================================================================================
 # PLOTTING HELPERS
 #========================================================================================================================================
 def make_profile_plot(
@@ -653,10 +607,7 @@ def make_profile_plot(
     """
     Make and save one radial profile comparison plot.
 
-    All curves are dashed.
-    FXD curves use dash phase offsets relative to one another.
-    FREE curves use dash phase offsets relative to one another.
-    No markers or data offsets are used.
+    All curves are solid and colored consistently with toroidal cut plots.
     """
 
     if len(profiles) == 0:
@@ -666,59 +617,47 @@ def make_profile_plot(
         figsize = (9, 6),
     )
 
-    phase_steps = (
-        0,
-        2,
-        4,
-        6,
-        8,
-        10,
-        12,
-        14,
-    )
+    for variant, (rho, values) in profiles.items():
 
-    group_counts = {
-        "FXD": 0,
-        "FREE": 0,
-        "OTHER": 0,
-    }
+        label = VARIANT_LABELS.get(
+            variant,
+            variant,
+        )
 
-    for label, (rho, values) in profiles.items():
-
-        if label.endswith("FXD"):
-            group = "FXD"
-            dash_sequence = (6, 3)
-            linewidth = 2.25
-            alpha = 0.90
-
-        elif label.endswith("FREE"):
-            group = "FREE"
-            dash_sequence = (10, 3)
-            linewidth = 2.25
-            alpha = 0.90
-
-        else:
-            group = "OTHER"
-            dash_sequence = (6, 3)
-            linewidth = 2.00
-            alpha = 0.85
-
-        phase_index = group_counts[group]
-        phase_offset = phase_steps[phase_index % len(phase_steps)]
-        group_counts[group] += 1
+        color = VARIANT_COLORS.get(
+            variant,
+            None,
+        )
 
         ax.plot(
             rho,
             values,
             label = label,
-            linestyle = (phase_offset, dash_sequence),
-            linewidth = linewidth,
-            alpha = alpha,
+            color = color,
+            linestyle = "-",
+            linewidth = 2.35,
+            alpha = 0.95,
         )
 
-    ax.set_xlabel("rho")
-    ax.set_ylabel(ylabel)
-    ax.set_title(title)
+    ax.set_xlabel(
+        r"Normalized radial toroidal flux coordinate $\rho$",
+        fontsize = 14,
+    )
+
+    ax.set_ylabel(
+        ylabel,
+        fontsize = 14,
+    )
+
+    ax.set_title(
+        title,
+        fontsize = 16,
+    )
+
+    ax.tick_params(
+        axis = "both",
+        labelsize = 11,
+    )
 
     ax.grid(
         True,
@@ -726,7 +665,7 @@ def make_profile_plot(
     )
 
     ax.legend(
-        fontsize = 8,
+        fontsize = 10,
         loc = "best",
         frameon = True,
     )
@@ -747,7 +686,6 @@ def make_profile_plot(
 
 
 
-
 def make_toroidal_cross_section_plot(
         equilibrium_data,
         title,
@@ -759,75 +697,186 @@ def make_toroidal_cross_section_plot(
     """
     Make and save one toroidal cross-section figure for one optimization.
 
-    The figure has one row per variant (FXD / FREE) and 6 columns,
-    corresponding to 6 toroidal cross-sections over one field period,
-    in the style of the DESC Basic Equilibrium tutorial.
+    The figure has 6 toroidal cuts in a 2-by-3 layout. Fixed-pressure and
+    free-pressure equilibria are overlaid using DESC plot_comparison.
     """
 
     if len(equilibrium_data) == 0:
         return None
 
     fig, axes = plt.subplots(
-        len(equilibrium_data),
-        num_phi,
+        2,
+        3,
         figsize = (
-            3.0 * num_phi,
-            3.4 * len(equilibrium_data),
+            17,
+            15,
         ),
         squeeze = False,
     )
 
-    for row, (variant, eq) in enumerate(equilibrium_data):
+    axes_flat = axes.reshape(-1)
 
-        phi_values = np.linspace(
-            0.0,
-            2.0 * np.pi / eq.NFP,
-            num_phi,
-            endpoint = False,
+    variants = [
+        variant
+        for variant, _ in equilibrium_data
+    ]
+
+    eqs = [
+        eq
+        for _, eq in equilibrium_data
+    ]
+
+    labels = [
+        VARIANT_LABELS.get(
+            variant,
+            variant,
+        )
+        for variant in variants
+    ]
+
+    colors = [
+        VARIANT_COLORS.get(
+            variant,
+            None,
+        )
+        for variant in variants
+    ]
+
+    linewidths = [
+        1.55
+        for _ in eqs
+    ]
+
+    linestyles = [
+        "-"
+        for _ in eqs
+    ]
+
+    reference_eq = eqs[0]
+
+    phi_values = np.linspace(
+        0.0,
+        2.0 * np.pi / reference_eq.NFP,
+        num_phi,
+        endpoint = False,
+    )
+
+    plot_comparison(
+        eqs,
+        rho = rho,
+        theta = theta,
+        phi = phi_values,
+        ax = axes_flat,
+        color = colors,
+        labels = labels,
+        lw = linewidths,
+        ls = linestyles,
+        legend = False,
+    )
+
+    axis_padding = 0.08
+
+    for ax, phi_value in zip(axes_flat, phi_values):
+
+        ax.set_title(
+            rf"$\phi = {phi_value:.2f}$",
+            fontsize = 22,
+            y = 1.035,
         )
 
-        for col, phi_value in enumerate(phi_values):
+        ax.set_xlabel(
+            "R [m]",
+            fontsize = 18,
+        )
 
-            ax = axes[row, col]
+        ax.set_ylabel(
+            "Z [m]",
+            fontsize = 18,
+        )
 
-            plot_surfaces(
-                eq,
-                rho = rho,
-                theta = theta,
-                phi = float(phi_value),
-                ax = np.atleast_1d(ax),
-            )
+        ax.tick_params(
+            axis = "both",
+            labelsize = 16,
+        )
 
-            if row == 0:
-                ax.set_title(
-                    rf"$\phi = {phi_value:.3f}$",
-                    fontsize = 10,
-                )
+        ax.grid(
+            True,
+            alpha = 0.25,
+        )
 
-            if col == 0:
-                ax.text(
-                    -0.20,
-                    0.50,
-                    variant,
-                    transform = ax.transAxes,
-                    rotation = 90,
-                    va = "center",
-                    ha = "center",
-                    fontsize = 11,
-                )
+        ax.set_box_aspect(
+            1.0,
+        )
+
+    for ax in axes_flat:
+
+        xmin, xmax = ax.get_xlim()
+        ymin, ymax = ax.get_ylim()
+
+        x_center = 0.5 * (
+            xmin + xmax
+        )
+
+        y_center = 0.5 * (
+            ymin + ymax
+        )
+
+        x_width = xmax - xmin
+        y_width = ymax - ymin
+
+        half_width = 0.5 * max(
+            x_width,
+            y_width,
+        ) * (
+            1.0 + axis_padding
+        )
+
+        ax.set_xlim(
+            x_center - half_width,
+            x_center + half_width,
+        )
+
+        ax.set_ylim(
+            y_center - half_width,
+            y_center + half_width,
+        )
+
+        ax.set_box_aspect(
+            1.0,
+        )
+
+    handles, legend_labels = axes_flat[0].get_legend_handles_labels()
+
+    suptitle_y = 0.985
+    legend_y = suptitle_y - 0.060
+
+    if len(handles) > 0:
+        fig.legend(
+            handles = handles,
+            labels = legend_labels,
+            loc = "upper center",
+            ncol = len(handles),
+            fontsize = 20,
+            frameon = True,
+            bbox_to_anchor = (
+                0.5,
+                legend_y,
+            ),
+        )
 
     fig.suptitle(
         title,
-        fontsize = 12,
+        fontsize = 28,
+        y = suptitle_y,
     )
 
-    fig.tight_layout(
-        rect = (
-            0.02,
-            0.02,
-            1.00,
-            0.94,
-        ),
+    fig.subplots_adjust(
+        left = 0.065,
+        right = 0.985,
+        bottom = 0.075,
+        top = 0.825,
+        wspace = 0.28,
+        hspace = -0.4,
     )
 
     fig.savefig(
@@ -852,13 +901,14 @@ def plot_toroidal_cross_sections(
     """
     Plot toroidal cross-sections one figure per optimization.
 
-    Each figure has:
-        - one row for FXD
-        - one row for FREE
-        - 6 toroidal cuts across one field period
+    Each figure has 6 overlaid toroidal cuts in a 2-by-3 layout.
     """
 
     saved_paths = []
+
+    tutorial_plot_title = get_tutorial_plot_title(
+        tutorial_name = tutorial_name,
+    )
 
     for optimization_name, group_files in files.items():
 
@@ -904,10 +954,14 @@ def plot_toroidal_cross_sections(
 
         save_path = tutorial_dir / f"{output_stem}_toroidal_cross_sections.png"
 
-        if optimization_name == "main":
-            title = f"{tutorial_name}: toroidal cross-sections"
+        if tutorial_name == "basic_qs":
+            title = tutorial_plot_title
+
+        elif optimization_name == "main":
+            title = f"{tutorial_plot_title}: toroidal cross-sections"
+
         else:
-            title = f"{tutorial_name} {optimization_name}: toroidal cross-sections"
+            title = f"{tutorial_plot_title} {optimization_name}: toroidal cross-sections"
 
         saved = make_toroidal_cross_section_plot(
             equilibrium_data = equilibrium_data,
@@ -925,8 +979,6 @@ def plot_toroidal_cross_sections(
 
 
 
-
-
 def plot_pressure_profiles(
         tutorial_name,
         tutorial_dir,
@@ -934,9 +986,6 @@ def plot_pressure_profiles(
     ):
     """
     Plot all FXD and FREE pressure profiles in one tutorial-level figure.
-
-    If a tutorial has multiple optimizations, all of them are included in the
-    same pressure plot and labeled by optimization name and variant.
     """
 
     profiles = {}
@@ -963,13 +1012,7 @@ def plot_pressure_profiles(
                 quantity = "p",
             )
 
-            if optimization_name == "main":
-                label = variant
-
-            else:
-                label = f"{optimization_name} {variant}"
-
-            profiles[label] = (
+            profiles[variant] = (
                 rho,
                 pressure,
             )
@@ -978,8 +1021,10 @@ def plot_pressure_profiles(
 
     saved = make_profile_plot(
         profiles = profiles,
-        title = f"{tutorial_name}: pressure profiles",
-        ylabel = "p",
+        title = get_tutorial_plot_title(
+            tutorial_name = tutorial_name,
+        ),
+        ylabel = "pressure [Pa]",
         save_path = save_path,
     )
 
@@ -987,11 +1032,6 @@ def plot_pressure_profiles(
         return []
 
     return [saved]
-
-
-
-
-
 
 
 
@@ -1053,25 +1093,6 @@ def plot_basic_qs(
 
 
 
-def plot_adv_qs(
-        tutorial_name,
-        tutorial_dir,
-        files,
-    ):
-    """
-    Plots for the adv_qs tutorial.
-    """
-
-    return plot_standard_tutorial_outputs(
-        tutorial_name = tutorial_name,
-        tutorial_dir = tutorial_dir,
-        files = files,
-    )
-
-
-
-
-
 def plot_balloon(
         tutorial_name,
         tutorial_dir,
@@ -1079,25 +1100,6 @@ def plot_balloon(
     ):
     """
     Plots for the balloon tutorial.
-    """
-
-    return plot_standard_tutorial_outputs(
-        tutorial_name = tutorial_name,
-        tutorial_dir = tutorial_dir,
-        files = files,
-    )
-
-
-
-
-
-def plot_neoclassical(
-        tutorial_name,
-        tutorial_dir,
-        files,
-    ):
-    """
-    Plots for the neoclassical tutorial.
     """
 
     return plot_standard_tutorial_outputs(
@@ -1120,9 +1122,7 @@ def plot_neoclassical(
 #========================================================================================================================================
 PLOTTERS = {
     "basic_qs": plot_basic_qs,
-    "adv_qs": plot_adv_qs,
     "balloon": plot_balloon,
-    "neoclassical": plot_neoclassical,
 }
 
 
@@ -1223,7 +1223,7 @@ def parse_args():
     parser.add_argument(
         "--tutorial",
         required = True,
-        help = "Tutorial name, e.g. basic_qs, adv_qs, balloon, or neoclassical.",
+        help = "Tutorial name, e.g. basic_qs or balloon.",
     )
 
     parser.add_argument(
