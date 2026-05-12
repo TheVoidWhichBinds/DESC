@@ -7,17 +7,17 @@
 #   1. optimization parameters as many radial axes,
 #   2. objective residuals as smooth colored fog volumes,
 #   3. broad continuous residual structure throughout the full cube,
-#   4. irregular low-residual pockets corresponding to local minima,
-#   5. a sweep plane that reveals fog on one side and no fog on the other side,
-#   6. a good local minimum and a poor local minimum.
+#   4. interspersed objective residual structure across the optimization space.
 #
 # The key idea in this version is that each objective fog is not a single cloud centered at one location.
 # Instead, each fog is a smooth function of x, y, and z across the entire cube.
 #
-# The good and poor local-minimum marker locations are computed from the superposition of the enabled scalar
-# fields:
-#   - good local minimum: 2nd-smallest value of the superposition field
-#   - poor local minimum: 4th-smallest value of the superposition field
+# This version removes:
+#   1. the sweep-plane slicing,
+#   2. the slider,
+#   3. the good and poor local-minimum markers.
+#
+# The output is saved as a PNG.
 #
 #==============================================================================================================
 
@@ -59,37 +59,15 @@ N_PARAMETER_AXES = 14
 AXIS_RADIUS = 2.35
 
 FOG_MIN_FIELD = 0.020
-FOG_N_SLICES_X = 100
-FOG_COLORSCALE_ALPHA_MAX = 0.30
-
-CUT_PLANE_OPACITY = 0.16
-CUT_PLANE_COLOR = "rgba(70, 70, 70, 0.16)"
-INITIAL_CLIP_STEP = 10
+FOG_OPACITY = 0.3
+FOG_SURFACE_COUNT = 18
 
 SAVE_HTML = False
-SAVE_PNG = False
+SAVE_PNG = True
+SHOW_FIGURE = False
 
 HTML_NAME = "stellarator_optimization_space.html"
-PNG_NAME = "stellarator_optimization_space.png"
-
-
-
-
-
-
-
-
-#==============================================================================================================
-# KEY POINTS
-#==============================================================================================================
-
-ORIGIN = np.array(
-    [
-        0.0,
-        0.0,
-        0.0,
-    ]
-)
+PNG_NAME = "Opt_Space.png"
 
 
 
@@ -116,6 +94,7 @@ OBJECTIVES = [
                 0.85,
             ]
         ),
+        "mix": 0.62,
     },
     {
         "name": "Quasisymmetry residual",
@@ -124,12 +103,13 @@ OBJECTIVES = [
         "seed": 202,
         "phases": np.array(
             [
-                -0.65,
-                0.45,
-                1.35,
-                -0.25,
+                -0.10,
+                1.55,
+                -0.95,
+                0.30,
             ]
         ),
+        "mix": 0.54,
     },
 ]
 
@@ -356,14 +336,44 @@ def make_objective_field(
     Create one sporadic objective fog field without Gaussian blobs or Gaussian cavities.
 
     Larger values = higher residual / denser fog.
-    Smaller values = lower residual / local-minimum candidates.
+    Smaller values = lower residual regions.
     """
 
-    field = make_coordinate_field(
+    base_field = make_coordinate_field(
         X = X,
         Y = Y,
         Z = Z,
         phases = objective["phases"],
+    )
+
+    shared_field = make_coordinate_field(
+        X = X,
+        Y = Y,
+        Z = Z,
+        phases = np.array(
+            [
+                0.35,
+                -0.80,
+                1.20,
+                -0.45,
+            ]
+        ),
+    )
+
+    field = (
+        objective.get(
+            "mix",
+            0.60,
+        )
+        * base_field
+        + (
+            1.0
+            - objective.get(
+                "mix",
+                0.60,
+            )
+        )
+        * shared_field
     )
 
     field = smooth_field(
@@ -382,103 +392,6 @@ def make_objective_field(
     )
 
     return field
-
-
-
-
-def find_ranked_superposition_points(
-        X,
-        Y,
-        Z,
-        fields,
-        ranks,
-        search_cube_size = 1.0,
-    ):
-    """
-    Locate points by ranking the superposition of all enabled scalar fields.
-
-    The minima search is restricted to a cube centered on the origin.
-
-    search_cube_size = 1.0 means:
-        x in [-0.5, 0.5]
-        y in [-0.5, 0.5]
-        z in [-0.5, 0.5]
-
-    ranks are one-indexed.
-    rank = 2 means the point with the second-smallest superposition value inside the cube.
-    rank = 4 means the point with the fourth-smallest superposition value inside the cube.
-    """
-
-    if len(fields) == 0:
-        raise ValueError(
-            "At least one objective must be enabled.",
-        )
-
-    superposition = np.zeros_like(
-        fields[0][1],
-    )
-
-    for _, field in fields:
-        superposition += field
-
-    half_width = 0.5 * search_cube_size
-
-    search_mask = (
-        (X >= -half_width)
-        & (X <= half_width)
-        & (Y >= -half_width)
-        & (Y <= half_width)
-        & (Z >= -half_width)
-        & (Z <= half_width)
-    )
-
-    allowed_flat_indices = np.flatnonzero(
-        search_mask.ravel(),
-    )
-
-    allowed_values = superposition.ravel()[
-        allowed_flat_indices
-    ]
-
-    allowed_order = np.argsort(
-        allowed_values,
-    )
-
-    ranked_points = []
-
-    for rank in ranks:
-        allowed_rank_index = allowed_order[
-            rank - 1
-        ]
-
-        flat_index = allowed_flat_indices[
-            allowed_rank_index
-        ]
-
-        grid_index = np.unravel_index(
-            flat_index,
-            superposition.shape,
-        )
-
-        point = np.array(
-            [
-                X[grid_index],
-                Y[grid_index],
-                Z[grid_index],
-            ]
-        )
-
-        ranked_points.append(
-            {
-                "rank": rank,
-                "point": point,
-                "value": float(
-                    superposition[grid_index],
-                ),
-            }
-        )
-
-    return ranked_points
 
 
 
@@ -680,12 +593,11 @@ def rgb_string_to_tuple(
 
 
 
-def make_fog_colorscale(
+def make_volume_colorscale(
         color,
-        alpha_max = FOG_COLORSCALE_ALPHA_MAX,
     ):
     """
-    Colorscale that fades from fully transparent to softly opaque.
+    Build a soft, transparent-to-colored volume colorscale.
     """
 
     r, g, b = rgb_string_to_tuple(
@@ -698,198 +610,27 @@ def make_fog_colorscale(
             f"rgba({r}, {g}, {b}, 0.00)",
         ],
         [
-            0.38,
+            0.35,
             f"rgba({r}, {g}, {b}, 0.00)",
         ],
         [
-            0.60,
-            f"rgba({r}, {g}, {b}, {0.08 * alpha_max:.5f})",
+            0.55,
+            f"rgba({r}, {g}, {b}, 0.06)",
         ],
         [
-            0.78,
-            f"rgba({r}, {g}, {b}, {0.26 * alpha_max:.5f})",
-        ],
-        [
-            0.90,
-            f"rgba({r}, {g}, {b}, {0.62 * alpha_max:.5f})",
+            0.75,
+            f"rgba({r}, {g}, {b}, 0.16)",
         ],
         [
             1.00,
-            f"rgba({r}, {g}, {b}, {alpha_max:.5f})",
+            f"rgba({r}, {g}, {b}, 0.30)",
         ],
     ]
 
 
 
 
-def evenly_spaced_indices(
-        n_total,
-        n_keep,
-    ):
-    """
-    Evenly spaced integer indices avoiding extreme domain boundaries.
-    """
-
-    if n_keep <= 0:
-        return []
-
-    if n_keep >= n_total:
-        return list(
-            range(
-                n_total,
-            )
-        )
-
-    return list(
-        np.unique(
-            np.round(
-                np.linspace(
-                    2,
-                    n_total - 3,
-                    n_keep,
-                )
-            ).astype(
-                int,
-            )
-        )
-    )
-
-
-
-
-def add_surface_slice(
-        fig,
-        X_slice,
-        Y_slice,
-        Z_slice,
-        field_slice,
-        name,
-        color,
-    ):
-    """
-    Add one translucent x-slice of the fog field.
-    """
-
-    masked_field = np.where(
-        field_slice >= FOG_MIN_FIELD,
-        field_slice,
-        np.nan,
-    )
-
-    if np.all(
-        np.isnan(
-            masked_field,
-        )
-    ):
-        return False
-
-    fig.add_trace(
-        go.Surface(
-            x = X_slice,
-            y = Y_slice,
-            z = Z_slice,
-            surfacecolor = masked_field,
-            cmin = 0.0,
-            cmax = 1.0,
-            colorscale = make_fog_colorscale(
-                color = color,
-            ),
-            showscale = False,
-            showlegend = False,
-            name = name,
-            legendgroup = name,
-            hoverinfo = "skip",
-            contours = dict(
-                x = dict(
-                    show = False,
-                ),
-                y = dict(
-                    show = False,
-                ),
-                z = dict(
-                    show = False,
-                ),
-            ),
-        )
-    )
-
-    return True
-
-
-
-
-def add_cut_plane(
-        fig,
-        x_value,
-    ):
-    """
-    Add the sweep plane x = constant.
-    """
-
-    y = np.linspace(
-        Y_LIM[0],
-        Y_LIM[1],
-        2,
-    )
-
-    z = np.linspace(
-        Z_LIM[0],
-        Z_LIM[1],
-        2,
-    )
-
-    Y_plane, Z_plane = np.meshgrid(
-        y,
-        z,
-        indexing = "ij",
-    )
-
-    X_plane = np.full_like(
-        Y_plane,
-        fill_value = x_value,
-        dtype = float,
-    )
-
-    surfacecolor = np.zeros_like(
-        X_plane,
-        dtype = float,
-    )
-
-    fig.add_trace(
-        go.Surface(
-            x = X_plane,
-            y = Y_plane,
-            z = Z_plane,
-            surfacecolor = surfacecolor,
-            cmin = 0.0,
-            cmax = 1.0,
-            colorscale = [
-                [0.0, CUT_PLANE_COLOR],
-                [1.0, CUT_PLANE_COLOR],
-            ],
-            opacity = CUT_PLANE_OPACITY,
-            showscale = False,
-            showlegend = False,
-            name = "Sweep plane",
-            hoverinfo = "skip",
-            contours = dict(
-                x = dict(
-                    show = False,
-                ),
-                y = dict(
-                    show = False,
-                ),
-                z = dict(
-                    show = False,
-                ),
-            ),
-        )
-    )
-
-
-
-
-def add_fog_trace(
+def add_fog_volume(
         fig,
         X,
         Y,
@@ -897,223 +638,33 @@ def add_fog_trace(
         field,
         name,
         color,
-        slice_indices,
-        fog_trace_info,
     ):
     """
-    Add one objective as a smooth fog assembled from many translucent x-slices.
+    Add one objective as a continuous translucent volume.
+
+    This replaces the previous x-slice construction.
     """
 
-    for i in slice_indices:
-        added = add_surface_slice(
-            fig = fig,
-            X_slice = X[i, :, :],
-            Y_slice = Y[i, :, :],
-            Z_slice = Z[i, :, :],
-            field_slice = field[i, :, :],
+    fig.add_trace(
+        go.Volume(
+            x = X.ravel(),
+            y = Y.ravel(),
+            z = Z.ravel(),
+            value = field.ravel(),
+            isomin = FOG_MIN_FIELD,
+            isomax = 1.0,
+            opacity = FOG_OPACITY,
+            surface_count = FOG_SURFACE_COUNT,
+            colorscale = make_volume_colorscale(
+                color = color,
+            ),
+            showscale = False,
+            showlegend = False,
             name = name,
-            color = color,
-        )
-
-        if added:
-            fog_trace_info.append(
-                {
-                    "trace_index": len(fig.data) - 1,
-                    "x_value": float(X[i, 0, 0]),
-                }
-            )
-
-
-
-
-def add_key_points(
-        fig,
-        good_local_minimum,
-        poor_local_minimum,
-        good_value,
-        poor_value,
-    ):
-    """
-    Add the origin plus the ranked good and poor local-minimum points.
-    """
-
-    fig.add_trace(
-        go.Scatter3d(
-            x = [
-                ORIGIN[0],
-            ],
-            y = [
-                ORIGIN[1],
-            ],
-            z = [
-                ORIGIN[2],
-            ],
-            mode = "markers",
-            marker = dict(
-                size = 5,
-                color = "black",
-            ),
-            name = "Origin",
-            showlegend = False,
+            legendgroup = name,
             hoverinfo = "skip",
         )
     )
-
-    fig.add_trace(
-        go.Scatter3d(
-            x = [
-                good_local_minimum[0],
-            ],
-            y = [
-                good_local_minimum[1],
-            ],
-            z = [
-                good_local_minimum[2],
-            ],
-            mode = "markers+text",
-            marker = dict(
-                size = 7,
-                color = "rgb(80, 180, 80)",
-            ),
-            text = [
-                "good local minimum",
-            ],
-            textposition = "top center",
-            name = f"Good local minimum, 2nd lowest superposition = {good_value:.4f}",
-        )
-    )
-
-    fig.add_trace(
-        go.Scatter3d(
-            x = [
-                poor_local_minimum[0],
-            ],
-            y = [
-                poor_local_minimum[1],
-            ],
-            z = [
-                poor_local_minimum[2],
-            ],
-            mode = "markers+text",
-            marker = dict(
-                size = 7,
-                color = "rgb(145, 90, 40)",
-            ),
-            text = [
-                "poor local minimum",
-            ],
-            textposition = "top center",
-            name = f"Poor local minimum, 4th lowest superposition = {poor_value:.4f}",
-        )
-    )
-
-    fig.add_trace(
-        go.Scatter3d(
-            x = [
-                ORIGIN[0],
-                good_local_minimum[0],
-            ],
-            y = [
-                ORIGIN[1],
-                good_local_minimum[1],
-            ],
-            z = [
-                ORIGIN[2],
-                good_local_minimum[2],
-            ],
-            mode = "lines",
-            line = dict(
-                color = "rgb(80, 180, 80)",
-                width = 6,
-                dash = "dash",
-            ),
-            name = "Good local minimum guide",
-            showlegend = False,
-            hoverinfo = "skip",
-        )
-    )
-
-    fig.add_trace(
-        go.Scatter3d(
-            x = [
-                ORIGIN[0],
-                poor_local_minimum[0],
-            ],
-            y = [
-                ORIGIN[1],
-                poor_local_minimum[1],
-            ],
-            z = [
-                ORIGIN[2],
-                poor_local_minimum[2],
-            ],
-            mode = "lines",
-            line = dict(
-                color = "rgb(145, 90, 40)",
-                width = 6,
-                dash = "dash",
-            ),
-            name = "Poor local minimum guide",
-            showlegend = False,
-            hoverinfo = "skip",
-        )
-    )
-
-
-
-
-def make_slider_steps(
-        fig,
-        fog_trace_info,
-        cut_plane_trace_indices,
-        always_visible_trace_indices,
-        clip_positions,
-    ):
-    """
-    Build slider steps that sweep the cut plane and reveal fog only for x >= x_clip.
-    """
-
-    n_traces = len(
-        fig.data,
-    )
-
-    steps = []
-
-    for step_index, x_clip in enumerate(
-        clip_positions,
-    ):
-        visible = [
-            False
-            for _ in range(
-                n_traces,
-            )
-        ]
-
-        for trace_index in always_visible_trace_indices:
-            visible[trace_index] = True
-
-        for info in fog_trace_info:
-            if info["x_value"] >= x_clip:
-                visible[info["trace_index"]] = True
-
-        visible[cut_plane_trace_indices[step_index]] = True
-
-        steps.append(
-            dict(
-                method = "update",
-                args = [
-                    {
-                        "visible": visible,
-                    },
-                    {
-                        "title": f"Conceptual Non-Convex Stellarator Optimization Space (sweep plane x = {x_clip:.2f})",
-                    },
-                ],
-                label = f"{x_clip:.2f}",
-            )
-        )
-
-    return steps
 
 
 
@@ -1156,34 +707,10 @@ def build_figure():
             )
         )
 
-    ranked_points = find_ranked_superposition_points(
-        X = X,
-        Y = Y,
-        Z = Z,
-        fields = fields,
-        ranks = (
-            2,
-            4,
-        ),
-        search_cube_size = 1.0,
-    )
-
-    good_local_minimum = ranked_points[0]["point"]
-    poor_local_minimum = ranked_points[1]["point"]
-
-    good_value = ranked_points[0]["value"]
-    poor_value = ranked_points[1]["value"]
-
     fig = go.Figure()
 
     add_parameter_axes(
         fig = fig,
-    )
-
-    always_visible_trace_indices = list(
-        range(
-            len(fig.data),
-        )
     )
 
     for objective, _ in fields:
@@ -1193,27 +720,8 @@ def build_figure():
             color = objective["color"],
         )
 
-    always_visible_trace_indices.extend(
-        range(
-            always_visible_trace_indices[-1] + 1,
-            len(fig.data),
-        )
-    )
-
-    slice_indices = evenly_spaced_indices(
-        n_total = X.shape[0],
-        n_keep = FOG_N_SLICES_X,
-    )
-
-    clip_positions = [
-        float(X[i, 0, 0])
-        for i in slice_indices
-    ]
-
-    fog_trace_info = []
-
     for objective, field in fields:
-        add_fog_trace(
+        add_fog_volume(
             fig = fig,
             X = X,
             Y = Y,
@@ -1221,76 +729,10 @@ def build_figure():
             field = field,
             name = objective["name"],
             color = objective["color"],
-            slice_indices = slice_indices,
-            fog_trace_info = fog_trace_info,
         )
-
-    add_key_points(
-        fig = fig,
-        good_local_minimum = good_local_minimum,
-        poor_local_minimum = poor_local_minimum,
-        good_value = good_value,
-        poor_value = poor_value,
-    )
-
-    always_visible_trace_indices.extend(
-        range(
-            len(fig.data) - 5,
-            len(fig.data),
-        )
-    )
-
-    cut_plane_trace_indices = []
-
-    for x_clip in clip_positions:
-        add_cut_plane(
-            fig = fig,
-            x_value = x_clip,
-        )
-
-        cut_plane_trace_indices.append(
-            len(fig.data) - 1,
-        )
-
-    initial_step = min(
-        max(
-            INITIAL_CLIP_STEP,
-            0,
-        ),
-        len(clip_positions) - 1,
-    )
-
-    initial_visible = [
-        False
-        for _ in range(
-            len(fig.data),
-        )
-    ]
-
-    for trace_index in always_visible_trace_indices:
-        initial_visible[trace_index] = True
-
-    for info in fog_trace_info:
-        if info["x_value"] >= clip_positions[initial_step]:
-            initial_visible[info["trace_index"]] = True
-
-    initial_visible[cut_plane_trace_indices[initial_step]] = True
-
-    for trace_index, is_visible in enumerate(
-        initial_visible,
-    ):
-        fig.data[trace_index].visible = is_visible
-
-    slider_steps = make_slider_steps(
-        fig = fig,
-        fog_trace_info = fog_trace_info,
-        cut_plane_trace_indices = cut_plane_trace_indices,
-        always_visible_trace_indices = always_visible_trace_indices,
-        clip_positions = clip_positions,
-    )
 
     fig.update_layout(
-        title = f"Conceptual Non-Convex Stellarator Optimization Space (sweep plane x = {clip_positions[initial_step]:.2f})",
+        title = "Conceptual Non-Convex Stellarator Optimization Space",
         scene = dict(
             xaxis = dict(
                 title = "",
@@ -1333,26 +775,14 @@ def build_figure():
             y = 0.98,
             bgcolor = "rgba(255, 255, 255, 0.60)",
         ),
-        sliders = [
-            dict(
-                active = initial_step,
-                currentvalue = dict(
-                    prefix = "Sweep plane x = ",
-                ),
-                pad = dict(
-                    t = 18,
-                ),
-                steps = slider_steps,
-                x = 0.12,
-                len = 0.76,
-            )
-        ],
         margin = dict(
             l = 0,
             r = 0,
             b = 0,
             t = 45,
         ),
+        width = 1400,
+        height = 1100,
     )
 
     return fig
@@ -1370,7 +800,7 @@ def build_figure():
 
 def main():
     """
-    Build, save, and show the figure.
+    Build, save, and optionally show the figure.
     """
 
     fig = build_figure()
@@ -1388,15 +818,22 @@ def main():
                 scale = 2,
             )
 
+            print(
+                f"Saved PNG to {PNG_NAME}",
+            )
+
         except Exception as error:
             print(
-                "Could not save PNG. Install kaleido if you want static image output.",
+                "Could not save PNG. Install kaleido if you want static image output:",
+            )
+            print(
+                "    pip install -U kaleido",
             )
             print(
                 f"Error: {error}",
             )
 
-    if not SAVE_HTML:
+    if SHOW_FIGURE:
         fig.show(
             renderer = "browser",
         )

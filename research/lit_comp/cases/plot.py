@@ -5,29 +5,32 @@
 #
 # Usage:
 #   cd research/lit_comp/cases
-#   python3 plot.py --case ATF
-#   python3 plot.py --case ATF --obj qs3
+#   python3 plot.py --case ARIES-CS
+#   python3 plot.py --case ARIES-CS --obj qs3
+#   python3 plot.py --case ARIES-CS --obj qs3 --N-Xsecs 3
 #
 # This script plots:
-#   1. INITIAL/FXD/FREE pressure profiles
-#   2. INITIAL/FXD/FREE toroidal cross-section overlays
+#   1. fixed-pressure/free-pressure pressure profiles
+#   2. fixed-pressure/free-pressure toroidal cross-section overlays
 #
 #==============================================================================================================
 
+
+#========================================================================================================================================
+# IMPORTS
+#========================================================================================================================================
 from argparse import ArgumentParser
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 import numpy as np
 
 from desc.grid import LinearGrid
-from desc.plotting import plot_surfaces
+from desc.plotting import plot_comparison
 
 try:
     from .helper import (
         find_h5_files,
-        find_initial_h5_file,
         get_existing_objective_dirs,
         load_final_eq,
         normalize_case_name,
@@ -36,11 +39,65 @@ try:
 except ImportError:
     from helper import (
         find_h5_files,
-        find_initial_h5_file,
         get_existing_objective_dirs,
         load_final_eq,
         normalize_case_name,
     )
+
+
+
+
+
+
+
+
+#========================================================================================================================================
+# PLOT STYLE
+#========================================================================================================================================
+VARIANT_LABELS = {
+    "FXD": "fixed-pressure",
+    "FLUX": "fixed-pressure",
+    "FREE": "free-pressure",
+    "PRESS": "free-pressure",
+}
+
+CANONICAL_VARIANT_LABELS = {
+    # Files may be named FXD/FREE or FLUX/PRESS, but all plot legends use
+    # the thesis-facing construction names below.
+    "FXD": "fixed-pressure",
+    "FREE": "free-pressure",
+}
+
+VARIANT_FILE_SUFFIXES = {
+    "FXD": (
+        "_FXD.h5",
+        "_FLUX.h5",
+    ),
+    "FREE": (
+        "_FREE.h5",
+        "_PRESS.h5",
+    ),
+}
+
+VARIANT_DISPLAY_ORDER = (
+    "FXD",
+    "FREE",
+)
+
+DEFAULT_COLOR_CYCLE = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+
+VARIANT_COLORS = {
+    "FXD": DEFAULT_COLOR_CYCLE[0],
+    "FLUX": DEFAULT_COLOR_CYCLE[0],
+    "FREE": DEFAULT_COLOR_CYCLE[1],
+    "PRESS": DEFAULT_COLOR_CYCLE[1],
+}
+
+OBJECTIVE_TITLES = {
+    "qs3": "Quasi-Symmetry Triple Product",
+    "balloon": "Infinite-n Ideal Ballooning Mode",
+    "force": "Force Balance",
+}
 
 
 
@@ -52,7 +109,6 @@ except ImportError:
 #========================================================================================================================================
 # PROFILE HELPERS
 #========================================================================================================================================
-
 def compute_radial_profile(
         eq,
         quantity,
@@ -90,33 +146,14 @@ def compute_radial_profile(
 
 def load_pressure_profiles(
         files,
-        initial_path = None,
     ):
     """
-    Load INITIAL, FXD, and FREE pressure profiles for one output folder.
+    Load fixed-pressure and free-pressure profiles for one output folder.
     """
 
     profiles = {}
 
-    if initial_path is not None:
-        eq = load_final_eq(
-            path = initial_path,
-        )
-
-        rho, pressure = compute_radial_profile(
-            eq = eq,
-            quantity = "p",
-        )
-
-        profiles["INITIAL"] = (
-            rho,
-            pressure,
-        )
-
-    for variant in (
-        "FXD",
-        "FREE",
-    ):
+    for variant in VARIANT_DISPLAY_ORDER:
         path = files.get(
             variant,
             None,
@@ -148,217 +185,61 @@ def load_pressure_profiles(
 
 
 
-#========================================================================================================================================
-# PLOTTING HELPERS
-#========================================================================================================================================
-
-def get_line_styles():
-    """
-    Return line styles used consistently across pressure and surface plots.
-    """
-
-    return {
-        "INITIAL": {
-            "color": "black",
-            "linestyle": "-",
-            "linewidth": 2,
-            "alpha": 0.38,
-            "zorder": 1,
-        },
-        "FXD": {
-            "color": "tab:green",
-            "linestyle": "--",
-            "linewidth": 1,
-            "alpha": 0.82,
-            "zorder": 2,
-        },
-        "FREE": {
-            "color": "tab:purple",
-            "linestyle": ":",
-            "linewidth": 1,
-            "alpha": 0.98,
-            "zorder": 3,
-        },
-    }
 
 
-
-
-
-def get_surface_plot_kwargs(
-        label,
-    ):
-    """
-    Return keyword arguments passed directly into DESC plot_surfaces.
-    """
-
-    style = get_line_styles()[label]
-
-    return {
-        "label": label,
-        "rho_color": style["color"],
-        "theta_color": style["color"],
-        "lcfs_color": style["color"],
-        "axis_color": style["color"],
-        "rho_ls": style["linestyle"],
-        "theta_ls": style["linestyle"],
-        "lcfs_ls": style["linestyle"],
-        "rho_lw": style["linewidth"],
-        "theta_lw": style["linewidth"],
-        "lcfs_lw": style["linewidth"],
-        "axis_alpha": style["alpha"],
-        "axis_size": 2.5,
-    }
-
-
-
-
-
-def apply_line_style(
-        line,
-        style,
-    ):
-    """
-    Apply style settings to one matplotlib line.
-    """
-
-    line.set_color(
-        style.get(
-            "color",
-            None,
-        )
-    )
-
-    line.set_linestyle(
-        style.get(
-            "linestyle",
-            "-",
-        )
-    )
-
-    line.set_linewidth(
-        style.get(
-            "linewidth",
-            1.8,
-        )
-    )
-
-    line.set_alpha(
-        style.get(
-            "alpha",
-            0.90,
-        )
-    )
-
-    line.set_zorder(
-        style.get(
-            "zorder",
-            2,
-        )
-    )
-
-    line.set_solid_capstyle("round")
-    line.set_dash_capstyle("round")
-
-
-
-
-
-def apply_collection_style(
-        collection,
-        style,
-    ):
-    """
-    Apply style settings to one matplotlib collection.
-    """
-
-    color = style.get(
-        "color",
-        None,
-    )
-
-    if color is not None:
-        try:
-            collection.set_color(color)
-        except Exception:
-            pass
-
-        try:
-            collection.set_edgecolor(color)
-        except Exception:
-            pass
-
-        try:
-            collection.set_edgecolors(color)
-        except Exception:
-            pass
-
-    try:
-        collection.set_facecolor("none")
-    except Exception:
-        pass
-
-    try:
-        collection.set_linestyle(
-            style.get(
-                "linestyle",
-                "-",
-            )
-        )
-    except Exception:
-        pass
-
-    try:
-        collection.set_linestyles(
-            style.get(
-                "linestyle",
-                "-",
-            )
-        )
-    except Exception:
-        pass
-
-    try:
-        collection.set_linewidth(
-            style.get(
-                "linewidth",
-                1.8,
-            )
-        )
-    except Exception:
-        pass
-
-    try:
-        collection.set_alpha(
-            style.get(
-                "alpha",
-                0.90,
-            )
-        )
-    except Exception:
-        pass
-
-    try:
-        collection.set_zorder(
-            style.get(
-                "zorder",
-                2,
-            )
-        )
-    except Exception:
-        pass
-
-
-
-
-
-def make_pressure_plot(
-        profiles,
-        title,
+def remove_existing_plot_file(
         save_path,
     ):
     """
-    Make and save one pressure-profile comparison plot.
+    Remove an existing plot file before saving a newly generated plot.
+    """
+
+    save_path = Path(save_path)
+
+    if save_path.exists():
+        save_path.unlink()
+
+
+
+
+
+#========================================================================================================================================
+# PLOTTING HELPERS
+#========================================================================================================================================
+def get_case_plot_title(
+        case,
+        objective_label,
+    ):
+    """
+    Return a publication-style title for one benchmark case/objective pair.
+    """
+
+    case_name = normalize_case_name(
+        case = case,
+    )
+
+    objective_title = OBJECTIVE_TITLES.get(
+        objective_label,
+        objective_label,
+    )
+
+    return f"{case_name} {objective_title}"
+
+
+
+
+
+def make_profile_plot(
+        profiles,
+        title,
+        ylabel,
+        save_path,
+    ):
+    """
+    Make and save one radial profile comparison plot.
+
+    Initial equilibria are intentionally not plotted. All curves are solid and
+    colored consistently with the toroidal cut plots.
     """
 
     if len(profiles) == 0:
@@ -368,43 +249,47 @@ def make_pressure_plot(
         figsize = (9, 6),
     )
 
-    line_styles = get_line_styles()
+    for variant, (rho, values) in profiles.items():
 
-    for label, (rho, values) in profiles.items():
-        style = line_styles.get(
-            label,
-            {},
+        label = CANONICAL_VARIANT_LABELS.get(
+            variant,
+            variant,
+        )
+
+        color = VARIANT_COLORS.get(
+            variant,
+            None,
         )
 
         ax.plot(
             rho,
             values,
             label = label,
-            color = style.get(
-                "color",
-                None,
-            ),
-            linestyle = style.get(
-                "linestyle",
-                "--",
-            ),
-            linewidth = style.get(
-                "linewidth",
-                2.25,
-            ),
-            alpha = style.get(
-                "alpha",
-                1.0,
-            ),
-            zorder = style.get(
-                "zorder",
-                2,
-            ),
+            color = color,
+            linestyle = "-",
+            linewidth = 2.35,
+            alpha = 0.95,
         )
 
-    ax.set_xlabel("rho")
-    ax.set_ylabel("p")
-    ax.set_title(title)
+    ax.set_xlabel(
+        r"Normalized radial toroidal flux coordinate $\rho$",
+        fontsize = 14,
+    )
+
+    ax.set_ylabel(
+        ylabel,
+        fontsize = 14,
+    )
+
+    ax.set_title(
+        title,
+        fontsize = 16,
+    )
+
+    ax.tick_params(
+        axis = "both",
+        labelsize = 11,
+    )
 
     ax.grid(
         True,
@@ -412,12 +297,16 @@ def make_pressure_plot(
     )
 
     ax.legend(
-        fontsize = 9,
+        fontsize = 10,
         loc = "best",
         frameon = True,
     )
 
     fig.tight_layout()
+
+    remove_existing_plot_file(
+        save_path = save_path,
+    )
 
     fig.savefig(
         save_path,
@@ -433,115 +322,9 @@ def make_pressure_plot(
 
 
 
-def style_new_surface_artists(
-        ax,
-        start_line_index,
-        start_collection_index,
-        start_patch_index,
-        label,
-    ):
-    """
-    Apply the plot style for one equilibrium to artists newly added by plot_surfaces.
-    """
-
-    line_styles = get_line_styles()
-    style = line_styles.get(
-        label,
-        {},
-    )
-
-    new_lines = ax.lines[start_line_index:]
-    new_collections = ax.collections[start_collection_index:]
-    new_patches = ax.patches[start_patch_index:]
-
-    for line in new_lines:
-        apply_line_style(
-            line = line,
-            style = style,
-        )
-
-    for collection in new_collections:
-        apply_collection_style(
-            collection = collection,
-            style = style,
-        )
-
-    for patch in new_patches:
-        try:
-            patch.set_edgecolor(
-                style.get(
-                    "color",
-                    None,
-                )
-            )
-            patch.set_facecolor("none")
-            patch.set_linestyle(
-                style.get(
-                    "linestyle",
-                    "-",
-                )
-            )
-            patch.set_linewidth(
-                style.get(
-                    "linewidth",
-                    1.8,
-                )
-            )
-            patch.set_alpha(
-                style.get(
-                    "alpha",
-                    0.90,
-                )
-            )
-            patch.set_zorder(
-                style.get(
-                    "zorder",
-                    2,
-                )
-            )
-        except Exception:
-            pass
-
-
-
-
-
-def make_toroidal_legend_handles():
-    """
-    Build legend handles for the toroidal overlay plot.
-    """
-
-    handles = []
-    line_styles = get_line_styles()
-
-    for label in (
-        "INITIAL",
-        "FXD",
-        "FREE",
-    ):
-        style = line_styles[label]
-
-        handles.append(
-            Line2D(
-                [0],
-                [0],
-                label = label,
-                color = style["color"],
-                linestyle = style["linestyle"],
-                linewidth = style["linewidth"],
-                alpha = style["alpha"],
-            )
-        )
-
-    return handles
-
-
-
-
-
 def get_toroidal_phi_values(
         reference_eq,
-        num_phi = 4,
+        num_phi = 6,
         N_Xsec_index = 0,
         N_Xsecs = 1,
     ):
@@ -619,31 +402,69 @@ def make_toroidal_cross_section_plot(
         save_path,
         rho = 8,
         theta = 8,
-        num_phi = 4,
+        num_phi = 6,
         N_Xsec_index = 0,
         N_Xsecs = 1,
     ):
     """
-    Make and save one toroidal cross-section overlay figure.
+    Make and save one toroidal cross-section figure.
+
+    The figure has 6 toroidal cuts in a 2-by-3 layout. Fixed-pressure and
+    free-pressure equilibria are overlaid using DESC plot_comparison.
     """
 
     if len(equilibrium_data) == 0:
         return None
 
-    reference_eq = equilibrium_data[0][1]
-
-    nrows = 2
-    ncols = 2
-
     fig, axes = plt.subplots(
-        nrows,
-        ncols,
+        2,
+        3,
         figsize = (
-            8.0,
-            8.0,
+            17,
+            15,
         ),
         squeeze = False,
     )
+
+    axes_flat = axes.reshape(-1)
+
+    variants = [
+        variant
+        for variant, _ in equilibrium_data
+    ]
+
+    eqs = [
+        eq
+        for _, eq in equilibrium_data
+    ]
+
+    labels = [
+        CANONICAL_VARIANT_LABELS.get(
+            variant,
+            variant,
+        )
+        for variant in variants
+    ]
+
+    colors = [
+        VARIANT_COLORS.get(
+            variant,
+            None,
+        )
+        for variant in variants
+    ]
+
+    linewidths = [
+        1.55
+        for _ in eqs
+    ]
+
+    linestyles = [
+        "-"
+        for _ in eqs
+    ]
+
+    reference_eq = eqs[0]
 
     phi_values = get_toroidal_phi_values(
         reference_eq = reference_eq,
@@ -659,43 +480,107 @@ def make_toroidal_cross_section_plot(
         N_Xsecs = N_Xsecs,
     )
 
-    for index, phi_value in enumerate(phi_values):
-        row = index // ncols
-        col = index % ncols
-        ax = axes[row, col]
+    plot_comparison(
+        eqs,
+        rho = rho,
+        theta = theta,
+        phi = phi_values,
+        ax = axes_flat,
+        color = colors,
+        labels = labels,
+        lw = linewidths,
+        ls = linestyles,
+        legend = False,
+    )
 
-        for label, eq in equilibrium_data:
-            start_line_index = len(ax.lines)
-            start_collection_index = len(ax.collections)
-            start_patch_index = len(ax.patches)
+    axis_padding = 0.08
 
-            plot_surfaces(
-                eq,
-                rho = rho,
-                theta = theta,
-                phi = float(phi_value),
-                ax = np.atleast_1d(ax),
-                **get_surface_plot_kwargs(
-                    label = label,
-                ),
-            )
-
-            style_new_surface_artists(
-                ax = ax,
-                start_line_index = start_line_index,
-                start_collection_index = start_collection_index,
-                start_patch_index = start_patch_index,
-                label = label,
-            )
+    for ax, phi_value in zip(axes_flat, phi_values):
 
         ax.set_title(
-            rf"$\phi = {phi_value:.3f}$",
-            fontsize = 10,
+            rf"$\phi = {phi_value:.2f}$",
+            fontsize = 22,
+            y = 1.035,
         )
 
-        ax.set_aspect(
-            "equal",
-            adjustable = "box",
+        ax.set_xlabel(
+            "R [m]",
+            fontsize = 18,
+        )
+
+        ax.set_ylabel(
+            "Z [m]",
+            fontsize = 18,
+        )
+
+        ax.tick_params(
+            axis = "both",
+            labelsize = 16,
+        )
+
+        ax.grid(
+            True,
+            alpha = 0.25,
+        )
+
+        ax.set_box_aspect(
+            1.0,
+        )
+
+    for ax in axes_flat:
+
+        xmin, xmax = ax.get_xlim()
+        ymin, ymax = ax.get_ylim()
+
+        x_center = 0.5 * (
+            xmin + xmax
+        )
+
+        y_center = 0.5 * (
+            ymin + ymax
+        )
+
+        x_width = xmax - xmin
+        y_width = ymax - ymin
+
+        half_width = 0.5 * max(
+            x_width,
+            y_width,
+        ) * (
+            1.0 + axis_padding
+        )
+
+        ax.set_xlim(
+            x_center - half_width,
+            x_center + half_width,
+        )
+
+        ax.set_ylim(
+            y_center - half_width,
+            y_center + half_width,
+        )
+
+        ax.set_box_aspect(
+            1.0,
+        )
+
+    handles, legend_labels = axes_flat[0].get_legend_handles_labels()
+
+    suptitle_y = 0.985
+    legend_y = suptitle_y - 0.060
+
+    if len(handles) > 0:
+        fig.legend(
+            handles = handles,
+            labels = legend_labels,
+            loc = "upper center",
+            ncol = len(handles),
+            fontsize = 20,
+            frameon = True,
+            bbox_to_anchor = (
+                0.5,
+                legend_y,
+            ),
         )
 
     if N_Xsecs > 1:
@@ -703,28 +588,21 @@ def make_toroidal_cross_section_plot(
 
     fig.suptitle(
         title,
-        fontsize = 12,
+        fontsize = 28,
+        y = suptitle_y,
     )
 
-    fig.legend(
-        handles = make_toroidal_legend_handles(),
-        loc = "upper center",
-        ncol = 3,
-        frameon = True,
-        fontsize = 9,
-        bbox_to_anchor = (
-            0.5,
-            0.965,
-        ),
+    fig.subplots_adjust(
+        left = 0.065,
+        right = 0.985,
+        bottom = 0.075,
+        top = 0.825,
+        wspace = 0.28,
+        hspace = -0.4,
     )
 
-    fig.tight_layout(
-        rect = (
-            0.02,
-            0.02,
-            1.00,
-            0.93,
-        ),
+    remove_existing_plot_file(
+        save_path = save_path,
     )
 
     fig.savefig(
@@ -745,8 +623,46 @@ def make_toroidal_cross_section_plot(
 
 
 #========================================================================================================================================
-# Case Plotters
+# CASE PLOTTERS
 #========================================================================================================================================
+def find_case_h5_files(
+        output_dir,
+    ):
+    """
+    Find fixed-pressure and free-pressure h5 files in one numbered run folder.
+
+    This accepts both naming schemes used by the case outputs:
+        fixed-pressure: *_FXD.h5 or *_FLUX.h5
+        free-pressure:  *_FREE.h5 or *_PRESS.h5
+    """
+
+    output_dir = Path(output_dir)
+    files = {}
+
+    for canonical_variant in VARIANT_DISPLAY_ORDER:
+        matches = []
+
+        for suffix in VARIANT_FILE_SUFFIXES[canonical_variant]:
+            matches.extend(
+                sorted(
+                    output_dir.glob(f"*{suffix}"),
+                )
+            )
+
+        if len(matches) > 0:
+            files[canonical_variant] = matches[0]
+
+        else:
+            files[canonical_variant] = None
+
+    if all(path is None for path in files.values()):
+        return {}
+
+    return files
+
+
+
+
 
 def get_all_run_dirs(
         objective_dir,
@@ -802,15 +718,13 @@ def plot_pressure_profiles(
         objective_label,
         output_dir,
         files,
-        initial_path,
     ):
     """
-    Plot INITIAL, FXD, and FREE pressure profiles for one output folder.
+    Plot fixed-pressure and free-pressure profiles for one output folder.
     """
 
     profiles = load_pressure_profiles(
         files = files,
-        initial_path = initial_path,
     )
 
     plot_stem = get_plot_stem(
@@ -821,9 +735,13 @@ def plot_pressure_profiles(
 
     save_path = output_dir / f"{plot_stem}_pressure.png"
 
-    saved = make_pressure_plot(
+    saved = make_profile_plot(
         profiles = profiles,
-        title = f"{plot_stem}: pressure profiles",
+        title = get_case_plot_title(
+            case = case,
+            objective_label = objective_label,
+        ),
+        ylabel = "pressure [Pa]",
         save_path = save_path,
     )
 
@@ -841,35 +759,15 @@ def plot_toroidal_cross_sections(
         objective_label,
         output_dir,
         files,
-        initial_path,
         N_Xsecs = 1,
     ):
     """
-    Plot INITIAL, FXD, and FREE toroidal cross-section overlays.
+    Plot fixed-pressure and free-pressure toroidal cross-section overlays.
     """
 
     equilibrium_data = []
 
-    if initial_path is not None:
-        try:
-            equilibrium_data.append(
-                (
-                    "INITIAL",
-                    load_final_eq(
-                        path = initial_path,
-                    ),
-                )
-            )
-
-        except Exception as error:
-            print("")
-            print(f"Skipping toroidal cross-sections for {objective_label} INITIAL: {error}")
-            print("")
-
-    for variant in (
-        "FXD",
-        "FREE",
-    ):
+    for variant in VARIANT_DISPLAY_ORDER:
         path = files.get(
             variant,
             None,
@@ -905,6 +803,11 @@ def plot_toroidal_cross_sections(
         output_dir = output_dir,
     )
 
+    base_title = get_case_plot_title(
+        case = case,
+        objective_label = objective_label,
+    )
+
     saved_paths = []
 
     for N_Xsec_index in range(N_Xsecs):
@@ -916,9 +819,9 @@ def plot_toroidal_cross_sections(
 
         saved = make_toroidal_cross_section_plot(
             equilibrium_data = equilibrium_data,
-            title = f"{plot_stem}: toroidal cross-sections",
+            title = base_title,
             save_path = save_path,
-            num_phi = 4,
+            num_phi = 6,
             N_Xsec_index = N_Xsec_index,
             N_Xsecs = N_Xsecs,
         )
@@ -944,20 +847,16 @@ def plot_objective_run_folder(
 
     objective_label = objective_dir.name
 
-    files = find_h5_files(
-        case_dir = output_dir,
+    files = find_case_h5_files(
+        output_dir = output_dir,
     )
 
     if len(files) == 0:
         print("")
-        print(f"No *_FXD.h5 or *_FREE.h5 files were found in: {output_dir}")
+        print(f"No fixed/free h5 files were found in: {output_dir}")
+        print("Expected one of *_FXD.h5 or *_FLUX.h5, and one of *_FREE.h5 or *_PRESS.h5.")
         print("")
         return []
-
-    initial_path = find_initial_h5_file(
-        run_dir = output_dir,
-        case = case,
-    )
 
     saved_paths = []
 
@@ -972,7 +871,6 @@ def plot_objective_run_folder(
         objective_label = objective_label,
         output_dir = output_dir,
         files = files,
-        initial_path = initial_path,
     )
 
     saved_paths += plot_toroidal_cross_sections(
@@ -980,7 +878,6 @@ def plot_objective_run_folder(
         objective_label = objective_label,
         output_dir = output_dir,
         files = files,
-        initial_path = initial_path,
         N_Xsecs = N_Xsecs,
     )
 
@@ -997,6 +894,8 @@ def plot_case(
     ):
     """
     Plot relevant comparisons for one case across all numbered run folders.
+
+    Existing plot PNG files are overwritten, not skipped.
     """
 
     objective_dirs = get_existing_objective_dirs(
@@ -1032,7 +931,7 @@ def plot_case(
 
     if len(saved_paths) == 0:
         raise FileNotFoundError(
-            "No plots were generated because no *_FXD.h5 or *_FREE.h5 files were found."
+            "No plots were generated because no fixed/free h5 files were found."
         )
 
     return saved_paths
@@ -1047,20 +946,19 @@ def plot_case(
 #========================================================================================================================================
 # CLI
 #========================================================================================================================================
-
 def parse_args():
     """
     Parse command-line arguments.
     """
 
     parser = ArgumentParser(
-        description = "Plot DESC case FXD/FREE comparisons.",
+        description = "Plot DESC case fixed-pressure/free-pressure comparisons.",
     )
 
     parser.add_argument(
         "--case",
         required = True,
-        help = "Case name, e.g. ATF, HELIOTRON, NCSX, W7-X.",
+        help = "Case name, e.g. ARIES-CS, HELIOTRON, or W7-X.",
     )
 
     parser.add_argument(
@@ -1069,15 +967,16 @@ def parse_args():
         choices = [
             "qs3",
             "balloon",
+            "force",
         ],
-        help = "Optional objective folder to plot. If omitted, qs3 and balloon are plotted.",
+        help = "Optional objective folder to plot. If omitted, all existing objective folders are plotted.",
     )
 
     parser.add_argument(
         "--N-Xsecs",
         type = int,
         default = 1,
-        help = "Number of interleaved four-cut toroidal cross-section figures to save.",
+        help = "Number of interleaved six-cut toroidal cross-section figures to save.",
     )
 
     args = parser.parse_args()
@@ -1106,6 +1005,7 @@ def main():
         print(f"Objective folder = {args.obj}")
 
     print("Run folders = all numbered runs")
+    print("Existing plots = overwritten")
     print(f"Toroidal N-Xsec sets = {args.N_Xsecs}")
 
     print("================================================================================================================")
@@ -1125,6 +1025,9 @@ def main():
         print(path)
 
     print("")
+
+
+
 
 
 
