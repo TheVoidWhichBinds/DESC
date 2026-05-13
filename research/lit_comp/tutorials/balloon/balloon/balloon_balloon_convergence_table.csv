@@ -1,0 +1,13 @@
+Run,FXD Converged,FXD Condition,FREE Converged,FREE Condition
+001,True,ftol,False,not converged
+002,True,gtol,False,not converged
+003,True,ftol,False,not converged
+004,True,gtol,False,not converged
+005,False,not converged,False,not converged
+006,True,gtol,False,not converged
+007,False,not converged,False,not converged
+008,True,gtol,False,not converged
+009,False,not converged,False,not converged
+010,True,gtol,False,not converged
+011,False,not converged,False,not converged
+012,True,gtol,False,not converged
